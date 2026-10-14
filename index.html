@@ -2205,10 +2205,71 @@ addEventListener('keydown', e => {
    ONLINE ROOMS (presence carries everything)
    ========================================================================= */
 let roomNS = null, roomChecked = false;
+// Outside claude.ai there is no room service, so the two browsers connect directly (WebRTC),
+// introduced by the free PeerJS broker. This adapter mimics the room calls the game already uses.
+const PEER_PREFIX = 'ballista-keep-v1-';
+function loadScript(src) { return new Promise((res, rej) => { const el = document.createElement('script'); el.src = src; el.async = true; el.onload = res; el.onerror = rej; document.head.appendChild(el); }); }
+function makePeerNS() {
+  return {kind: 'peer', join(name, role) {
+    return new Promise((resolve, reject) => {
+      const peer = role === 'host' ? new window.Peer(PEER_PREFIX + name, {debug: 0}) : new window.Peer({debug: 0});
+      const R = {me: null, pres: {}, remotes: new Map(), handlers: [], errs: [], conns: new Set(), dead: false};
+      let settled = false;
+      const list = () => { const out = [{peer: R.me || 'me', presence: R.pres, sameTab: true, isMe: true, kind: 'viewer', guest: false, by: null}]; for (const [pid, r] of R.remotes) out.push({peer: pid, presence: r, sameTab: false, isMe: false, kind: 'viewer', guest: false, by: null}); return out; };
+      const notify = () => { const ps = list(); for (const h of R.handlers.slice()) { try { h({peers: ps, joined: [], left: [], updated: []}); } catch (e) {} } };
+      const fail = (code, message) => { for (const h of R.errs.slice()) { try { h({code, message}); } catch (e) {} } };
+      const wire = conn => {
+        R.conns.add(conn);
+        conn.on('open', () => { try { conn.send({t: 'p', p: R.pres}); } catch (e) {} });
+        conn.on('data', d => { if (d && d.t === 'p' && d.p && typeof d.p === 'object') { R.remotes.set(conn.peer, d.p); notify(); } });
+        conn.on('close', () => { R.conns.delete(conn); R.remotes.delete(conn.peer); notify(); if (role === 'guest' && !R.dead) fail('upstream_error', 'host left'); });
+        conn.on('error', () => {});
+      };
+      const api = {
+        name, kind: 'peer',
+        presence(patch) { Object.assign(R.pres, patch); for (const c of R.conns) if (c.open) { try { c.send({t: 'p', p: R.pres}); } catch (e) {} } return Promise.resolve(); },
+        peers: list,
+        onPeers(h, onErr) { R.handlers.push(h); if (onErr) R.errs.push(onErr); setTimeout(() => { if (!R.dead) h({peers: list(), joined: [], left: [], updated: []}); }, 0); return () => { R.handlers = R.handlers.filter(x => x !== h); R.errs = R.errs.filter(x => x !== onErr); }; },
+        connected() { return !R.dead; },
+        leave() { R.dead = true; try { peer.destroy(); } catch (e) {} return Promise.resolve(); }
+      };
+      const giveUp = code => { if (settled) return; settled = true; R.dead = true; try { peer.destroy(); } catch (e) {} reject({code}); };
+      peer.on('open', pid => {
+        R.me = pid;
+        if (role === 'host') { settled = true; resolve(api); return; }
+        const conn = peer.connect(PEER_PREFIX + name, {reliable: true});
+        wire(conn);
+        conn.on('open', () => { if (!settled) { settled = true; resolve(api); } });
+        setTimeout(() => giveUp('not_found'), 15000);
+      });
+      if (role === 'host') peer.on('connection', wire);
+      peer.on('error', err => {
+        const t = err && err.type;
+        if (!settled) giveUp(t === 'peer-unavailable' ? 'not_found' : t === 'unavailable-id' ? 'code_taken' : (t || 'network'));
+        else if (t === 'peer-unavailable' && role === 'guest') fail('upstream_error', 'host gone');
+      });
+      peer.on('disconnected', () => { if (!R.dead) { try { peer.reconnect(); } catch (e) {} } });
+    });
+  }};
+}
 (async () => {
   try { roomNS = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) { roomNS = null; }
+  if (!roomNS) {
+    for (const src of ['https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js', 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js']) {
+      if (window.Peer) break;
+      try { await loadScript(src); } catch (e) {}
+    }
+    if (window.Peer) roomNS = makePeerNS();
+  }
   roomChecked = true; overlaySig = '';
 })();
+const peerMode = () => !!(roomNS && roomNS.kind === 'peer');
+function netErrText(code, roomCode) {
+  if (code === 'not_found') return 'No room is open with code ' + roomCode + '. Check the code with your rival, and make sure their room screen is still up.';
+  if (code === 'network' || code === 'server-error' || code === 'socket-error' || code === 'socket-closed') return 'Couldn’t reach the matchmaking service. Check your connection and try again.';
+  if (code === 'browser-incompatible') return 'This browser can’t make direct connections. Try a current Chrome, Edge, Firefox or Safari.';
+  return 'The room could not be reached (' + code + '). Try again in a moment.';
+}
 const ALPH = 'abcdefghjkmnpqrstuvwxyz';
 function makeCode() { let s = ''; for (let i = 0; i < 4; i++) s += ALPH[Math.floor(Math.random() * ALPH.length)]; return s + Math.floor(10 + Math.random() * 90); }
 function cleanCode(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8); }
@@ -2217,12 +2278,14 @@ async function hostRoom() {
   leaveRoom();
   newMatch('host'); S.phase = 'lobby'; S.netMsg = 'Opening the arena…';
   try {
-    const r = await roomNS.join('bk-' + code);
-    net = {room: r, role: 'host', code, guestPeer: null, lastSend: 0, rematch: false, unsub: []};
+    let r, used = code;
+    try { r = await roomNS.join('bk-' + used, 'host'); }
+    catch (e) { if (e && e.code === 'code_taken') { used = makeCode(); r = await roomNS.join('bk-' + used, 'host'); } else throw e; }
+    net = {room: r, role: 'host', code: used, guestPeer: null, lastSend: 0, rematch: false, unsub: []};
     S.netMsg = '';
     r.presence({role: 'host', snap: {ph: 'lobby'}}).catch(() => {});
     net.unsub.push(r.onPeers(onHostPeers, netLost));
-  } catch (e) { S.phase = 'neterr'; S.netMsg = 'The room could not be opened (' + (e && e.code || 'error') + '). Try again in a moment.'; }
+  } catch (e) { S.phase = 'neterr'; S.netMsg = netErrText(e && e.code || 'error', code); }
 }
 function onHostPeers(ch) {
   if (!net || net.role !== 'host') return;
@@ -2286,11 +2349,11 @@ async function joinRoom(code) {
   leaveRoom();
   newMatch('guest'); S.phase = 'connecting'; S.connectAt = performance.now(); S.code = code;
   try {
-    const r = await roomNS.join('bk-' + code);
+    const r = await roomNS.join('bk-' + code, 'guest');
     net = {room: r, role: 'guest', code, hostPeer: null, myPeer: null, lastSend: 0, lastIn: '', actN: 0, in: {m: '', acts: [], r: 0}, unsub: []};
     r.presence({role: 'guest', in: net.in}).catch(() => {});
     net.unsub.push(r.onPeers(onGuestPeers, netLost));
-  } catch (e) { S.phase = 'neterr'; S.netMsg = 'Could not reach room ' + code + ' (' + (e && e.code || 'error') + ').'; }
+  } catch (e) { S.phase = 'neterr'; S.netMsg = netErrText(e && e.code || 'error', code); }
 }
 function onGuestPeers(ch) {
   if (!net || net.role !== 'guest') return;
@@ -2494,7 +2557,7 @@ function renderDock() {
   d.innerHTML = h;
 }
 function sigNow() {
-  const parts = [S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, S.netMsg || '', S.joinErr || ''];
+  const parts = [S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || ''];
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
   if (S.mode === 'guest') parts.push(net && net.in.r, S.hostRematch, S.phase === 'connecting' && performance.now() - S.connectAt > 8000);
@@ -2526,10 +2589,10 @@ function showOverlay() {
           (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
             '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
             (S.joinErr ? '<p class="warn">' + S.joinErr + '</p>' : '')
-          : '<p class="hint">' + (roomChecked ? 'Online rooms aren’t available in this view. Open the page on claude.ai while signed in.' : 'Connecting to rooms…') + '</p>') +
+          : '<p class="hint">' + (roomChecked ? 'Online play couldn’t load. Check your connection and reload the page.' : 'Connecting to rooms…') + '</p>') +
         '</div>' +
       '</div>' +
-      '<p class="hint">Turn up the music with the volume controls at the bottom right. A friend needs access to this page (Share menu) and must be signed in.</p>'
+      '<p class="hint">Turn up the music with the volume controls at the bottom right. ' + (peerMode() ? 'To play a friend, send them this page’s link and your room code.' : 'A friend needs access to this page (Share menu) and must be signed in.') + '</p>'
     );
     return;
   }
@@ -2537,7 +2600,7 @@ function showOverlay() {
     card('<div class="kicker">Room open</div><h1>Send the code</h1>' +
       (net ? '<div class="code" id="codeShow">' + net.code + '</div><div class="btns"><button class="btn" data-act="copy" type="button">Copy code</button></div>' +
         '<p>Your rival opens this same page, chooses Join under Against a friend, and types the code. You run HEX on the left. Planning starts as soon as they arrive.</p>' +
-        '<p class="hint">They need access to this page (share it from the Share menu) and must be signed in.</p>'
+        '<p class="hint">' + (peerMode() ? 'Send them this page’s link too. Keep this screen open until they join.' : 'They need access to this page (share it from the Share menu) and must be signed in.') + '</p>'
         : '<p>' + (S.netMsg || 'Opening the arena…') + '</p>') +
       '<div class="btns"><button class="btn quiet" data-act="menu" type="button">Cancel</button></div>', true);
   } else if (ph === 'connecting' || ph === 'joined') {

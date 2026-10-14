@@ -9,7 +9,7 @@ Each round you get 60 seconds to plan: buy turrets from a shop of five, merge th
 Open `index.html` in a browser, or play it on GitHub Pages once Pages is turned on for this repo (Settings → Pages → Deploy from a branch → `main` / root).
 
 - **Against the CPU:** Easy or Hard.
-- **Against a friend:** online rooms only work when the game is opened as a Claude artifact on claude.ai. On GitHub Pages the friend option shows as unavailable.
+- **Against a friend:** one player chooses **Create room** and sends the page link and room code. The other opens the link, types the code and chooses **Join**. Browsers connect directly to each other, introduced by the free PeerJS service, so no account is needed.
 
 Keys during planning: **D** reroll, **F** buy XP, **E** sell, **Esc** cancel a selection.
 
