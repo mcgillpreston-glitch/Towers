@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ballista Keep</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Chakra+Petch:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: one-screen auto-battler. Glass HUD with both tacticians' HP and the phase clock, the night-arena canvas, and a planning dock (shop, mounts, bench, cores) that folds to one line while combat runs. Deliberately single dark theme. */
 :root{
@@ -17,106 +17,119 @@
   --muted:#aaa3cf;
   --hex:#ff2bd6;
   --volt:#22e6ff;
-  --warn:#ffb020;
+  --warn:#ffc46b;
   --ok:#7dffb0;
-  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --bz:#b08a4c;
+  --bz-hi:#e8c98a;
+  --bz-lo:#5a3f1c;
+  --cr:#3ec8e6;
+  --ether:#eef6ff;
+  --gild:linear-gradient(135deg,#e8c98a 0%,#b08a4c 30%,#f3dfae 50%,#8a6530 72%,#e8c98a 100%);
+  --f-display:"Cinzel","Trajan Pro",Georgia,serif;
   --f-ui:"Chakra Petch","Rajdhani","Segoe UI",system-ui,sans-serif;
   color-scheme:dark;
 }
 html,body{height:100%}
 body{background:var(--void);color:var(--ink);font-family:var(--f-ui);font-size:15px;overflow:hidden}
 .app{height:100%;display:flex;flex-direction:column;gap:8px;padding-inline:16px;padding-block:10px;box-sizing:border-box;max-width:1280px;margin:0 auto}
-.panel{background:linear-gradient(180deg,var(--glass-hi),var(--glass));border:1px solid var(--line);clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+.panel{position:relative;background:linear-gradient(180deg,var(--glass-hi),var(--glass)) padding-box,var(--gild) border-box;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px rgba(232,201,138,.28),0 0 28px rgba(62,200,230,.08)}
+.panel::before,.panel::after{content:"";position:absolute;top:50%;width:9px;height:9px;transform:translateY(-50%) rotate(45deg);background:var(--gild);box-shadow:0 0 8px rgba(62,200,230,.6);pointer-events:none;z-index:2}
+.panel::before{left:-5px}
+.panel::after{right:-5px}
 header.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:8px 16px}
 .team{display:flex;flex-direction:column;gap:4px;min-width:0}
 .team.r{align-items:flex-end}
 .tname{display:flex;gap:10px;align-items:baseline;min-width:0}
 .team.r .tname{flex-direction:row-reverse}
-.tname b{font:900 16px var(--f-display);letter-spacing:.14em}
+.tname b{font:900 17px var(--f-display);letter-spacing:.16em}
 .team.l .tname b{color:var(--hex);text-shadow:0 0 14px rgba(255,43,214,.65)}
 .team.r .tname b{color:var(--volt);text-shadow:0 0 14px rgba(34,230,255,.65)}
 .tname span{font:600 11px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .tname span.you{color:var(--ink)}
 .hprow{display:flex;gap:8px;align-items:center;width:100%;max-width:360px}
 .team.r .hprow{flex-direction:row-reverse}
-.hpbar{flex:1;height:10px;background:#120d22;border:1px solid var(--line);overflow:hidden;display:flex}
+.hpbar{flex:1;height:12px;background:#0a0716 padding-box,var(--gild) border-box;border:1.5px solid transparent;overflow:hidden;display:flex;position:relative;clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,4px 100%,0 50%)}
+.hpbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.14) 0 6px,rgba(255,255,255,0) 6px 14px);pointer-events:none}
 .team.r .hpbar{justify-content:flex-end}
 .hpbar i{display:block;height:100%;width:100%;transition:width .4s}
-.team.l .hpbar i{background:linear-gradient(90deg,#6a0c5c,var(--hex));box-shadow:0 0 12px var(--hex)}
-.team.r .hpbar i{background:linear-gradient(270deg,#0a5466,var(--volt));box-shadow:0 0 12px var(--volt)}
-.hpnum{font:700 13px var(--f-ui);font-variant-numeric:tabular-nums;min-width:30px}
-.team.r .hpnum{text-align:right}
-.sub{font:600 11px var(--f-ui);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.clock{text-align:center;min-width:132px}
-.time{font:900 30px var(--f-display);letter-spacing:.04em;font-variant-numeric:tabular-nums;line-height:1}
-.time.hot{color:var(--warn);text-shadow:0 0 18px rgba(255,176,32,.75)}
-.rnd{font:600 11px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:5px;white-space:nowrap}
+.team.l .hpbar i{background:linear-gradient(180deg,#ffb3f0 0%,var(--hex) 45%,#6a0c5c 100%);box-shadow:0 0 12px var(--hex)}
+.team.r .hpbar i{background:linear-gradient(180deg,#b8f6ff 0%,var(--volt) 45%,#0a5466 100%);box-shadow:0 0 12px var(--volt)}
+.hpnum{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:50%;font:900 12px var(--f-display);font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 1px 2px #000;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85) 0,rgba(255,255,255,0) 28%),radial-gradient(circle at 50% 50%,var(--g) 0,#0a0716 92%) padding-box,var(--gild) border-box;border:2px solid transparent;box-shadow:0 0 14px var(--g),inset 0 -6px 10px rgba(0,0,0,.6)}
+.team.l .hpnum{--g:var(--hex)}
+.team.r .hpnum{--g:var(--volt)}
+.sub{font:700 10px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--bz-hi);white-space:nowrap;font-variant-numeric:tabular-nums}
+.clock{text-align:center;min-width:150px;padding:6px 18px;background:rgba(5,3,11,.6) padding-box,var(--gild) border-box;border:1.5px solid transparent;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
+.time{font:900 28px var(--f-display);letter-spacing:.06em;font-variant-numeric:tabular-nums;line-height:1;color:var(--ether);text-shadow:0 0 14px rgba(62,200,230,.6)}
+.time.hot{color:var(--warn);text-shadow:0 0 18px rgba(255,196,107,.8)}
+.rnd{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--bz-hi);margin-top:5px;white-space:nowrap}
 .stage{flex:1;min-height:180px;position:relative;display:flex;align-items:center;justify-content:center}
 canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid var(--line);box-shadow:0 0 0 1px #000,0 0 50px rgba(255,43,214,.12),0 0 70px rgba(34,230,255,.08)}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.card{pointer-events:auto;width:min(680px,calc(100% - 20px));max-height:calc(100% - 10px);overflow-y:auto;box-sizing:border-box;padding:20px 24px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,rgba(21,16,48,.97),rgba(9,7,20,.97));border:1px solid var(--line);clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);box-shadow:0 30px 80px rgba(0,0,0,.8)}
+.card{pointer-events:auto;width:min(680px,calc(100% - 20px));max-height:calc(100% - 10px);overflow-y:auto;box-sizing:border-box;padding:22px 26px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,rgba(21,16,48,.97),rgba(9,7,20,.97)) padding-box,var(--gild) border-box;border:3px solid transparent;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px rgba(232,201,138,.3),inset 0 0 40px rgba(62,200,230,.06),0 30px 80px rgba(0,0,0,.8)}
 .card.narrow{width:min(520px,calc(100% - 20px))}
-.kicker{font:600 11px var(--f-ui);letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
-.card h1{margin:0;font:900 32px var(--f-display);letter-spacing:.04em;text-transform:uppercase;line-height:1.05;background:linear-gradient(90deg,var(--hex),#a66bff 50%,var(--volt));-webkit-background-clip:text;background-clip:text;color:transparent;text-wrap:balance}
-.card h2{margin:0;font:700 12px var(--f-ui);letter-spacing:.24em;text-transform:uppercase;color:var(--ink)}
+.kicker{font:700 11px var(--f-display);letter-spacing:.3em;text-transform:uppercase;color:var(--bz-hi)}
+.card h1{margin:0;font:900 32px var(--f-display);letter-spacing:.06em;text-transform:uppercase;line-height:1.1;background:linear-gradient(180deg,#fff6dc 0%,#e8c98a 40%,#9ff0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-wrap:balance;filter:drop-shadow(0 0 10px rgba(62,200,230,.35))}
+.card h2{margin:0;font:700 12px var(--f-display);letter-spacing:.24em;text-transform:uppercase;color:var(--bz-hi)}
 .card p{margin:0;line-height:1.5;max-width:64ch}
 .card .hint{color:var(--muted);font-size:13px}
 .card .warn{color:var(--warn)}
 .rules{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:14px}
 .rules li{padding-left:14px;position:relative;line-height:1.4}
-.rules li::before{content:"";position:absolute;left:0;top:.5em;width:6px;height:6px;transform:rotate(45deg);background:linear-gradient(135deg,var(--hex),var(--volt))}
+.rules li::before{content:"";position:absolute;left:0;top:.5em;width:6px;height:6px;transform:rotate(45deg);background:var(--gild);box-shadow:0 0 6px rgba(62,200,230,.6)}
 .modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.mode{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(0,0,0,.35);border:1px solid var(--line);min-width:0}
+.mode{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(0,0,0,.35);border:1px solid rgba(232,201,138,.35);min-width:0}
 .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.btn{font:700 12px var(--f-ui);letter-spacing:.16em;text-transform:uppercase;color:var(--ink);background:#120d22;border:1px solid var(--line);padding:10px 14px;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);white-space:nowrap}
-.btn:hover:not(:disabled){border-color:var(--volt);box-shadow:inset 0 0 0 1px var(--volt),0 0 18px rgba(34,230,255,.3)}
-.btn.prime{background:linear-gradient(90deg,var(--hex),#a66bff 50%,var(--volt));color:#05030b;border-color:transparent}
-.btn.prime:hover:not(:disabled){filter:brightness(1.15)}
+.btn{font:700 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--ether);background:linear-gradient(180deg,#1b1533,#0c0918) padding-box,var(--gild) border-box;border:1.5px solid transparent;padding:10px 14px;cursor:pointer;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%);white-space:nowrap}
+.btn:hover:not(:disabled){box-shadow:inset 0 0 14px rgba(62,200,230,.35),0 0 18px rgba(62,200,230,.3);color:#fff}
+.btn.prime{background:linear-gradient(180deg,#9ff0ff 0%,#3ec8e6 45%,#0e5566 100%) padding-box,var(--gild) border-box;color:#05030b;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+.btn.prime:hover:not(:disabled){filter:brightness(1.12)}
 .btn:disabled{opacity:.4;cursor:not-allowed}
-.btn.quiet{background:transparent;color:var(--muted)}
+.btn.quiet{background:transparent padding-box,linear-gradient(135deg,rgba(232,201,138,.5),rgba(176,138,76,.3)) border-box;color:var(--muted)}
 .btn.small{padding:8px 11px;font-size:11px}
 .btn b{color:var(--warn)}
 .join{display:flex;gap:8px}
-.join input{flex:1;min-width:0;background:#07050f;border:1px solid var(--line);color:var(--ink);font:700 16px var(--f-ui);letter-spacing:.24em;text-transform:uppercase;padding:8px 10px}
+.join input{flex:1;min-width:0;background:#07050f padding-box,var(--gild) border-box;border:1.5px solid transparent;color:var(--ink);font:700 16px var(--f-display);letter-spacing:.24em;text-transform:uppercase;padding:8px 10px}
 .join input:focus{outline:2px solid var(--volt);outline-offset:1px}
-.code{font:900 40px var(--f-display);letter-spacing:.2em;color:var(--ink);text-shadow:0 0 18px rgba(255,43,214,.5),0 0 30px rgba(34,230,255,.35);user-select:all;-webkit-user-select:all}
+.code{font:900 40px var(--f-display);letter-spacing:.2em;color:var(--ether);text-shadow:0 0 18px rgba(62,200,230,.6),0 0 30px rgba(232,201,138,.35);user-select:all;-webkit-user-select:all}
 /* planning dock */
 .dock{display:flex;flex-direction:column;gap:8px;padding:10px 14px;max-height:50vh;overflow-y:auto}
 .eco{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .stat{display:flex;flex-direction:column;gap:2px;min-width:70px}
-.stat span{font:700 10px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-.stat b{font:900 20px var(--f-display);font-variant-numeric:tabular-nums;color:var(--warn);line-height:1.1}
+.stat span{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--bz-hi);white-space:nowrap}
+.stat b{font:900 22px var(--f-display);font-variant-numeric:tabular-nums;color:var(--warn);line-height:1.1;text-shadow:0 0 12px rgba(255,196,107,.5)}
 .stat em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
 .stat.grow{flex:1;min-width:150px}
-.xpbar{height:6px;background:#120d22;border:1px solid var(--line);margin-block:3px}
-.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#3d9bff,#a66bff)}
+.xpbar{height:7px;background:#0a0716 padding-box,var(--gild) border-box;border:1px solid transparent;margin-block:3px;clip-path:polygon(3px 0,calc(100% - 3px) 0,100% 50%,calc(100% - 3px) 100%,3px 100%,0 50%)}
+.xpbar i{display:block;height:100%;background:linear-gradient(180deg,#d6fbff,var(--cr) 50%,#0e5566)}
 .spacer{flex:1}
 .shop{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.unit{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;padding:7px 9px;background:linear-gradient(180deg,#171236,#0b0816);border:1px solid var(--t);color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;box-shadow:inset 0 0 18px -8px var(--t)}
-.unit:hover:not(:disabled){box-shadow:inset 0 0 24px -6px var(--t),0 0 14px -4px var(--t)}
+.unit{position:relative;display:flex;flex-direction:column;gap:3px;text-align:left;padding:8px 10px 8px;background:linear-gradient(180deg,#171236,#0b0816) padding-box,var(--gild) border-box;border:2px solid transparent;color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px color-mix(in srgb,var(--t) 55%,transparent),inset 0 0 22px -8px var(--t)}
+.unit::after{content:"";position:absolute;right:6px;bottom:6px;width:7px;height:7px;transform:rotate(45deg);background:var(--t);box-shadow:0 0 8px var(--t);pointer-events:none}
+.unit:hover:not(:disabled){box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px var(--t),inset 0 0 28px -6px var(--t),0 0 16px -4px var(--t)}
 .unit:disabled{cursor:not-allowed;opacity:.5}
-.unit .un{display:flex;justify-content:space-between;gap:6px;padding-top:2px;font:700 13px var(--f-ui);letter-spacing:.03em}
+.unit .un{display:flex;justify-content:space-between;gap:6px;padding:3px 6px;margin:-2px -4px 0;font:700 12px var(--f-display);letter-spacing:.04em;background:linear-gradient(90deg,rgba(232,201,138,.18),rgba(62,200,230,.12));border-bottom:1px solid rgba(232,201,138,.35)}
 .unit .un em{font-style:normal;color:var(--warn);font-variant-numeric:tabular-nums}
 .unit .ut{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .unit .ud{font-size:12px;color:var(--muted);line-height:1.2}
-.unit .own{position:absolute;top:-1px;left:-1px;font:700 10px var(--f-ui);background:var(--warn);color:#05030b;padding:1px 6px}
-.unit.sold{border-style:dashed;border-color:var(--line);color:var(--muted);cursor:default;align-items:center;justify-content:center;box-shadow:none;min-height:58px;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.unit .own{position:absolute;top:-2px;left:-2px;font:700 10px var(--f-display);background:var(--gild);color:#05030b;padding:1px 6px;clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%)}
+.unit.sold{background:rgba(5,3,11,.5);border:1px dashed rgba(232,201,138,.3);color:var(--muted);cursor:default;align-items:center;justify-content:center;box-shadow:none;min-height:58px;font:700 11px var(--f-display);letter-spacing:.2em;text-transform:uppercase}
+.unit.sold::after{display:none}
 .zones{display:grid;grid-template-columns:5fr 4fr 3fr;gap:12px}
-.zl{font:700 10px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;white-space:nowrap}
+.zl{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--bz-hi);margin-bottom:4px;white-space:nowrap}
 .g{display:grid;gap:5px}
 .g10{grid-template-columns:repeat(5,1fr)}
 .g8{grid-template-columns:repeat(4,1fr)}
 .g6{grid-template-columns:repeat(3,1fr)}
-.chip{position:relative;min-height:42px;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:3px 7px;background:#0b0816;border:1px solid var(--t,var(--line));color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;text-align:left;box-shadow:inset 0 0 14px -8px var(--t,transparent)}
-.chip.empty{border-style:dashed;color:var(--muted)}
-.chip.sel{outline:2px solid #fff;outline-offset:1px;box-shadow:0 0 16px rgba(255,255,255,.35)}
-.chip.target{border-color:#fff;border-style:dashed}
+.chip{position:relative;min-height:42px;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:3px 7px;background:linear-gradient(180deg,#120d26,#0b0816) padding-box,linear-gradient(135deg,var(--bz-hi),var(--bz-lo)) border-box;border:1.5px solid transparent;color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;text-align:left;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t,transparent) 45%,transparent),inset 0 0 14px -8px var(--t,transparent)}
+.chip.empty{background:rgba(5,3,11,.5) padding-box,linear-gradient(135deg,rgba(232,201,138,.3),rgba(90,63,28,.3)) border-box;border-style:dashed;color:var(--muted)}
+.chip.sel{outline:2px solid var(--ether);outline-offset:1px;box-shadow:0 0 16px rgba(62,200,230,.6)}
+.chip.target{background:linear-gradient(180deg,#120d26,#0b0816) padding-box,linear-gradient(135deg,#9ff0ff,#3ec8e6) border-box;border-style:dashed}
 .chip:disabled{cursor:default}
-.chip .cn{font:700 11px var(--f-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip .cn{font:700 11px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .cs{font-size:10px;letter-spacing:.06em}
 .chip .ml{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .chip .ci{position:absolute;right:4px;top:4px;display:flex;gap:2px}
-.chip .ci i{width:6px;height:6px;transform:rotate(45deg)}
+.chip .ci i{width:6px;height:6px;transform:rotate(45deg);box-shadow:0 0 5px currentColor}
 .selbar{display:flex;gap:10px;align-items:center;min-height:30px;font-size:13px;flex-wrap:wrap}
 .selbar .m{color:var(--warn)}
 .selbar .h{color:var(--muted)}
@@ -124,9 +137,10 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .cline{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px}
 .cline b{font-variant-numeric:tabular-nums}
 button:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
-.sound{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;gap:12px;align-items:center;padding:4px 12px 4px 4px;font:700 10px var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.sound{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;gap:12px;align-items:center;padding:4px 12px 4px 4px;font:700 10px var(--f-display);letter-spacing:.18em;text-transform:uppercase;color:var(--bz-hi)}
+.sound::before,.sound::after{display:none}
 .sound label{display:flex;gap:8px;align-items:center;white-space:nowrap}
-.sound input[type=range]{width:96px;accent-color:var(--hex);cursor:pointer}
+.sound input[type=range]{width:96px;accent-color:var(--cr);cursor:pointer}
 .sound input[type=range]:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
 @media (max-width:760px){
   .shop{grid-template-columns:repeat(3,1fr)}
@@ -1727,140 +1741,148 @@ function drawCannon(side) {
   ctx.restore();
 }
 const MET = {hi: '#c3c8d8', mid: '#6b7086', lo: '#2b2e3c', dark: '#14151c', brass: '#d4a84e', brassD: '#7a5f24', copper: '#d88a4c', copperD: '#6e3a1c'};
+// the ancient vocabulary: aged bronze geometry around lit crystal
+const ANC = {bzHi: '#e8c98a', bz: '#b08a4c', bzLo: '#5a3f1c', bzDark: '#2a1c0a', cr: '62,200,230', crHi: '#d6fbff', am: '255,196,90', amHi: '#fff1cf', ether: '#eef6ff'};
 function metal(y0, y1, hi, mid, lo) { const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, hi || MET.hi); g.addColorStop(0.45, mid || MET.mid); g.addColorStop(1, lo || MET.lo); return g; }
+function bronze(y0, y1) { return metal(y0, y1, ANC.bzHi, ANC.bz, ANC.bzLo); }
 function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function chamfer(x, y, w, h, c) { ctx.beginPath(); ctx.moveTo(x + c, y); ctx.lineTo(x + w - c, y); ctx.lineTo(x + w, y + c); ctx.lineTo(x + w, y + h - c); ctx.lineTo(x + w - c, y + h); ctx.lineTo(x + c, y + h); ctx.lineTo(x, y + h - c); ctx.lineTo(x, y + c); ctx.closePath(); }
 function barrel(x0, x1, y, r, cols) { ctx.fillStyle = metal(y - r, y + r, cols && cols[0], cols && cols[1], cols && cols[2]); ctx.fillRect(x0, y - r, x1 - x0, r * 2); }
-function rivet(x, y) { ctx.fillStyle = '#e2e5ee'; ctx.fillRect(x - 0.55, y - 0.55, 1.1, 1.1); }
-function outline() { ctx.strokeStyle = MET.dark; ctx.lineWidth = 0.7; ctx.stroke(); }
+function rivet(x, y) { ctx.fillStyle = ANC.bzHi; ctx.fillRect(x - 0.55, y - 0.55, 1.1, 1.1); }
+function outline() { ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.7; ctx.stroke(); }
+// a faceted crystal panel set into bronze; `lit` 0..1 drives its inner light
+function crystal(x, y, w, h, rgb, lit) {
+  const g = ctx.createLinearGradient(x, y, x + w, y + h);
+  g.addColorStop(0, 'rgba(' + rgb + ',' + (0.35 + 0.5 * lit) + ')'); g.addColorStop(0.5, 'rgba(255,255,255,' + (0.25 + 0.5 * lit) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',' + (0.3 + 0.4 * lit) + ')');
+  ctx.fillStyle = '#071a24'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(x, y + h); ctx.lineTo(x + w * 0.45, y); ctx.stroke();
+  ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.7; ctx.strokeRect(x + 0.35, y + 0.35, w - 0.7, h - 0.7);
+}
+// a glowing crystal node, the emitters of these weapons
+function node(x, y, r, rgb, lit) {
+  const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+  g.addColorStop(0, 'rgba(255,255,255,' + (0.6 + 0.4 * lit) + ')'); g.addColorStop(0.55, 'rgba(' + rgb + ',' + (0.6 + 0.4 * lit) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',.25)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.6; ctx.stroke();
+  if (lit > 0.5) glowDot(x, y, r * 2.6, rgb, 0.35 * lit);
+}
+// a shard: pointed crystal along +x from (x,y)
+function shard(x, y, len, w, rgb, lit) {
+  ctx.beginPath(); ctx.moveTo(x, y - w); ctx.lineTo(x + len * 0.8, y - w * 0.55); ctx.lineTo(x + len, y); ctx.lineTo(x + len * 0.8, y + w * 0.55); ctx.lineTo(x, y + w); ctx.closePath();
+  const g = ctx.createLinearGradient(x, y - w, x + len, y + w);
+  g.addColorStop(0, 'rgba(' + rgb + ',' + (0.5 + 0.4 * lit) + ')'); g.addColorStop(0.5, 'rgba(255,255,255,' + (0.3 + 0.6 * lit) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',.9)');
+  ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.6; ctx.stroke();
+}
 const UPRIGHT = {arc: 1, frost: 1, void: 1};
-// where the shot leaves the barrel, in art units from the pivot
 function tipLen(s) { return {hitscan: s.id === 'needle' ? 30 : 23, rail: s.id === 'lancer' ? 33 : 27, flak: 23, mortar: 19, swarm: 12, torch: 17, cryo: 16, beam: 20}[s.kind] || 12; }
 function drawTurretHead(s, charge, kick) {
-  const id = s.id;
+  const id = s.id, rgb = s.rgb, t = S.t;
   ctx.translate(-kick * 2.5, 0);
   switch (s.kind) {
     case 'hitscan':
       if (id === 'needle') {
-        ctx.fillStyle = metal(-5, 5); rrect(-8, -5, 15, 10, 2); ctx.fill(); outline();
-        barrel(6, 27, 0, 1.4, ['#e6e9f2', '#8a8fa5', '#30333f']);
-        ctx.fillStyle = metal(-2.8, 2.8); ctx.fillRect(26, -2.8, 4.5, 5.6);
-        ctx.fillStyle = MET.dark; ctx.fillRect(27.4, -2.8, 0.8, 5.6); ctx.fillRect(29, -2.8, 0.8, 5.6);
-        ctx.fillStyle = metal(-11, -6.5, '#6b7086', '#2b2e3c', '#14151c'); ctx.fillRect(-3, -11, 13, 4);
-        ctx.fillStyle = MET.lo; ctx.fillRect(0, -7, 1.6, 2); ctx.fillRect(6, -7, 1.6, 2);
-        ctx.fillStyle = 'rgba(140,230,255,.95)'; ctx.fillRect(9.6, -10.6, 1.2, 3.2);
-        rivet(-5, -2); rivet(-5, 2); rivet(3, -2); rivet(3, 2);
+        ctx.fillStyle = bronze(-5, 5); chamfer(-9, -5, 16, 10, 2); ctx.fill(); outline();
+        crystal(-6, -3, 9, 6, ANC.cr, charge);
+        barrel(6, 24, 0, 1.5, [ANC.bzHi, ANC.bz, ANC.bzLo]);
+        for (const x of [9, 15, 21]) { ctx.fillStyle = bronze(-3, 3); ctx.fillRect(x, -3, 1.6, 6); }
+        shard(24, 0, 8, 1.8, rgb, charge);
+        // lens on top
+        ctx.fillStyle = bronze(-11, -6); rrect(-2, -11, 12, 5, 1.5); ctx.fill(); outline();
+        node(10.5, -8.5, 2.2, ANC.cr, charge);
       } else {
-        ctx.fillStyle = metal(-7, 3, '#8a9862', '#5a6640', '#2c331d'); rrect(-13, -7, 9, 11, 1.5); ctx.fill(); outline();
-        ctx.fillStyle = '#1d2214'; ctx.fillRect(-11, -4, 5, 1); ctx.fillRect(-11, -1, 5, 1);
-        ctx.strokeStyle = MET.brass; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-6, -5); ctx.quadraticCurveTo(-2, -10, 1, -6); ctx.stroke();
-        ctx.fillStyle = metal(-6.5, 6.5); rrect(-5, -6.5, 13, 13, 3); ctx.fill(); outline();
-        rivet(-2, -3.5); rivet(5, -3.5); rivet(-2, 3.5); rivet(5, 3.5);
-        const sp = Math.floor(S.t * 40) % 3;
-        for (let n = 0; n < 3; n++) barrel(8, 22, (n - 1) * 2.5, 1.1, n === sp && kick > 0 ? ['#ffffff', '#a2a7bb', '#3a3d4c'] : null);
-        ctx.fillStyle = metal(-4.8, 4.8); ctx.fillRect(13, -4.8, 2.6, 9.6); ctx.fillRect(20.5, -4.4, 2.2, 8.8);
+        // rotary: a bronze drum with six crystal rods spinning in a ring
+        ctx.fillStyle = bronze(-7, 7); chamfer(-13, -7, 11, 14, 2.5); ctx.fill(); outline();
+        crystal(-11, -4, 7, 8, ANC.am, 0.6 + 0.4 * charge);
+        ctx.fillStyle = bronze(-6.5, 6.5); rrect(-4, -6.5, 12, 13, 3); ctx.fill(); outline();
+        rivet(-1, -4); rivet(5, -4); rivet(-1, 4); rivet(5, 4);
+        const spin = kick > 0 ? t * 40 : t * 3;
+        for (let n = 0; n < 6; n++) { const a = spin + n * Math.PI / 3, y = Math.sin(a) * 3.2, front = Math.cos(a) > 0; if (!front) shard(8, y, 13, 0.9, rgb, charge * 0.5); }
+        ctx.fillStyle = bronze(-4.5, 4.5); ctx.fillRect(13, -4.5, 2.4, 9);
+        for (let n = 0; n < 6; n++) { const a = spin + n * Math.PI / 3, y = Math.sin(a) * 3.2, front = Math.cos(a) > 0; if (front) shard(8, y, 13, 0.9, rgb, charge); }
+        ctx.fillStyle = bronze(-5, 5); ctx.fillRect(20.5, -5, 2.2, 10);
       }
       break;
     case 'flak':
-      ctx.fillStyle = MET.brass; ctx.beginPath(); ctx.arc(-7, 1, 3.6, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = MET.brassD; ctx.beginPath(); ctx.arc(-7, 1, 1.6, 0, Math.PI * 2); ctx.fill();
-      for (const y of [-3.6, 3.6]) {
-        barrel(5, 20, y, 1.9);
-        ctx.fillStyle = metal(y - 2.8, y + 2.8); ctx.fillRect(19, y - 2.8, 4.5, 5.6);
-        ctx.fillStyle = MET.dark; ctx.fillRect(20.2, y - 2.8, 0.8, 5.6); ctx.fillRect(21.8, y - 2.8, 0.8, 5.6);
-      }
-      ctx.fillStyle = metal(-9.5, 9.5, '#9aa0b5', '#5a5f75', '#24262f');
-      ctx.beginPath(); ctx.moveTo(-4, -9.5); ctx.lineTo(6, -8.5); ctx.lineTo(8.5, 0); ctx.lineTo(6, 8.5); ctx.lineTo(-4, 9.5); ctx.closePath(); ctx.fill(); outline();
-      rivet(-1, -6.5); rivet(-1, 6.5); rivet(5, -5.5); rivet(5, 5.5);
-      ctx.fillStyle = '#ffb020'; ctx.fillRect(-2, -1, 7, 2);
+      // twin crystal emitters behind a bronze pavise
+      ctx.fillStyle = bronze(-9.5, 9.5); ctx.beginPath(); ctx.moveTo(-5, -9.5); ctx.lineTo(6, -8); ctx.lineTo(9, 0); ctx.lineTo(6, 8); ctx.lineTo(-5, 9.5); ctx.closePath(); ctx.fill(); outline();
+      crystal(-3, -5, 8, 10, ANC.am, charge);
+      for (const y of [-3.8, 3.8]) { barrel(7, 18, y, 1.8, [ANC.bzHi, ANC.bz, ANC.bzLo]); node(19.5, y, 2.4, rgb, charge); }
+      ctx.fillStyle = bronze(-2, 2); ctx.beginPath(); ctx.arc(-8, 1, 3.4, 0, Math.PI * 2); ctx.fill(); outline();
+      node(-8, 1, 1.6, ANC.am, 1);
       break;
     case 'cryo':
-      ctx.fillStyle = metal(-6.5, 6.5, '#f1f6fc', '#a9c3d6', '#465f72'); rrect(-13, -6.5, 15, 13, 6); ctx.fill(); outline();
-      ctx.fillStyle = 'rgba(25,35,55,.55)'; ctx.fillRect(-9.5, -6.5, 1.6, 13); ctx.fillRect(-4.5, -6.5, 1.6, 13);
-      ctx.strokeStyle = '#8fa6b8'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-3, -6.5); ctx.quadraticCurveTo(4, -11, 8, -4); ctx.stroke();
-      ctx.fillStyle = metal(-4, 4); ctx.fillRect(1, -4, 11, 8);
-      ctx.fillStyle = metal(-5.5, 5.5); rrect(11, -5.5, 4, 11, 1); ctx.fill(); outline();
-      ctx.fillStyle = 'rgba(' + s.rgb + ',' + (0.6 + 0.4 * charge) + ')'; ctx.beginPath(); ctx.arc(15.6, 0, 2.6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = bronze(-6.5, 6.5); rrect(-13, -6.5, 20, 13, 6); ctx.fill(); outline();
+      crystal(-9, -3.5, 10, 7, '160,240,255', 0.5 + 0.5 * charge);
+      ctx.fillStyle = bronze(-4, 4); ctx.fillRect(6, -4, 7, 8);
+      // ice crystal cluster at the nose
+      shard(12, 0, 9, 3.4, '127,230,255', charge); shard(12, -2.5, 6, 1.6, '127,230,255', charge); shard(12, 2.5, 6, 1.6, '127,230,255', charge);
       break;
     case 'torch':
-      for (const y of [-4.2, 4.2]) {
-        ctx.fillStyle = metal(y - 3.6, y + 3.6, '#ffbe7a', '#d9662a', '#5e230c'); rrect(-14, y - 3.6, 12, 7.2, 3.6); ctx.fill(); outline();
-        ctx.fillStyle = '#1b1b20'; ctx.fillRect(-10, y - 3.6, 1.3, 7.2); ctx.fillRect(-6, y - 3.6, 1.3, 7.2);
-      }
-      ctx.fillStyle = metal(-4.5, 4.5); rrect(-3, -4.5, 9, 9, 1.5); ctx.fill(); outline();
-      ctx.fillStyle = metal(-3.5, 3.5); ctx.beginPath(); ctx.moveTo(5, -2.6); ctx.lineTo(16, -3.6); ctx.lineTo(16, 3.6); ctx.lineTo(5, 2.6); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#2a1c14'; ctx.fillRect(15, -3.6, 2, 7.2);
-      ctx.fillStyle = 'rgba(255,' + (140 + Math.floor(Math.random() * 60)) + ',40,.9)'; ctx.beginPath(); ctx.arc(17.5, 0, 1.6, 0, Math.PI * 2); ctx.fill();
+      // twin amber crystal reservoirs
+      for (const y of [-4.3, 4.3]) { ctx.fillStyle = bronze(y - 3.6, y + 3.6); rrect(-15, y - 3.6, 13, 7.2, 3.6); ctx.fill(); outline(); crystal(-12, y - 2, 7, 4, ANC.am, 0.6 + 0.4 * Math.sin(t * 6 + y)); }
+      ctx.fillStyle = bronze(-4.5, 4.5); chamfer(-3, -4.5, 9, 9, 1.5); ctx.fill(); outline();
+      ctx.fillStyle = bronze(-3.5, 3.5); ctx.beginPath(); ctx.moveTo(5, -2.6); ctx.lineTo(16, -3.8); ctx.lineTo(16, 3.8); ctx.lineTo(5, 2.6); ctx.closePath(); ctx.fill(); outline();
+      node(16.5, 0, 2.2, ANC.am, 0.6 + 0.4 * Math.random());
       break;
     case 'arc': {
       const tall = id === 'tesla', hgt = tall ? 24 : 16;
-      ctx.fillStyle = metal(-3.5, 3.5); rrect(-7, -3.5, 14, 7, 1.5); ctx.fill(); outline();
-      ctx.fillStyle = '#e8e1d0'; ctx.fillRect(-2.5, -6, 5, 3);
-      for (let y = -6; y > -hgt; y -= 2.6) { ctx.fillStyle = metal(y - 1.3, y + 1.3, '#f6c08e', MET.copper, MET.copperD); ctx.fillRect(-4.2, y - 1.3, 8.4, 2.1); }
-      ctx.fillStyle = MET.lo; ctx.fillRect(-0.8, -hgt - 3, 1.6, 4);
-      ctx.fillStyle = metal(-hgt - 8, -hgt - 1, '#eef0f6', '#8a8fa5', '#353846'); ctx.beginPath(); ctx.ellipse(0, -hgt - 4.5, tall ? 8.5 : 6.5, 3.2, 0, 0, Math.PI * 2); ctx.fill(); outline();
-      glowDot(0, -hgt - 4.5, 7 + 5 * charge, s.rgb, 0.25 + 0.55 * charge);
-      if (charge > 0.85 && !reduced) {
-        ctx.strokeStyle = 'rgba(' + s.rgb + ',.9)'; ctx.lineWidth = 0.8; ctx.beginPath();
-        let x = 0, y = -hgt - 4.5; ctx.moveTo(x, y);
-        for (let n = 0; n < 3; n++) { x += rnd(-5, 5); y += rnd(-4, 3); ctx.lineTo(x, y); }
-        ctx.stroke();
-      }
+      ctx.fillStyle = bronze(-3.5, 3.5); chamfer(-7, -3.5, 14, 7, 1.5); ctx.fill(); outline();
+      // stacked crystal rings up the column
+      for (let y = -6; y > -hgt; y -= 4) { ctx.fillStyle = bronze(y - 1.4, y + 1.4); ctx.fillRect(-4.6, y - 1.4, 9.2, 2.8); crystal(-3.4, y - 0.8, 6.8, 1.6, rgb, 0.4 + 0.6 * charge * (0.5 + 0.5 * Math.sin(t * 6 - y * 0.5))); }
+      ctx.fillStyle = bronze(-hgt - 3, -hgt); ctx.fillRect(-2.6, -hgt - 3, 5.2, 3);
+      // floating crystal sphere, held in a bronze claw
+      ctx.strokeStyle = ANC.bz; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-5, -hgt - 2); ctx.lineTo(-7, -hgt - 8); ctx.moveTo(5, -hgt - 2); ctx.lineTo(7, -hgt - 8); ctx.stroke();
+      node(0, -hgt - 7 + Math.sin(t * 2) * 0.8, tall ? 5.5 : 4.2, rgb, charge);
+      if (charge > 0.85 && !reduced) { ctx.strokeStyle = 'rgba(' + rgb + ',.9)'; ctx.lineWidth = 0.8; ctx.beginPath(); let x = 0, y = -hgt - 7; ctx.moveTo(x, y); for (let n = 0; n < 3; n++) { x += rnd(-5, 5); y += rnd(-4, 3); ctx.lineTo(x, y); } ctx.stroke(); }
       break;
     }
     case 'swarm':
-      ctx.fillStyle = metal(-8.5, 8.5, '#9aa0b5', '#5a5f75', '#24262f'); rrect(-9, -8.5, 19, 17, 2); ctx.fill(); outline();
-      for (let n = 0; n < 4; n++) { ctx.fillStyle = n % 2 ? '#14151c' : '#ffb020'; ctx.fillRect(-7 + n * 2.4, 5, 2.4, 2); }
-      ctx.fillStyle = metal(-8.5, 8.5); ctx.fillRect(9, -8.5, 3.5, 17);
-      for (const y of [-5.2, 0, 5.2]) {
-        ctx.fillStyle = '#0d0e13'; ctx.beginPath(); ctx.arc(10.8, y, 2, 0, Math.PI * 2); ctx.fill();
-        if (charge > 0.5) { ctx.fillStyle = '#ff5a3c'; ctx.beginPath(); ctx.arc(10.8, y, 1, 0, Math.PI * 2); ctx.fill(); }
-      }
-      rivet(-6, -6); rivet(6, -6); rivet(-6, 2); rivet(6, 2);
+      ctx.fillStyle = bronze(-8.5, 8.5); chamfer(-9, -8.5, 19, 17, 2.5); ctx.fill(); outline();
+      crystal(-7, -6, 7, 12, rgb, 0.3 + 0.5 * charge);
+      ctx.fillStyle = bronze(-8.5, 8.5); ctx.fillRect(9, -8.5, 4, 17);
+      for (const y of [-5.2, 0, 5.2]) { ctx.fillStyle = '#071a24'; ctx.beginPath(); ctx.arc(11, y, 2, 0, Math.PI * 2); ctx.fill(); if (charge > 0.5) node(11, y, 1.3, '255,110,80', 1); }
+      rivet(-7, -7); rivet(7, -7); rivet(-7, 7); rivet(7, 7);
       break;
-    case 'mortar':
-      ctx.fillStyle = metal(-4, 4); rrect(-9, -4, 11, 8, 1.5); ctx.fill(); outline();
-      if (id === 'hellfire') {
-        for (const y of [-5.2, 0, 5.2]) { barrel(0, 16, y, 2.3, ['#a7adbf', '#4f5466', '#20222d']); ctx.fillStyle = MET.dark; ctx.fillRect(6, y - 2.3, 1, 4.6); ctx.fillRect(11, y - 2.3, 1, 4.6); }
-        ctx.fillStyle = metal(-7.8, 7.8); ctx.fillRect(15, -7.8, 3, 15.6);
-      } else {
-        ctx.fillStyle = metal(-4.8, 4.8, '#a7adbf', '#4f5466', '#20222d'); ctx.fillRect(0, -4.8, 16, 9.6);
-        ctx.fillStyle = MET.dark; ctx.fillRect(5, -4.8, 1.2, 9.6); ctx.fillRect(10, -4.8, 1.2, 9.6);
-        ctx.fillStyle = metal(-6, 6); ctx.fillRect(15, -6, 3.2, 12);
-      }
-      glowDot(18, 0, 6, s.rgb, 0.2 + 0.6 * charge);
+    case 'mortar': {
+      ctx.fillStyle = bronze(-4, 4); chamfer(-9, -4, 11, 8, 1.5); ctx.fill(); outline();
+      const tubes = id === 'hellfire' ? [-5.2, 0, 5.2] : [0];
+      for (const y of tubes) { const r = id === 'hellfire' ? 2.3 : 4.6; ctx.fillStyle = bronze(y - r, y + r); ctx.fillRect(0, y - r, 16, r * 2); crystal(3, y - r * 0.55, 10, r * 1.1, ANC.am, 0.3 + 0.7 * charge); ctx.fillStyle = bronze(y - r - 0.6, y + r + 0.6); ctx.fillRect(14, y - r - 0.8, 3, r * 2 + 1.6); }
+      glowDot(18, 0, 7, rgb, 0.2 + 0.6 * charge);
       break;
+    }
     case 'rail': {
       const big = id === 'lancer', L = big ? 33 : 27;
-      ctx.fillStyle = metal(-7.5, 7.5, '#7f859b', '#4a4f63', '#1d1f29'); rrect(-13, -7.5, 13, 15, 2); ctx.fill(); outline();
-      for (let n = 0; n < 3; n++) { ctx.fillStyle = charge > (n + 1) / 3 ? 'rgb(' + s.rgb + ')' : '#2b2e3c'; ctx.fillRect(-10.5 + n * 3.5, -4.5, 2.4, 9); }
-      for (const y of [-3.3, 3.3]) barrel(-1, L, y, 1.35, ['#e1e4ee', '#7d8296', '#2a2d3a']);
-      for (let x = 4; x < L - 3; x += 5) { ctx.fillStyle = metal(-4.4, 4.4, '#f6c08e', MET.copper, MET.copperD); ctx.fillRect(x, -4.4, 1.9, 8.8); }
-      if (big) { ctx.fillStyle = MET.mid; for (let x = -11; x < -1; x += 2.6) ctx.fillRect(x, -10.5, 1.3, 3.5); }
-      if (charge >= 1) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(' + s.rgb + ',.55)'; ctx.fillRect(0, -1.6, L, 3.2); ctx.globalCompositeOperation = 'source-over'; }
+      ctx.fillStyle = bronze(-7.5, 7.5); chamfer(-13, -7.5, 13, 15, 2.5); ctx.fill(); outline();
+      crystal(-11, -5, 9, 10, rgb, charge);
+      for (const y of [-3.4, 3.4]) barrel(-1, L, y, 1.4, [ANC.bzHi, ANC.bz, ANC.bzLo]);
+      // shards suspended between the rails light up as the charge builds
+      for (let x = 3, n = 0; x < L - 4; x += 5, n++) shard(x, 0, 4, 1.8, rgb, charge >= (n + 1) / 5 ? 1 : 0.15);
+      if (big) { ctx.fillStyle = bronze(-11, -7.5); for (let x = -11; x < -1; x += 2.8) ctx.fillRect(x, -11, 1.4, 3.5); }
+      if (charge >= 1) { ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = 'rgba(' + rgb + ',.5)'; ctx.fillRect(0, -1.6, L, 3.2); ctx.globalCompositeOperation = 'source-over'; }
       break;
     }
     case 'frost':
-      ctx.fillStyle = metal(-3.5, 3.5); rrect(-10, -3.5, 20, 7, 2); ctx.fill(); outline();
-      ctx.fillStyle = metal(-14, 0, '#f1f6fc', '#9fb8cb', '#3c5364'); ctx.beginPath(); ctx.ellipse(0, -3, 11, 11, 0, Math.PI, 0); ctx.fill(); outline();
-      ctx.fillStyle = '#1d2b36'; for (const x of [-6, -2, 2, 6]) ctx.fillRect(x - 0.6, -9, 1.2, 4);
-      ctx.fillStyle = 'rgba(' + s.rgb + ',.95)'; ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(3, -14); ctx.lineTo(0, -11); ctx.lineTo(-3, -14); ctx.closePath(); ctx.fill();
-      glowDot(0, -15, 8 + 6 * charge, s.rgb, 0.2 + 0.5 * charge);
+      ctx.fillStyle = bronze(-3.5, 3.5); chamfer(-10, -3.5, 20, 7, 2); ctx.fill(); outline();
+      ctx.fillStyle = bronze(-13, -2); ctx.beginPath(); ctx.ellipse(0, -3, 11, 10, 0, Math.PI, 0); ctx.fill(); outline();
+      ctx.fillStyle = '#071a24'; ctx.beginPath(); ctx.ellipse(0, -3, 8, 7, 0, Math.PI, 0); ctx.fill();
+      shard(-9, -8, 0.1, 0, rgb, 0);
+      ctx.save(); ctx.translate(0, -8); ctx.rotate(-Math.PI / 2); shard(0, 0, 14, 4.2, rgb, charge); ctx.rotate(0.5); shard(0, 0, 9, 2, rgb, charge); ctx.rotate(-1); shard(0, 0, 9, 2, rgb, charge); ctx.restore();
+      glowDot(0, -14, 10 + 6 * charge, rgb, 0.2 + 0.4 * charge);
       break;
     case 'void':
-      ctx.fillStyle = metal(-4, 4); ctx.beginPath(); ctx.moveTo(-8, 4); ctx.lineTo(-3, -6); ctx.lineTo(3, -6); ctx.lineTo(8, 4); ctx.closePath(); ctx.fill(); outline();
-      for (let n = 0; n < 3; n++) {
-        ctx.strokeStyle = n === 1 ? MET.brass : MET.hi; ctx.lineWidth = 1.7;
-        ctx.beginPath(); ctx.ellipse(0, -16, 12 - n, 4.2, S.t * (1.1 + n * 0.7) + n, 0, Math.PI * 2); ctx.stroke();
-      }
-      { const g = ctx.createRadialGradient(0, -16, 0, 0, -16, 6); g.addColorStop(0, '#000000'); g.addColorStop(0.7, '#14081f'); g.addColorStop(1, 'rgba(' + s.rgb + ',.9)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -16, 6, 0, Math.PI * 2); ctx.fill(); }
-      glowDot(0, -16, 12, s.rgb, 0.18 + 0.4 * charge);
+      ctx.fillStyle = bronze(-4, 4); ctx.beginPath(); ctx.moveTo(-8, 4); ctx.lineTo(-3, -6); ctx.lineTo(3, -6); ctx.lineTo(8, 4); ctx.closePath(); ctx.fill(); outline();
+      for (let n = 0; n < 3; n++) { ctx.strokeStyle = n === 1 ? ANC.bzHi : 'rgba(' + rgb + ',.8)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, -16, 12 - n, 4.2, t * (1.1 + n * 0.7) + n, 0, Math.PI * 2); ctx.stroke(); }
+      { const g = ctx.createRadialGradient(0, -16, 0, 0, -16, 6); g.addColorStop(0, '#000000'); g.addColorStop(0.7, '#14081f'); g.addColorStop(1, 'rgba(' + rgb + ',.9)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -16, 6, 0, Math.PI * 2); ctx.fill(); }
+      for (let n = 0; n < 4; n++) { const a = t * 1.6 + n * Math.PI / 2; ctx.save(); ctx.translate(Math.cos(a) * 10, -16 + Math.sin(a) * 4); ctx.rotate(a + Math.PI / 2); shard(0, 0, 4, 1.2, rgb, charge); ctx.restore(); }
+      glowDot(0, -16, 12, rgb, 0.18 + 0.4 * charge);
       break;
     case 'beam':
-      ctx.fillStyle = metal(-7.5, 7.5, '#fff0b8', '#c99f45', '#563f12'); rrect(-11, -7.5, 23, 15, 3); ctx.fill(); outline();
-      ctx.fillStyle = 'rgba(40,28,8,.6)'; for (let x = -8; x < 8; x += 3) ctx.fillRect(x, -7.5, 1.2, 4);
-      ctx.fillStyle = metal(-5.5, 5.5); ctx.fillRect(11, -5.5, 8, 11);
-      { const g = ctx.createRadialGradient(19.5, 0, 0, 19.5, 0, 5); g.addColorStop(0, '#ffffff'); g.addColorStop(1, 'rgba(' + s.rgb + ',.9)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(19.5, 0, 4.6, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = bronze(-7.5, 7.5); chamfer(-11, -7.5, 23, 15, 3); ctx.fill(); outline();
+      crystal(-9, -5, 10, 10, ANC.am, 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 8)));
+      ctx.fillStyle = bronze(-5.5, 5.5); ctx.fillRect(11, -5.5, 8, 11); outline();
+      ctx.fillStyle = bronze(-7, 7); ctx.beginPath(); ctx.arc(19.5, 0, 6.5, 0, Math.PI * 2); ctx.fill(); outline();
+      node(19.5, 0, 4.4, rgb, 0.6 + 0.4 * Math.sin(t * 8));
       break;
   }
 }
@@ -1873,12 +1895,10 @@ function drawTurrets(side) {
     const [x, y] = mountWorld(side, i), u = P.board[i];
     const T = turrets ? turrets[i] : null;
     ctx.save(); ctx.translate(x, y); ctx.scale(TS, TS);
-    // bracket bolted to the keep and a pedestal
-    ctx.fillStyle = metal(0, 12, '#868ca2', '#4a4f63', '#1d1f29');
-    if (i >= 4) { const wx = side ? 13 : -13; ctx.beginPath(); ctx.moveTo(wx, -3); ctx.lineTo(0, 1); ctx.lineTo(0, 9); ctx.lineTo(wx, 12); ctx.closePath(); ctx.fill(); outline(); }
-    rrect(-7, 3, 14, 6, 1.5); ctx.fill(); outline();
-    ctx.fillStyle = 'rgb(' + F.rgb + ')'; ctx.fillRect(-7, 6.3, 14, 1.1);
-    rivet(-5, 4.6); rivet(5, 4.6);
+    // bronze corbel and a faceted crystal plinth lit in the team colour
+    if (i >= 4) { const wx = side ? 13 : -13; ctx.fillStyle = bronze(-3, 12); ctx.beginPath(); ctx.moveTo(wx, -3); ctx.lineTo(0, 1); ctx.lineTo(0, 9); ctx.lineTo(wx, 12); ctx.closePath(); ctx.fill(); outline(); }
+    ctx.fillStyle = bronze(3, 10); chamfer(-8, 3, 16, 7, 2); ctx.fill(); outline();
+    crystal(-5, 5, 10, 3, F.rgb, 0.5 + 0.3 * Math.sin(S.t * 3 + i)); rivet(-6.5, 6.5); rivet(6.5, 6.5);
     if ((selBench || selM >= 0) && i !== selM) {
       const pulse = 0.4 + 0.4 * Math.sin(S.t * 6);
       ctx.strokeStyle = 'rgba(255,255,255,' + (u ? pulse * 0.5 : pulse) + ')'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
@@ -1886,37 +1906,40 @@ function drawTurrets(side) {
     }
     if (i === selM) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke(); }
     if (!u) {
-      ctx.fillStyle = metal(-5, 5, '#3a3d4c', '#22242f', '#101118'); ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill(); outline();
-      for (let n = 0; n < 4; n++) rivet(Math.cos(n * Math.PI / 2 + 0.78) * 3.4, Math.sin(n * Math.PI / 2 + 0.78) * 3.4);
+      ctx.fillStyle = bronze(-5, 5); ctx.beginPath(); for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2; n ? ctx.lineTo(Math.cos(a) * 5.5, Math.sin(a) * 5.5) : ctx.moveTo(Math.cos(a) * 5.5, Math.sin(a) * 5.5); } ctx.closePath(); ctx.fill(); outline();
+      ctx.fillStyle = '#071a24'; ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
       continue;
     }
     const R = ROSTER[u.r], st = T ? T.s : R, charge = T ? clamp(1 - T.cd * st.rate, 0, 1) : 1;
     const up = UPRIGHT[st.kind], ang = up ? 0 : T ? T.ang : (side ? Math.PI : 0) - (i < 4 ? 0.2 : 0) * (side ? -1 : 1);
     const kick = T ? clamp(T.flash / 0.07, 0, 1) : 0;
-    // slewing ring with a thin rarity band
-    ctx.fillStyle = metal(-6.5, 6.5, '#7a8096', '#3e4253', '#1a1b24'); ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = TIER_C[R.tier]; ctx.lineWidth = 1; ctx.stroke();
-    // star ornament: 2-star gets armour skirts and a power cell, 3-star adds a halo crown and pennant
+    // hexagonal bronze bezel with a rarity band
+    ctx.fillStyle = bronze(-7, 7); ctx.beginPath(); for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2; n ? ctx.lineTo(Math.cos(a) * 7, Math.sin(a) * 7) : ctx.moveTo(Math.cos(a) * 7, Math.sin(a) * 7); } ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = TIER_C[R.tier]; ctx.lineWidth = 1.2; ctx.stroke();
+    // star ornament: 2-star grows bronze filigree wings set with crystals, 3-star adds a turning rune ring and floating shards
     if (u.star >= 2) {
-      ctx.fillStyle = metal(-9, 9, '#9a97c8', '#5b5790', '#2e2b4d');
-      ctx.beginPath(); ctx.moveTo(-10, -9); ctx.lineTo(10, -9); ctx.lineTo(12, -4); ctx.lineTo(-12, -4); ctx.closePath(); ctx.fill(); outline();
-      ctx.beginPath(); ctx.moveTo(-10, 9); ctx.lineTo(10, 9); ctx.lineTo(12, 4); ctx.lineTo(-12, 4); ctx.closePath(); ctx.fill(); outline();
-      ctx.fillStyle = 'rgba(' + F.rgb + ',.85)'; ctx.fillRect(-9, -6.5, 18, 1); ctx.fillRect(-9, 5.5, 18, 1);
-      rivet(-8, -7.5); rivet(8, -7.5); rivet(-8, 7.5); rivet(8, 7.5);
-      const px = side ? 11 : -11;
-      ctx.fillStyle = metal(-5, 5, '#f6c08e', MET.copper, MET.copperD); rrect(px - 2.5, -5, 5, 10, 1); ctx.fill(); outline();
-      glowDot(px, 0, 5 + 2 * Math.sin(S.t * 4 + i), F.rgb, 0.5);
+      ctx.strokeStyle = ANC.bz; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+      for (const sg of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(-6, sg * 7); ctx.quadraticCurveTo(-12, sg * 12, -15, sg * 4); ctx.quadraticCurveTo(-13, sg * 9, -8, sg * 10); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(6, sg * 7); ctx.quadraticCurveTo(12, sg * 12, 15, sg * 4); ctx.stroke();
+        node(-15, sg * 4, 1.7, F.rgb, 0.8); node(15, sg * 4, 1.7, F.rgb, 0.8);
+      }
+      ctx.strokeStyle = ANC.bzHi; ctx.lineWidth = 0.6;
+      for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(-6, sg * 7); ctx.quadraticCurveTo(-12, sg * 12, -15, sg * 4); ctx.stroke(); }
     }
     if (u.star >= 3) {
+      const ry = up ? -30 : -1, rr = 15, spin = S.t * 0.6;
       ctx.globalCompositeOperation = 'lighter';
-      for (let n = 0; n < 2; n++) { ctx.strokeStyle = 'rgba(255,210,58,' + (0.55 - n * 0.2) + ')'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, up ? -28 : -2, 14 + n * 3, 4 + n, S.t * (1.2 + n * 0.5), 0, Math.PI * 2); ctx.stroke(); }
+      ctx.strokeStyle = 'rgba(' + ANC.am + ',.55)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(0, ry, rr, rr * 0.32, 0, 0, Math.PI * 2); ctx.stroke();
+      // rune ticks around the ring, each a small glyph
+      for (let n = 0; n < 12; n++) {
+        const a = spin + n * Math.PI / 6, gx = Math.cos(a) * rr, gy = ry + Math.sin(a) * rr * 0.32, back = Math.sin(a) < 0;
+        ctx.strokeStyle = 'rgba(' + ANC.am + ',' + (back ? 0.35 : 0.9) + ')'; ctx.lineWidth = 0.9;
+        ctx.beginPath(); ctx.moveTo(gx, gy - 2.2); ctx.lineTo(gx, gy + 2.2); if (n % 3 === 0) { ctx.moveTo(gx - 1.4, gy - 0.6); ctx.lineTo(gx + 1.4, gy + 0.6); } else if (n % 3 === 1) { ctx.moveTo(gx - 1.2, gy + 1.4); ctx.lineTo(gx + 1.2, gy + 1.4); } ctx.stroke();
+      }
       ctx.globalCompositeOperation = 'source-over';
-      const fx = side ? 12 : -12, wave = Math.sin(S.t * 5 + i) * 2;
-      ctx.strokeStyle = '#c8cbe0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(fx, 2); ctx.lineTo(fx, -20); ctx.stroke();
-      ctx.fillStyle = 'rgb(' + F.rgb + ')';
-      ctx.beginPath(); ctx.moveTo(fx, -20); ctx.lineTo(fx + (side ? 9 : -9), -17 + wave); ctx.lineTo(fx, -13); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(fx, -21, 1.6, 0, Math.PI * 2); ctx.fill();
+      for (let n = 0; n < 3; n++) { const a = -S.t * 0.9 + n * Math.PI * 2 / 3, sx = Math.cos(a) * 19, sy = ry + Math.sin(a) * 6 + Math.sin(S.t * 2 + n) * 1.5; ctx.save(); ctx.translate(sx, sy); ctx.rotate(-Math.PI / 2); shard(0, 0, 5, 1.4, F.rgb, 0.8); ctx.restore(); }
     }
     ctx.save(); ctx.rotate(ang);
     if (!up && Math.cos(ang) < 0) ctx.scale(1, -1);
@@ -1924,9 +1947,9 @@ function drawTurrets(side) {
     ctx.restore();
     for (let k2 = 0; k2 < u.star; k2++) {
       const sx = (k2 - (u.star - 1) / 2) * 6, sy = up ? -34 : -19;
-      ctx.fillStyle = STAR_C[u.star]; ctx.beginPath(); ctx.moveTo(sx, sy - 2.5); ctx.lineTo(sx + 2.4, sy); ctx.lineTo(sx, sy + 2.5); ctx.lineTo(sx - 2.4, sy); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = STAR_C[u.star]; ctx.beginPath(); ctx.moveTo(sx, sy - 3); ctx.lineTo(sx + 2.2, sy); ctx.lineTo(sx, sy + 3); ctx.lineTo(sx - 2.2, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.5; ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(sx - 0.5, sy - 2, 1, 1.6);
     }
-    u.items.forEach((it, k2) => { ctx.fillStyle = ITEMS[it].color; ctx.fillRect((k2 - (u.items.length - 1) / 2) * 5 - 1.6, 10.5, 3.2, 3.2); });
+    u.items.forEach((it, k2) => drawItemGem(it, (k2 - (u.items.length - 1) / 2) * 6, 13.5, 0.26));
     if (T && T.flash > 0 && !up) {
       const tl = tipLen(st), mx = Math.cos(ang) * tl, my = Math.sin(ang) * tl, sz = st.kind === 'rail' || st.kind === 'mortar' ? 14 : 9;
       ctx.globalCompositeOperation = 'lighter';
@@ -2147,13 +2170,24 @@ function drawFx() {
 }
 
 
+// a core: a cut crystal in a bronze bezel, carrying its own rune
+const RUNES = {
+  N: c => { c.moveTo(0, -5); c.lineTo(0, 5); c.moveTo(-4, -2); c.lineTo(4, 2); c.moveTo(-4, 2); c.lineTo(4, -2); },
+  O: c => { c.arc(0, 0, 4, 0, Math.PI * 2); c.moveTo(0, -6); c.lineTo(0, 6); },
+  T: c => { c.moveTo(-5, -4); c.lineTo(5, -4); c.moveTo(0, -4); c.lineTo(0, 5); c.moveTo(-3, 2); c.lineTo(0, 5); c.lineTo(3, 2); },
+  X: c => { c.moveTo(-4, -4); c.lineTo(4, 4); c.moveTo(4, -4); c.lineTo(-4, 4); c.moveTo(0, -6); c.lineTo(0, -3); c.moveTo(0, 3); c.lineTo(0, 6); },
+  L: c => { c.moveTo(-5, 0); c.lineTo(5, 0); c.arc(0, 0, 2.2, 0, Math.PI * 2); c.moveTo(0, -5); c.lineTo(0, -2.2); }
+};
 function drawItemGem(key, x, y, sc) {
   const it = ITEMS[key]; if (!it) return;
   ctx.save(); ctx.translate(x, y); ctx.scale(sc || 1, sc || 1);
-  ctx.fillStyle = '#100c20'; ctx.strokeStyle = it.color; ctx.lineWidth = 1.5;
-  ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; i ? ctx.lineTo(Math.cos(a) * 10, Math.sin(a) * 10) : ctx.moveTo(Math.cos(a) * 10, Math.sin(a) * 10); } ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = it.color; ctx.font = '700 10px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(key, 0, 1);
-  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = bronze(-11, 11); ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 - Math.PI / 2; i ? ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11) : ctx.moveTo(Math.cos(a) * 11, Math.sin(a) * 11); } ctx.closePath(); ctx.fill(); outline();
+  const g = ctx.createLinearGradient(-8, -8, 8, 8);
+  g.addColorStop(0, 'rgba(' + it.glow + ',.95)'); g.addColorStop(0.5, 'rgba(255,255,255,.75)'); g.addColorStop(1, 'rgba(' + it.glow + ',.85)');
+  ctx.fillStyle = '#071a24'; ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 - Math.PI / 2; i ? ctx.lineTo(Math.cos(a) * 8, Math.sin(a) * 8) : ctx.moveTo(Math.cos(a) * 8, Math.sin(a) * 8); } ctx.closePath(); ctx.fill();
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(-7, 4); ctx.lineTo(-1, -7); ctx.stroke();
+  ctx.strokeStyle = '#0b1a26'; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.beginPath(); RUNES[key](ctx); ctx.stroke();
   ctx.restore();
 }
 function drawDrops() {
@@ -2198,7 +2232,7 @@ function drawKeepBars() {
     ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(cx - w / 2 - 2, y - 2, w + 4, 18);
     ctx.fillStyle = S.keepFlash[s] > 0.05 ? '#ff5a5a' : 'rgb(' + SIDES[s].rgb + ')'; ctx.fillRect(cx - w / 2, y, w * clamp(P.keep / KEEP_HP, 0, 1), 14);
     if (P.shield > 0) { ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(cx - w / 2, y, w * clamp(P.shield / KEEP_HP, 0, 1), 4); }
-    ctx.font = '700 11px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#ece8ff';
+    ctx.font = '700 11px Cinzel, Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#e8c98a';
     ctx.fillText('KEEP ' + Math.ceil(Math.max(0, P.keep)) + (P.shield > 0 ? ' + ' + Math.ceil(P.shield) + ' SHIELD' : '') + ' · ' + P.roundKills + ' KILLS', cx, y - 6);
   }
 }
@@ -2211,13 +2245,13 @@ function drawTraits(side) {
   let y = 34;
   for (const t of list) {
     const T = TRAITS[t], l = lv[t] || 0, next = T.tiers[Math.min(l, T.tiers.length - 1)];
-    const col = l === 0 ? '#6c64a0' : l === T.tiers.length ? '#ffd23a' : '#d08a4a';
+    const col = l === 0 ? '#5a4f7a' : l === T.tiers.length ? '#ffd23a' : '#9ff0ff';
     const ix = side ? x - 8 : x + 8;
     ctx.fillStyle = l ? col : 'rgba(0,0,0,.6)'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
     ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + Math.PI / 6; i ? ctx.lineTo(ix + Math.cos(a) * 8, y - 4 + Math.sin(a) * 8) : ctx.moveTo(ix + Math.cos(a) * 8, y - 4 + Math.sin(a) * 8); } ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.textAlign = al;
     const tx = side ? x - 22 : x + 22;
-    ctx.font = '700 12px "Chakra Petch", sans-serif'; ctx.fillStyle = l ? '#ffffff' : '#aaa3cf';
+    ctx.font = '700 11px Cinzel, Georgia, serif'; ctx.fillStyle = l ? '#fff6dc' : '#aaa3cf';
     ctx.fillText(T.name.toUpperCase() + '  ' + cnt[t] + ' / ' + (l === T.tiers.length ? T.tiers[T.tiers.length - 1] : next), tx, y);
     if (l) { ctx.font = '500 11px "Chakra Petch", sans-serif'; ctx.fillStyle = col; ctx.fillText(T.desc[l - 1], tx, y + 13); y += 32; } else y += 20;
     if (y > TW.top + 160) break;
@@ -2231,7 +2265,7 @@ function drawTitles() {
     const y = H / 2 - 30;
     ctx.save(); ctx.translate(W / 2, y); ctx.scale(pop, pop);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '900 ' + t.size + 'px Unbounded, "Arial Black", sans-serif';
+    ctx.font = '900 ' + t.size + 'px Cinzel, Georgia, serif';
     const g = reduced ? 0 : 3 + 3 * S.kick;
     ctx.globalAlpha = a;
     ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillText(t.text, 3, 5);
