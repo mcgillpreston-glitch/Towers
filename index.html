@@ -1655,10 +1655,12 @@ function drawEyes(hx, hy, R0) {
   const open = E.blink > 0 ? Math.abs(E.blink - 0.09) / 0.09 : 1;
   // the iris tints toward the side whose army has pushed the line into enemy ground
   const lean = clamp(E.gaze, -1, 1), rgb = lean < 0 ? SIDES[1].rgb : SIDES[0].rgb, tint = Math.abs(lean);
+  const pupils = [];
   for (const side of [-1, 1]) {
     const ex = hx + side * 36, ey = hy - 4, er = 27;
     const dx = E.x - ex, dy = E.y - ey, d = Math.hypot(dx, dy) || 1, off = Math.min(11, d / 40);
     const px = ex + dx / d * off, py = ey + dy / d * off;
+    pupils.push([px, py]);
     ctx.save(); ctx.translate(ex, ey); ctx.scale(1, Math.max(0.06, open)); ctx.translate(-ex, -ey);
     ctx.fillStyle = '#f4f2ff'; ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(80,60,120,.6)'; ctx.lineWidth = 2; ctx.stroke();
@@ -1670,6 +1672,23 @@ function drawEyes(hx, hy, R0) {
     ctx.restore();
     // lid shadow
     ctx.strokeStyle = 'rgba(40,25,70,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, er - 1, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+  }
+  // laser tracker: both eyes beam onto the front line, half transparent, in the pushing side's colour
+  if (fx !== null && open > 0.3) {
+    const lc = tint > 0.08 ? rgb : '255,255,255', jitter = reduced ? 0 : Math.sin(S.t * 40) * 0.8;
+    ctx.save(); ctx.lineCap = 'round';
+    for (const [px, py] of pupils) {
+      ctx.strokeStyle = 'rgba(' + lc + ',0.5)'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(E.x + jitter, E.y); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    // the tracked point on the ground
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = 'rgb(' + lc + ')'; ctx.beginPath(); ctx.arc(E.x, E.y, 5 + 2 * S.kick, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgb(' + lc + ')'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(E.x, E.y - 14); ctx.lineTo(E.x, GY + 2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.save(); ctx.translate(E.x, GY + 2); ctx.scale(1, 0.3); ctx.beginPath(); ctx.arc(0, 0, 26 + 6 * S.kick, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    ctx.restore();
   }
 }
 // drawn in the left keep's frame; the right keep is mirrored
