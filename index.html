@@ -2405,7 +2405,7 @@ function makePeerNS() {
         R.conns.add(conn);
         conn.on('open', () => { try { conn.send({t: 'p', p: R.pres}); } catch (e) {} });
         conn.on('data', d => { if (d && d.t === 'p' && d.p && typeof d.p === 'object') { R.remotes.set(conn.peer, d.p); notify(); } });
-        conn.on('close', () => { R.conns.delete(conn); R.remotes.delete(conn.peer); notify(); if (role === 'guest' && !R.dead) fail('upstream_error', 'host left'); });
+        conn.on('close', () => { R.conns.delete(conn); R.remotes.delete(conn.peer); notify(); });
         conn.on('error', () => {});
       };
       const api = {
