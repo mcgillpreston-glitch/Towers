@@ -18,3 +18,7 @@ Keys during planning: **D** reroll, **F** buy XP, **E** sell. **Tab** shows the 
 - `index.html` — the whole game (canvas, logic, UI).
 - `ballista_bby.mp3` — menu and planning music.
 - `OoooooOOOooo.mp3` — combat music.
+
+
+## Art
+The keeps, turrets, minions, cores and arena background are painted sprites in `assets/`. If an image fails to load the game falls back to its built-in vector art.

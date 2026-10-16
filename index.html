@@ -15,8 +15,8 @@
   --line:#3d3470;
   --ink:#ece8ff;
   --muted:#aaa3cf;
-  --hex:#ff2bd6;
-  --volt:#22e6ff;
+  --hex:#4aa8ff;
+  --volt:#ff5a3c;
   --warn:#ffc46b;
   --ok:#7dffb0;
   --bz:#b08a4c;
@@ -45,8 +45,8 @@ header.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:
 .tname{display:flex;gap:10px;align-items:baseline;min-width:0}
 .team.r .tname{flex-direction:row-reverse}
 .tname b{font:900 17px var(--f-display);letter-spacing:.16em}
-.team.l .tname b{color:var(--hex);text-shadow:0 0 14px rgba(255,43,214,.65)}
-.team.r .tname b{color:var(--volt);text-shadow:0 0 14px rgba(34,230,255,.65)}
+.team.l .tname b{color:var(--hex);text-shadow:0 0 14px rgba(74,168,255,.65)}
+.team.r .tname b{color:var(--volt);text-shadow:0 0 14px rgba(255,90,60,.65)}
 .tname span{font:600 11px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
 .tname span.you{color:var(--ink)}
 .hprow{display:flex;gap:8px;align-items:center;width:100%;max-width:360px}
@@ -66,7 +66,7 @@ header.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:
 .time.hot{color:var(--warn);text-shadow:0 0 18px rgba(255,196,107,.8)}
 .rnd{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--bz-hi);margin-top:5px;white-space:nowrap}
 .stage{flex:1;min-height:180px;position:relative;display:flex;align-items:center;justify-content:center}
-canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid var(--line);box-shadow:0 0 0 1px #000,0 0 50px rgba(255,43,214,.12),0 0 70px rgba(34,230,255,.08)}
+canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid var(--line);box-shadow:0 0 0 1px #000,0 0 50px rgba(74,168,255,.12),0 0 70px rgba(255,90,60,.08)}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .card{pointer-events:auto;width:min(680px,calc(100% - 20px));max-height:calc(100% - 10px);overflow-y:auto;box-sizing:border-box;padding:22px 26px;display:flex;flex-direction:column;gap:12px;background:linear-gradient(180deg,rgba(21,16,48,.97),rgba(9,7,20,.97)) padding-box,var(--gild) border-box;border:3px solid transparent;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px rgba(232,201,138,.3),inset 0 0 40px rgba(62,200,230,.06),0 30px 80px rgba(0,0,0,.8)}
 .card.narrow{width:min(520px,calc(100% - 20px))}
@@ -131,6 +131,10 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .chip .cn{font:700 11px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .cs{font-size:10px;letter-spacing:.06em}
 .chip .ml{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.unit .ti{position:absolute;right:8px;top:30px;width:58px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 4px #000);pointer-events:none}
+.unit .ud{padding-right:62px}
+.chip .ti{position:absolute;right:3px;bottom:2px;width:34px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 2px #000);pointer-events:none}
+.chip .ti.core{width:26px;height:26px;border-radius:50%;bottom:auto;top:50%;transform:translateY(-50%)}
 .chip .ci{position:absolute;right:4px;top:4px;display:flex;gap:2px}
 .chip .ci i{width:6px;height:6px;transform:rotate(45deg);box-shadow:0 0 5px currentColor}
 .selbar{display:flex;gap:10px;align-items:center;min-height:30px;font-size:13px;flex-wrap:wrap}
@@ -211,16 +215,16 @@ const BATTLE_ZOOM = 1.12, SETUP_LEN = 60, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESU
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
 const TS = 1.4, US = 1.15, LG = 480;
 const tw = (x, y) => [x * TS, GY + (y - LG) * TS];
-const TWL = {x0: 40, x1: 140, top: 222};
+const TWL = {x0: 28, x1: 142, top: 200};
 const TW = {x0: TWL.x0 * TS, x1: TWL.x1 * TS, top: GY + (TWL.top - LG) * TS};
 const TCX = (TW.x0 + TW.x1) / 2;
-const CANNON_L = {px: 90, py: 200, arm: 30};
+const CANNON_L = {px: 90, py: 206, arm: 30};
 const CANNON = {px: CANNON_L.px * TS, py: GY + (CANNON_L.py - LG) * TS, arm: CANNON_L.arm * TS, vmax: 1000, minA: -0.25, maxA: 1.45, radius: 48, reload: 1.3};
-const MOUNTS_L = [[50, 213], [68, 213], [114, 213], [132, 213], [152, 262], [152, 300], [152, 338], [152, 376], [152, 414], [152, 452]];
+const MOUNTS_L = [[57, 190], [80, 190], [104, 190], [122, 190], [152, 235], [152, 269], [152, 305], [152, 341], [152, 380], [152, 420]];
 const MOUNTS = MOUNTS_L.map(([x, y]) => tw(x, y));
 const MOUNT_LABEL = ['Roof 1', 'Roof 2', 'Roof 3', 'Roof 4', 'Deck 1', 'Deck 2', 'Deck 3', 'Deck 4', 'Deck 5', 'Deck 6'];
 const MOUNT_ORDER = [4, 5, 6, 7, 8, 9, 1, 2, 0, 3];
-const CORE_DOCK = tw(TWL.x0 + 20, TWL.top + 118);
+const CORE_DOCK = tw(90, 290);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
@@ -232,8 +236,8 @@ function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let
 
 /* ---------- factions ---------- */
 const SIDES = [
-  {name: 'HEX', full: 'Hex Syndicate', c: '#ff2bd6', rgb: '255,43,214', hi: '255,150,235'},
-  {name: 'VOLT', full: 'Volt Dynasty', c: '#22e6ff', rgb: '34,230,255', hi: '160,245,255'}
+  {name: 'HEX', full: 'Hex Syndicate', c: '#4aa8ff', rgb: '74,168,255', hi: '170,214,255'},
+  {name: 'VOLT', full: 'Volt Dynasty', c: '#ff5a3c', rgb: '255,90,60', hi: '255,170,140'}
 ];
 
 /* ---------- the turret roster (the champions of this game) ---------- */
@@ -269,10 +273,10 @@ const TRAITS = {
   heavy:     {name: 'Heavy',     tiers: [2, 4], desc: ['Keep shield +250', 'Keep shield +600']}
 };
 const ITEMS = {
-  N: {name: 'Neutron Core',   fx: '+40% damage',               color: '#ff3b5c', glow: '255,59,92'},
-  O: {name: 'Overclock Chip', fx: '+35% fire rate',            color: '#ffb020', glow: '255,176,32'},
-  T: {name: 'Tri-Barrel',     fx: 'Also hits a second target', color: '#eae6ff', glow: '234,230,255'},
-  X: {name: 'Nova Charge',    fx: '+50% splash, +15% damage',  color: '#b46bff', glow: '180,107,255'},
+  N: {name: 'Neutron Core',   fx: '+40% damage',               color: '#b46bff', glow: '180,107,255'},
+  O: {name: 'Overclock Chip', fx: '+35% fire rate',            color: '#3ee0ff', glow: '62,224,255'},
+  T: {name: 'Tri-Barrel',     fx: 'Also hits a second target', color: '#ff4a5a', glow: '255,74,90'},
+  X: {name: 'Nova Charge',    fx: '+50% splash, +15% damage',  color: '#ffb020', glow: '255,176,32'},
   L: {name: 'Nano Lens',      fx: '+25% range',                color: '#7dffb0', glow: '125,255,176'}
 };
 const ITEM_KEYS = 'NOTXL';
@@ -1059,7 +1063,7 @@ function turretsUpdate(side, dt, real) {
 }
 function fireTurret(side, T, u, mx, my, real, extra) {
   const s = T.s, [cx, cy] = ucenter(u), ang = extra ? Math.atan2(cy - my, cx - mx) : T.ang;
-  const tl = UPRIGHT[s.kind] ? 0 : tipLen(s), mzx = mx + Math.cos(ang) * tl * TS, mzy = my + Math.sin(ang) * tl * TS - (s.kind === 'arc' ? (s.id === 'tesla' ? 40 : 29) : 0), loud = side === S.me ? 1 : 0.45;
+  const tl = isUp(s) ? 0 : tipLen(s), mzx = mx + Math.cos(ang) * tl * TS, mzy = my + Math.sin(ang) * tl * TS - (isUp(s) ? (artOn() ? 52 : s.kind === 'arc' ? (s.id === 'tesla' ? 40 : 29) : 0) : 0), loud = side === S.me ? 1 : 0.45;
   if ((s.kind === 'hitscan' || s.kind === 'flak') && Math.random() < 0.6) S.parts.push({x: mx, y: my, vx: (side ? 1 : -1) * rnd(40, 100), vy: -rnd(90, 160), c: '#d4a84e', life: 0.7, r: 1.6});
   if ((s.kind === 'mortar' || s.kind === 'rail' || s.kind === 'flak') && Math.random() < 0.5) smoke(mzx, mzy, 1, 5);
   T.flash = 0.07;
@@ -1492,6 +1496,27 @@ function guestTween(dt) {
 /* =========================================================================
    DRAWING
    ========================================================================= */
+/* ---------- painted art: loaded in the background; the procedural art stays as the fallback ---------- */
+const ART = {};
+function loadArt(key, file) { if (typeof Image === 'undefined') return; const im = new Image(); im.onload = () => { im.ok = true; }; im.src = 'assets/' + file; ART[key] = im; }
+const artOk = im => !!(im && im.ok);
+const artOn = () => artOk(ART.tb) && artOk(ART.tr);
+for (const c of ['b', 'r']) {
+  loadArt('t' + c, 'tower_' + c + '.webp');
+  for (const R of ROSTER) loadArt('w' + c + R.id, 'w_' + c + '_' + R.id + '.webp');
+  for (const k of ['trooper', 'bike', 'bulwark', 'drone', 'titan']) loadArt('m' + c + k, 'm_' + c + '_' + k + '.webp');
+}
+for (const k of ['N', 'O', 'T', 'X']) loadArt('c' + k, 'core_' + k + '.webp');
+loadArt('bg', 'bg.jpg');
+// w = drawn width (art units); fx, fy = the swivel as a fraction of the sprite; nat = the barrel's native angle (blue; red mirrors it)
+const SPR = {
+  vulcan: {w: 40, fx: .26, fy: .42}, flak: {w: 36, fx: .28, fy: .40}, cryo: {w: 44, fx: .24, fy: .44}, torch: {w: 38, fx: .26, fy: .42},
+  arc: {w: 36, fx: .26, fy: .42}, swarm: {w: 36, fx: .28, fy: .40}, needle: {w: 46, fx: .22, fy: .46}, mortar: {w: 32, fx: .30, fy: .72, nat: -0.95, tip: 24},
+  rail: {w: 44, fx: .24, fy: .44}, tesla: {w: 26, up: 1, tip: 44}, hellfire: {w: 40, fx: .30, fy: .45}, lancer: {w: 52, fx: .22, fy: .46},
+  glacier: {w: 40, fx: .28, fy: .42}, singularity: {w: 38, fx: .28, fy: .42}, sunlance: {w: 52, fx: .26, fy: .46}
+};
+const TIER_RGB = ['', '163,169,191', '61,220,132', '61,155,255', '192,107,255', '255,176,32'];
+const USZ = {trooper: 54, bike: 44, bulwark: 54, drone: 34, titan: 110};
 // static skyline, painted once
 const sky = document.createElement('canvas');
 sky.width = W * 2; sky.height = GY * 2;
@@ -1509,7 +1534,7 @@ sky.width = W * 2; sky.height = GY * 2;
         if (r() < 0.22) { c.fillStyle = 'rgba(' + (r() < 0.5 ? '255,170,240' : '160,235,255') + ',' + (winA * (0.4 + r())) + ')'; c.fillRect(wx, wy, 2, 3); }
       }
       if (signs && r() < 0.18 && h > 60) {
-        c.strokeStyle = 'rgba(' + (x < W / 2 ? '255,43,214' : '34,230,255') + ',.55)'; c.lineWidth = 1.5;
+        c.strokeStyle = 'rgba(' + (x < W / 2 ? '74,168,255' : '255,90,60') + ',.55)'; c.lineWidth = 1.5;
         c.strokeRect(x + 4, base - h + 10, w - 8, 10 + r() * 10);
       }
       x += w + r() * 5;
@@ -1519,7 +1544,7 @@ sky.width = W * 2; sky.height = GY * 2;
   layer(GY, 40, 160, '#040309', 0.14, true);
   // hanging stained-glass banners between the near towers
   for (let x = 110; x < W - 100; x += 180 + r() * 90) {
-    const h = 60 + r() * 50, left = x < W / 2, rgb = left ? '255,43,214' : '34,230,255';
+    const h = 60 + r() * 50, left = x < W / 2, rgb = left ? '74,168,255' : '255,90,60';
     c.fillStyle = '#0a0719'; c.fillRect(x - 1, GY - 180 - h, 2, h + 40);
     const g = c.createLinearGradient(0, GY - 180 - h, 0, GY - 180);
     g.addColorStop(0, 'rgba(' + rgb + ',.45)'); g.addColorStop(1, 'rgba(' + rgb + ',.12)');
@@ -1536,10 +1561,16 @@ function drawScene() {
   const g = ctx.createLinearGradient(0, 0, 0, GY);
   g.addColorStop(0, '#010005'); g.addColorStop(0.6, '#06031a'); g.addColorStop(1, '#170828');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, GY);
-  for (const [x, y, r] of stars) { ctx.fillStyle = 'rgba(236,232,255,' + (0.18 + 0.15 * Math.sin(t * r + x)) + ')'; ctx.fillRect(x, y, r * 1.4, r * 1.4); }
+  const BG = ART.bg, bgOn = artOk(BG);
+  if (bgOn) {
+    ctx.fillStyle = '#04061a'; ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(BG, 0, -82, W, W * BG.height / BG.width);
+    ctx.fillStyle = 'rgba(3,4,22,.2)'; ctx.fillRect(0, 0, W, H);
+  } else for (const [x, y, r] of stars) { ctx.fillStyle = 'rgba(236,232,255,' + (0.18 + 0.15 * Math.sin(t * r + x)) + ')'; ctx.fillRect(x, y, r * 1.4, r * 1.4); }
 
   // the stage halo with its equaliser
   const hx = W / 2, hy = 165, R0 = 96 * (1 + 0.04 * kk);
+  if (bgOn) { const dg = ctx.createRadialGradient(hx, hy, R0 * 0.5, hx, hy, R0 * 2.3); dg.addColorStop(0, 'rgba(2,2,14,.62)'); dg.addColorStop(1, 'rgba(2,2,14,0)'); ctx.fillStyle = dg; ctx.fillRect(hx - R0 * 2.3, hy - R0 * 2.3, R0 * 4.6, R0 * 4.6); }
   ctx.globalCompositeOperation = 'lighter';
   const hg = ctx.createRadialGradient(hx, hy, 10, hx, hy, 220);
   hg.addColorStop(0, 'rgba(160,90,255,' + (0.06 + 0.08 * kk * E) + ')'); hg.addColorStop(1, 'rgba(90,30,160,0)');
@@ -1571,7 +1602,7 @@ function drawScene() {
     ctx.lineTo(bx + Math.cos(a - spread) * len, GY + Math.sin(a - spread) * len); ctx.lineTo(bx + Math.cos(a + spread) * len, GY + Math.sin(a + spread) * len); ctx.closePath(); ctx.fill();
   }
   ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(sky, 0, 0, W, GY);
+  if (!bgOn) ctx.drawImage(sky, 0, 0, W, GY);
 
   // drop lasers fanning from the halo
   if (E > 0.9 && !chaosIs('blackout')) {
@@ -1584,7 +1615,8 @@ function drawScene() {
     ctx.globalCompositeOperation = 'source-over';
   }
 
-  // the arena floor
+  // the arena floor (the painted deck replaces it)
+  if (!bgOn) {
   const fg = ctx.createLinearGradient(0, GY, 0, H);
   fg.addColorStop(0, '#08051a'); fg.addColorStop(1, '#010004');
   ctx.fillStyle = fg; ctx.fillRect(0, GY, W, H - GY);
@@ -1611,6 +1643,8 @@ function drawScene() {
   const eg = ctx.createLinearGradient(0, 0, W, 0);
   eg.addColorStop(0, 'rgba(' + SIDES[0].rgb + ',.8)'); eg.addColorStop(0.5, 'rgba(236,232,255,.5)'); eg.addColorStop(1, 'rgba(' + SIDES[1].rgb + ',.8)');
   ctx.fillStyle = eg; ctx.fillRect(0, GY, W, 2);
+  }
+  ctx.globalCompositeOperation = 'lighter';
   for (let s = 0; s < 2; s++) {
     const x = s ? W - TCX : TCX, rg = ctx.createRadialGradient(x, GY + 10, 0, x, GY + 10, 180);
     rg.addColorStop(0, 'rgba(' + SIDES[s].rgb + ',.22)'); rg.addColorStop(1, 'rgba(' + SIDES[s].rgb + ',0)');
@@ -1778,10 +1812,20 @@ function conduit(x1, y1, x2, y2, rgb, t, w, pulses) {
   }
   ctx.globalCompositeOperation = 'source-over';
 }
+function drawTowerArt(side) {
+  const im = ART[side ? 'tr' : 'tb']; if (!artOk(im)) return false;
+  const k = 0.2732;
+  ctx.save(); ctx.translate(6.67, 154.5); ctx.scale(k, k);
+  if (side === 1) { ctx.translate(im.width, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(im, 0, 0); ctx.restore();
+  return true;
+}
 function drawTower(side) {
   const {x0, x1, top} = TWL, P = S.p[side], F = SIDES[side], hpF = clamp(P.keep / KEEP_HP, 0, 1), kk = S.kick;
   const flick = hpF < 0.3 && !reduced ? (Math.sin(S.t * 37) > 0.3 ? 1 : 0.35) : 1;
   const rgb = F.rgb, bw = x1 - x0, base = LG - 30, cx = (x0 + x1) / 2;
+  const useArt = drawTowerArt(side);
+  if (!useArt) {
   // plinth and buttresses
   ctx.fillStyle = metal(LG - 46, LG, '#6f6ca0', '#3a3660', '#1a1830');
   ctx.beginPath(); ctx.moveTo(x0 - 22, LG); ctx.lineTo(x0 - 8, LG - 36); ctx.lineTo(x1 + 8, LG - 36); ctx.lineTo(x1 + 22, LG); ctx.closePath(); ctx.fill(); outline();
@@ -1840,6 +1884,13 @@ function drawTower(side) {
   const blink = Math.sin(S.t * 4) > 0 ? 1 : 0.25;
   glowDot(x0 + 2, top - 94, 9, rgb, blink);
   ctx.fillStyle = 'rgba(' + rgb + ',' + blink + ')'; ctx.beginPath(); ctx.arc(x0 + 2, top - 94, 2.5, 0, Math.PI * 2); ctx.fill();
+  }
+  if (useArt) {
+    // the reactor glows through the stained glass; it stutters as the keep fails
+    const pulse = (0.35 + 0.35 * kk) * flick;
+    glowDot(90, 290, 34 + 10 * kk, rgb, pulse);
+    glowDot(90, 436, 20, rgb, 0.18 + 0.2 * kk);
+  }
   // battle damage: scorch, cracks and fires as the keep is worn down
   if (hpF < 0.75) {
     const d = 1 - hpF;
@@ -1918,7 +1969,8 @@ function shard(x, y, len, w, rgb, lit) {
   ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.6; ctx.stroke();
 }
 const UPRIGHT = {arc: 1, frost: 1, void: 1};
-function tipLen(s) { return {hitscan: s.id === 'needle' ? 30 : 23, rail: s.id === 'lancer' ? 33 : 27, flak: 23, mortar: 19, swarm: 12, torch: 17, cryo: 16, beam: 20}[s.kind] || 12; }
+const isUp = s => artOn() ? s.id === 'tesla' : !!UPRIGHT[s.kind];
+function tipLen(s) { const P = artOn() && SPR[s.id]; if (P) return P.tip || P.w * (1 - P.fx); return {hitscan: s.id === 'needle' ? 30 : 23, rail: s.id === 'lancer' ? 33 : 27, flak: 23, mortar: 19, swarm: 12, torch: 17, cryo: 16, beam: 20}[s.kind] || 12; }
 function drawTurretHead(s, charge, kick) {
   const id = s.id, rgb = s.rgb, t = S.t;
   ctx.translate(-kick * 2.5, 0);
@@ -2029,6 +2081,27 @@ function drawTurretHead(s, charge, kick) {
       break;
   }
 }
+// a painted turret on its swivel; blue art faces right, red art faces left
+function drawWeapon(st, side, up, ang, charge, kick) {
+  const P = SPR[st.id], im = ART[(side ? 'wr' : 'wb') + st.id];
+  if (!P || !artOk(im)) return false;
+  const w = P.w, h = w * im.height / im.width;
+  ctx.save();
+  if (up) {
+    ctx.translate(0, 4);
+    ctx.drawImage(im, -w / 2, -h, w, h);
+    if (kick > 0.05) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = kick * 0.5; ctx.drawImage(im, -w / 2, -h, w, h); }
+    if (charge > 0.85 && !reduced) glowDot(0, -h + 3, 10, st.rgb, 0.35 + 0.25 * Math.sin(S.t * 9));
+  } else {
+    const nat = side ? Math.PI - (P.nat || 0) : (P.nat || 0), px = (side ? 1 - P.fx : P.fx) * w, py = P.fy * h;
+    ctx.rotate(ang - nat);
+    ctx.translate((side ? 1 : -1) * kick * 2.4, 0);
+    ctx.drawImage(im, -px, -py, w, h);
+    if (kick > 0.05) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = kick * 0.45; ctx.drawImage(im, -px, -py, w, h); }
+  }
+  ctx.restore();
+  return true;
+}
 function selectedMount() { const sel = S.ui.sel; return sel && sel.z === 'm' ? sel.i : -1; }
 function drawTurrets(side) {
   const P = S.p[side], F = SIDES[side], planning = S.phase === 'setup' && side === S.me;
@@ -2038,16 +2111,22 @@ function drawTurrets(side) {
     const [x, y] = mountWorld(side, i), u = P.board[i];
     const T = turrets ? turrets[i] : null;
     ctx.save(); ctx.translate(x, y); ctx.scale(TS, TS);
+    const AON = artOn();
     // bronze corbel and a faceted crystal plinth lit in the team colour
-    if (i >= 4) { const wx = side ? 13 : -13; ctx.fillStyle = bronze(-3, 12); ctx.beginPath(); ctx.moveTo(wx, -3); ctx.lineTo(0, 1); ctx.lineTo(0, 9); ctx.lineTo(wx, 12); ctx.closePath(); ctx.fill(); outline(); }
+    if (!AON) { if (i >= 4) { const wx = side ? 13 : -13; ctx.fillStyle = bronze(-3, 12); ctx.beginPath(); ctx.moveTo(wx, -3); ctx.lineTo(0, 1); ctx.lineTo(0, 9); ctx.lineTo(wx, 12); ctx.closePath(); ctx.fill(); outline(); }
     ctx.fillStyle = bronze(3, 10); chamfer(-8, 3, 16, 7, 2); ctx.fill(); outline();
-    crystal(-5, 5, 10, 3, F.rgb, 0.5 + 0.3 * Math.sin(S.t * 3 + i)); rivet(-6.5, 6.5); rivet(6.5, 6.5);
+    crystal(-5, 5, 10, 3, F.rgb, 0.5 + 0.3 * Math.sin(S.t * 3 + i)); rivet(-6.5, 6.5); rivet(6.5, 6.5); }
     if ((selBench || selM >= 0) && i !== selM) {
       const pulse = 0.4 + 0.4 * Math.sin(S.t * 6);
       ctx.strokeStyle = 'rgba(255,255,255,' + (u ? pulse * 0.5 : pulse) + ')'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
       ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
     if (i === selM) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke(); }
+    if (!u && AON) {
+      if (S.phase === 'setup') { ctx.strokeStyle = 'rgba(' + F.rgb + ',' + (0.35 + 0.25 * Math.sin(S.t * 3 + i)) + ')'; ctx.lineWidth = 1.2; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.restore();
+      continue;
+    }
     if (!u) {
       ctx.fillStyle = bronze(-5, 5); ctx.beginPath(); for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2; n ? ctx.lineTo(Math.cos(a) * 5.5, Math.sin(a) * 5.5) : ctx.moveTo(Math.cos(a) * 5.5, Math.sin(a) * 5.5); } ctx.closePath(); ctx.fill(); outline();
       ctx.fillStyle = '#071a24'; ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, Math.PI * 2); ctx.fill();
@@ -2055,11 +2134,13 @@ function drawTurrets(side) {
       continue;
     }
     const R = ROSTER[u.r], st = T ? T.s : R, charge = T ? clamp(1 - T.cd * st.rate, 0, 1) : 1;
-    const up = UPRIGHT[st.kind], ang = up ? 0 : T ? T.ang : (side ? Math.PI : 0) - (i < 4 ? 0.2 : 0) * (side ? -1 : 1);
+    const up = isUp(st), ang = up ? 0 : T ? T.ang : (side ? Math.PI : 0) - (i < 4 ? 0.2 : 0) * (side ? -1 : 1);
     const kick = T ? clamp(T.flash / 0.07, 0, 1) : 0;
-    // hexagonal bronze bezel with a rarity band
+    // hexagonal bronze bezel with a rarity band (the painted art swaps it for a rarity glow)
+    if (AON) glowDot(0, 0, 13, TIER_RGB[R.tier], 0.4);
+    else {
     ctx.fillStyle = bronze(-7, 7); ctx.beginPath(); for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2; n ? ctx.lineTo(Math.cos(a) * 7, Math.sin(a) * 7) : ctx.moveTo(Math.cos(a) * 7, Math.sin(a) * 7); } ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = TIER_C[R.tier]; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.strokeStyle = TIER_C[R.tier]; ctx.lineWidth = 1.2; ctx.stroke(); }
     // star ornament: 2-star grows bronze filigree wings set with crystals, 3-star adds a turning rune ring and floating shards
     if (u.star >= 2) {
       ctx.strokeStyle = ANC.bz; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
@@ -2084,10 +2165,12 @@ function drawTurrets(side) {
       ctx.globalCompositeOperation = 'source-over';
       for (let n = 0; n < 3; n++) { const a = -S.t * 0.9 + n * Math.PI * 2 / 3, sx = Math.cos(a) * 19, sy = ry + Math.sin(a) * 6 + Math.sin(S.t * 2 + n) * 1.5; ctx.save(); ctx.translate(sx, sy); ctx.rotate(-Math.PI / 2); shard(0, 0, 5, 1.4, F.rgb, 0.8); ctx.restore(); }
     }
-    ctx.save(); ctx.rotate(ang);
-    if (!up && Math.cos(ang) < 0) ctx.scale(1, -1);
-    drawTurretHead(st, charge, up ? 0 : kick);
-    ctx.restore();
+    if (!(AON && drawWeapon(st, side, up, ang, charge, kick))) {
+      ctx.save(); ctx.rotate(ang);
+      if (!up && Math.cos(ang) < 0) ctx.scale(1, -1);
+      drawTurretHead(st, charge, up ? 0 : kick);
+      ctx.restore();
+    }
     for (let k2 = 0; k2 < u.star; k2++) {
       const sx = (k2 - (u.star - 1) / 2) * 6, sy = up ? -34 : -19;
       ctx.fillStyle = STAR_C[u.star]; ctx.beginPath(); ctx.moveTo(sx, sy - 3); ctx.lineTo(sx + 2.2, sy); ctx.lineTo(sx, sy + 3); ctx.lineTo(sx - 2.2, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = ANC.bzDark; ctx.lineWidth = 0.5; ctx.stroke(); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(sx - 0.5, sy - 2, 1, 1.6);
@@ -2116,12 +2199,32 @@ function glowDot(x, y, r, rgb, a) {
   ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
   ctx.globalCompositeOperation = 'source-over';
 }
+// painted minions: blue art faces right, red art faces left, so no mirroring
+function drawUnitArt(e, im, rgb, fl) {
+  const h = USZ[e.type], w = h * im.width / im.height, fly = e.type === 'drone';
+  const walk = e.atk ? 0 : Math.sin(e.t * (e.spd / 6));
+  glowDot(0, fly ? 0 : -3, fly ? 24 : 28, rgb, 0.22);
+  if (!fly) { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.ellipse(0, 1, w * 0.38, 3.2, 0, 0, Math.PI * 2); ctx.fill(); }
+  let dy = 0, rot = 0;
+  if (e.type === 'trooper' || e.type === 'bulwark') { dy = -Math.abs(walk) * 2.2; rot = walk * 0.035; }
+  else if (e.type === 'titan') { dy = -Math.abs(walk) * 3; rot = walk * 0.02; }
+  else if (e.type === 'bike') dy = Math.sin(e.t * 8);
+  else if (fly) rot = Math.sin(e.t * 9) * 0.07;
+  ctx.translate(0, dy); ctx.rotate(rot);
+  const oy = fly ? -h / 2 : -h;
+  ctx.drawImage(im, -w / 2, oy, w, h);
+  if (fl) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.6; ctx.drawImage(im, -w / 2, oy, w, h); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+  if (e.atk && !fly && Math.sin(e.t * 18) > 0.6) glowDot(e.side ? -w * 0.5 : w * 0.5, -h * 0.55, 8, '255,220,120', 0.8);
+}
 function drawUnit(e) {
   const F = SIDES[e.side], fl = e.flash > 0, rgb = F.rgb;
-  const body = fl ? (e.side ? '#a8f6ff' : '#ffb8f2') : (e.side ? '#0f4552' : '#511347');
-  const armor = fl ? '#ffffff' : (e.side ? '#2a8a9c' : '#9a2e8c');
+  const body = fl ? (e.side ? '#ffc4b0' : '#b8dcff') : (e.side ? '#5a1a10' : '#10305a');
+  const armor = fl ? '#ffffff' : (e.side ? '#c24a2a' : '#2a6ac0');
   const vis = '#ffffff';
+  const spr = ART[(e.side ? 'mr' : 'mb') + e.type], useSpr = artOk(spr);
   ctx.save(); ctx.translate(e.x, e.y); ctx.scale(US, US);
+  if (useSpr) drawUnitArt(e, spr, rgb, fl);
+  else {
   if (e.side === 0) ctx.scale(-1, 1);
   const walk = e.atk ? 0 : Math.sin(e.t * (e.spd / 6));
   if (!e.fly) { ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.ellipse(0, 1, e.w / US * 0.55, 3, 0, 0, Math.PI * 2); ctx.fill(); }
@@ -2182,6 +2285,7 @@ function drawUnit(e) {
     glowDot(2, -57, 16, rgb, 0.6 * core);
     ctx.fillStyle = armor; ctx.fillRect(-48 - pound * 8, -56, 30, 8);
     if (e.atk && pound > 0.8) glowDot(-50 - pound * 8, -52, 14, '255,220,120', 0.9);
+  }
   }
   ctx.restore();
   if (e.slow > 0) { ctx.fillStyle = 'rgba(127,230,255,.18)'; const [x, y, w, h] = hitbox(e); ctx.fillRect(x - 2, y - 2, w + 4, h + 4); }
@@ -2323,6 +2427,14 @@ const RUNES = {
 };
 function drawItemGem(key, x, y, sc) {
   const it = ITEMS[key]; if (!it) return;
+  const cim = ART['c' + key];
+  if (artOk(cim)) {
+    ctx.save(); ctx.translate(x, y); ctx.scale((sc || 1) * 1.25, (sc || 1) * 1.25);
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(cim, -12, -12, 24, 24); ctx.restore();
+    ctx.strokeStyle = ANC.bz; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = ANC.bzHi; ctx.lineWidth = 0.7; ctx.stroke();
+    ctx.restore(); return;
+  }
   ctx.save(); ctx.translate(x, y); ctx.scale(sc || 1, sc || 1);
   ctx.fillStyle = bronze(-11, 11); ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 - Math.PI / 2; i ? ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11) : ctx.moveTo(Math.cos(a) * 11, Math.sin(a) * 11); } ctx.closePath(); ctx.fill(); outline();
   const g = ctx.createLinearGradient(-8, -8, 8, 8);
@@ -2371,7 +2483,7 @@ function drawRingsFields() {
 function drawKeepBars() {
   if (S.phase !== 'combat' && S.phase !== 'result' && S.phase !== 'intro') return;
   for (let s = 0; s < 2; s++) {
-    const P = S.p[s], y = TW.top - 122, w = 200, edge = (W / 2) / S.cam.z;
+    const P = S.p[s], y = Math.max(54, TW.top - 122), w = 200, edge = (W / 2) / S.cam.z;
     const cx = s ? Math.min(W - TCX, S.cam.x + edge - w / 2 - 12) : Math.max(TCX, S.cam.x - edge + w / 2 + 12);
     ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(cx - w / 2 - 2, y - 2, w + 4, 18);
     ctx.fillStyle = S.keepFlash[s] > 0.05 ? '#ff5a5a' : 'rgb(' + SIDES[s].rgb + ')'; ctx.fillRect(cx - w / 2, y, w * clamp(P.keep / KEEP_HP, 0, 1), 14);
@@ -2834,6 +2946,8 @@ function dockSigNow() {
   if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5));
   return base.join('|');
 }
+const wIcon = id => '<img class="ti" alt="" src="assets/w_' + (S.me === 1 ? 'r' : 'b') + '_' + id + '.webp" onerror="this.remove()">';
+const cIcon = k => '<img class="ti core" alt="" src="assets/core_' + k + '.webp" onerror="this.remove()">';
 function unitLabel(u) { return ROSTER[u.r].name; }
 function chipHtml(u, z, i, label, locked) {
   const sel = S.ui.sel && S.ui.sel.z === z && S.ui.sel.i === i;
@@ -2842,7 +2956,7 @@ function chipHtml(u, z, i, label, locked) {
   if (!u) return '<button type="button" class="chip empty' + (unitSel ? ' target' : '') + '" data-act="slot:' + z + ':' + i + '"' + (locked ? ' disabled' : '') + '><span class="ml">' + (label || 'Empty') + '</span></button>';
   const R = ROSTER[u.r];
   return '<button type="button" class="chip' + (sel ? ' sel' : '') + ((itemSel && u.items.length < 3) || unitSel ? ' target' : '') + '" data-act="slot:' + z + ':' + i + '" style="--t:' + TIER_C[R.tier] + '"' + (locked ? ' disabled' : '') + '>' +
-    (label ? '<span class="ml">' + label + '</span>' : '') +
+    wIcon(R.id) + (label ? '<span class="ml">' + label + '</span>' : '') +
     '<span class="cn">' + R.name + ' <span class="cs" style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span></span>' +
     (u.items.length ? '<span class="ci">' + u.items.map(it => '<i style="background:' + ITEMS[it].color + '"></i>').join('') + '</span>' : '') + '</button>';
 }
@@ -2883,7 +2997,7 @@ function renderDock() {
     if (r < 0 || !ROSTER[r]) { h += '<div class="unit sold">Sold</div>'; continue; }
     const R = ROSTER[r], own = ownedCopies(P, r, 1);
     h += '<button type="button" class="unit" data-act="buy:' + i + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
-      (own ? '<span class="own">' + own + '/3</span>' : '') +
+      (own ? '<span class="own">' + own + '/3</span>' : '') + wIcon(R.id) +
       '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span><span class="ud">' + R.short + '</span></button>';
   }
   h += '</div><div class="zones">' +
@@ -2892,7 +3006,7 @@ function renderDock() {
     '<div><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6">';
   for (let i = 0; i < MAX_ITEMS; i++) {
     const it = P.items[i] ? ITEMS[P.items[i]] : null, sel = S.ui.sel && S.ui.sel.z === 'i' && S.ui.sel.i === i;
-    h += it ? '<button type="button" class="chip' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '><span class="cn" style="color:' + it.color + '">' + it.name + '</span><span class="ml">' + it.fx + '</span></button>'
+    h += it ? '<button type="button" class="chip' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '>' + cIcon(P.items[i]) + '<span class="cn" style="color:' + it.color + '">' + it.name + '</span><span class="ml">' + it.fx + '</span></button>'
       : '<div class="chip empty"><span class="ml">—</span></div>';
   }
   h += '</div></div></div>';
