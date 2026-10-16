@@ -143,6 +143,16 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .odds{font-size:11px;color:var(--muted);letter-spacing:.06em;white-space:nowrap}
 .cline{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px}
 .cline b{font-variant-numeric:tabular-nums}
+#tip{position:fixed;z-index:80;max-width:310px;padding:10px 12px;background:linear-gradient(180deg,rgba(24,18,54,.98),rgba(9,7,20,.97)) padding-box,var(--gild) border-box;border:1.5px solid transparent;box-shadow:0 10px 34px rgba(0,0,0,.7);font:500 12.5px/1.4 var(--f-ui);color:var(--ink);pointer-events:none}
+#tip[hidden]{display:none}
+#tip .tn{font:700 14px var(--f-display);letter-spacing:.03em}
+#tip .ts{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+#tip .tg{display:grid;grid-template-columns:auto 1fr;gap:1px 12px;margin:6px 0;font-variant-numeric:tabular-nums}
+#tip .tg span:nth-child(odd){color:var(--muted)}
+#tip .tl{margin-top:3px;color:var(--muted)}
+#tip .tl.on{color:#9ff0ff}
+#tip .tl.max{color:#ffd23a}
+#tip .tl b{color:var(--ink)}
 button:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
 table.stats{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
 table.stats th,table.stats td{padding:4px 8px;text-align:right;border-bottom:1px solid var(--line)}
@@ -178,18 +188,19 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 </head>
-<body><div class="app">
+<body><div id="tip" role="tooltip" hidden></div>
+<div class="app">
   <header class="hud panel">
     <div class="team l">
       <div class="tname"><b>HEX</b><span id="tag0">CPU</span></div>
-      <div class="hprow"><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span></div>
-      <div class="sub" id="sub0">Lv 3</div>
+      <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span></div>
+      <div class="sub" id="sub0" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
     </div>
-    <div class="clock"><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Ballista Keep</div></div>
+    <div class="clock" data-tip="Phase clock. 60 s of planning, then 30 s of automatic combat."><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Ballista Keep</div></div>
     <div class="team r">
       <div class="tname"><b>VOLT</b><span id="tag1">CPU</span></div>
-      <div class="hprow"><div class="hpbar"><i id="hp1"></i></div><span class="hpnum" id="hpt1">100</span></div>
-      <div class="sub" id="sub1">Lv 3</div>
+      <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp1"></i></div><span class="hpnum" id="hpt1">100</span></div>
+      <div class="sub" id="sub1" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
     </div>
   </header>
 
@@ -197,11 +208,11 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
     <canvas id="cv" aria-label="Arena between two keeps. During planning, tap a mount on your keep to select or place a turret."></canvas>
     <div class="overlay" id="overlay"></div>
     <div class="sound panel" id="sound">
-      <button class="btn small quiet" id="statsBtn" type="button" hidden>Stats · Tab</button>
-      <button class="btn small quiet" id="menuBtn" type="button" hidden>Menu · Esc</button>
-      <button class="btn small quiet" id="muteBtn" type="button" aria-pressed="false">Mute</button>
-      <label for="volMusic">Music <input type="range" id="volMusic" min="0" max="100" step="1" value="70" aria-label="Music volume"></label>
-      <label for="volFx">Effects <input type="range" id="volFx" min="0" max="100" step="1" value="80" aria-label="Effects volume"></label>
+      <button class="btn small quiet" id="statsBtn" type="button" data-tip="Match stats: kills, damage, spending and every round so far (Tab)." hidden>Stats · Tab</button>
+      <button class="btn small quiet" id="menuBtn" type="button" data-tip="Menu: audio and video settings, leave game, main menu (Esc)." hidden>Menu · Esc</button>
+      <button class="btn small quiet" id="muteBtn" type="button" data-tip="Mute or unmute all sound." aria-pressed="false">Mute</button>
+      <label for="volMusic" data-tip="Music volume.">Music <input type="range" id="volMusic" min="0" max="100" step="1" value="70" aria-label="Music volume"></label>
+      <label for="volFx" data-tip="Sound effects volume.">Effects <input type="range" id="volFx" min="0" max="100" step="1" value="80" aria-label="Effects volume"></label>
     </div>
   </div>
 
@@ -2528,6 +2539,7 @@ function drawKeepBars() {
     ctx.fillText('KEEP ' + Math.ceil(Math.max(0, P.keep)) + (P.shield > 0 ? ' + ' + Math.ceil(P.shield) + ' SHIELD' : '') + ' · ' + P.roundKills + ' KILLS', cx, y - 6);
   }
 }
+let traitHit = [];
 function drawTraits(side) {
   const P = S.p[side];
   const {cnt, lv} = S.phase === 'setup' ? traitLevels(P.board) : {cnt: traitLevels(P.board).cnt, lv: P.traitLv};
@@ -2537,6 +2549,7 @@ function drawTraits(side) {
   let y = 34;
   for (const t of list) {
     const T = TRAITS[t], l = lv[t] || 0, next = T.tiers[Math.min(l, T.tiers.length - 1)];
+    traitHit.push({x0: side ? x - 215 : x - 4, x1: side ? x + 4 : x + 215, y0: y - 13, y1: y + (l ? 19 : 7), t, l, c: cnt[t]});
     const col = l === 0 ? '#5a4f7a' : l === T.tiers.length ? '#ffd23a' : '#9ff0ff';
     const ix = side ? x - 8 : x + 8;
     ctx.fillStyle = l ? col : 'rgba(0,0,0,.6)'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
@@ -2610,6 +2623,7 @@ function render() {
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   if (S.flash > 0) { ctx.fillStyle = 'rgba(' + S.flashC + ',' + S.flash * 0.5 + ')'; ctx.fillRect(0, 0, W, H); }
   if (S.energy > 0.9 && !reduced) { ctx.fillStyle = 'rgba(255,255,255,' + 0.035 * S.kick + ')'; ctx.fillRect(0, 0, W, H); }
+  traitHit = [];
   if (S.mode !== 'demo' && S.phase !== 'over') { drawTraits(0); drawTraits(1); }
   if (S.letter > 0.5) {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, S.letter); ctx.fillRect(0, H - S.letter, W, S.letter);
@@ -2667,6 +2681,78 @@ cv.addEventListener('pointerdown', e => {
   if (best >= 0) onSlot('m', best);
   else if (S.ui.sel) S.ui.sel = null;
 });
+/* ---------- tooltips: weapons, cores, traits and the HUD ---------- */
+const tipEl = document.getElementById('tip');
+const escA = v => String(v).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+function unitTipHtml(u, lv) {
+  const R = ROSTER[u.r], s = statsFor(u, lv), beam = s.kind === 'beam', n = s.count || 1, f1 = d => d < 10 ? (Math.round(d * 10) / 10).toString() : String(Math.round(d));
+  let h = '<div class="tn" style="color:' + TIER_C[R.tier] + '">' + R.name + ' <span style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span></div>';
+  h += '<div class="ts">Tier ' + R.tier + ' · ' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</div><div>' + R.short + '.</div><div class="tg">';
+  h += '<span>' + (beam ? 'Damage' : 'Damage / shot') + '</span><span>' + f1(s.dmg * n * (beam ? 10 : 1)) + (beam ? ' per second (ramps up)' : n > 1 ? ' (' + n + ' × ' + f1(s.dmg) + ')' : '') + '</span>';
+  h += '<span>Fire rate</span><span>' + (beam ? 'continuous' : s.rate.toFixed(1) + ' / s') + '</span>';
+  h += '<span>Range</span><span>' + Math.round(s.range / PX_PER_M) + ' m' + (s.min ? ' (min ' + Math.round(s.min / PX_PER_M) + ' m)' : '') + '</span>';
+  h += '<span>Hits</span><span>' + (s.air && s.ground ? 'air and ground' : s.air ? 'air only' : 'ground only') + '</span>';
+  if (s.chain) h += '<span>Chain</span><span>jumps to ' + s.chain + ' targets</span>';
+  if (s.splash) h += '<span>Splash</span><span>' + Math.round(s.splash / PX_PER_M * 10) / 10 + ' m radius</span>';
+  if (s.radius) h += '<span>Pull</span><span>' + Math.round(s.radius / PX_PER_M * 10) / 10 + ' m radius</span>';
+  if (s.cone) h += '<span>Cone</span><span>wide flame at the gate</span>';
+  h += '</div>';
+  for (const t of R.traits) { const l = lv[t] || 0, T = TRAITS[t]; h += '<div class="tl ' + (l === T.tiers.length ? 'max' : l ? 'on' : '') + '"><b>' + T.name + '</b> ' + (l ? '· ' + T.desc[l - 1] : '· inactive, needs ' + T.tiers[0] + ' different ' + T.name + ' turrets') + '</div>'; }
+  if (u.items.length) { h += '<div class="ts" style="margin-top:8px">Cores fitted</div>'; for (const k of u.items) h += '<div class="tl on"><b style="color:' + ITEMS[k].color + '">' + ITEMS[k].name + '</b> · ' + ITEMS[k].fx + '</div>'; }
+  return h;
+}
+const itemTipHtml = k => { const it = ITEMS[k]; return it ? '<div class="tn" style="color:' + it.color + '">' + it.name + '</div><div class="ts">Core</div><div>' + it.fx + '.</div><div class="tl">Fit up to 3 cores on any turret. Cores come from fallen mechs and every 3rd round.</div>' : ''; };
+function traitTipHtml(t, l, c) {
+  const T = TRAITS[t]; let h = '<div class="tn">' + T.name + '</div><div class="ts">Trait · ' + c + ' different turret' + (c === 1 ? '' : 's') + '</div>';
+  T.tiers.forEach((th, i) => { h += '<div class="tl ' + (l === i + 1 ? (l === T.tiers.length ? 'max' : 'on') : '') + '"><b>' + th + ' turrets</b> · ' + T.desc[i] + '</div>'; });
+  return h + '<div class="tl">Only different turret types count, so duplicates do not stack a trait.</div>';
+}
+function tipFromKey(k) {
+  const P = S.p[S.me] || S.p[0], lv = traitLevels(P.board).lv, [a, b, c] = k.split(':');
+  if (a === 'r') return unitTipHtml(unitOf(+b, 1), lv);
+  if (a === 'm' || a === 'b') { const u = (a === 'm' ? P.board : P.bench)[+b]; return u ? unitTipHtml(u, lv) : ''; }
+  if (a === 'i') return itemTipHtml(b);
+  return '';
+}
+let tipOn = false;
+function placeTip(x, y) {
+  const w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+  let l = x + 16, t = y + 18;
+  if (l + w > innerWidth - 6) l = Math.max(6, x - w - 14);
+  if (t + h > innerHeight - 6) t = Math.max(6, y - h - 14);
+  tipEl.style.left = l + 'px'; tipEl.style.top = t + 'px';
+}
+function setTip(html, x, y, key) {
+  if (!html) { if (tipOn) { tipEl.hidden = true; tipOn = false; tipEl._k = null; } return; }
+  if (tipEl._k !== key) { tipEl.innerHTML = html; tipEl._k = key; }
+  tipEl.hidden = false; tipOn = true; placeTip(x, y);
+}
+function canvasTip(e) {
+  const r = cv.getBoundingClientRect();
+  const sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
+  for (const h of traitHit) if (sx >= h.x0 && sx <= h.x1 && sy >= h.y0 && sy <= h.y1) return [traitTipHtml(h.t, h.l, h.c), 't' + h.t + h.l + h.c];
+  const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
+  for (const d of S.drops) if (Math.hypot(wx - d.x, wy - d.y) < 24) return [itemTipHtml(d.kind), 'd' + d.kind];
+  for (let side = 0; side < 2; side++) for (let i = 0; i < 10; i++) {
+    const u = S.p[side].board[i]; if (!u) continue;
+    const [x, y] = mountWorld(side, i);
+    if (Math.hypot(wx - x, wy - y) < 22) return [unitTipHtml(u, traitLevels(S.p[side].board).lv), 'u' + side + i + u.r + u.star + u.items.join('')];
+  }
+  return null;
+}
+addEventListener('pointermove', e => {
+  if (e.pointerType === 'touch') return;
+  const tg = e.target;
+  if (tg === cv) { const c = canvasTip(e); if (c) return setTip(c[0], e.clientX, e.clientY, c[1]); return setTip(null); }
+  const el = tg && tg.closest ? tg.closest('[data-tipk],[data-tip]') : null;
+  if (!el) return setTip(null);
+  const k = el.getAttribute('data-tipk');
+  if (k) return setTip(tipFromKey(k), e.clientX, e.clientY, 'k' + k + S.round + S.phase + (S.p[S.me] ? S.p[S.me].board.length + S.p[S.me].items.join('') : ''));
+  const txt = el.getAttribute('data-tip');
+  setTip('<div>' + escA(txt) + '</div>', e.clientX, e.clientY, 's' + txt);
+});
+addEventListener('pointerdown', () => setTip(null));
+document.addEventListener('pointerleave', () => setTip(null));
 const inMatch = () => S.mode !== 'demo' && !['lobby', 'connecting', 'joined', 'neterr', 'gone'].includes(S.phase);
 addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' && e.target.type === 'text')) return;
@@ -2989,9 +3075,9 @@ function chipHtml(u, z, i, label, locked) {
   const sel = S.ui.sel && S.ui.sel.z === z && S.ui.sel.i === i;
   const itemSel = S.ui.sel && S.ui.sel.z === 'i';
   const unitSel = S.ui.sel && (S.ui.sel.z === 'm' || S.ui.sel.z === 'b');
-  if (!u) return '<button type="button" class="chip empty' + (unitSel ? ' target' : '') + '" data-act="slot:' + z + ':' + i + '"' + (locked ? ' disabled' : '') + '><span class="ml">' + (label || 'Empty') + '</span></button>';
+  if (!u) return '<button type="button" class="chip empty' + (unitSel ? ' target' : '') + '" data-tip="' + (z === 'm' ? 'Empty mount. Pick a turret from the bench or shop, then tap here to place it.' : 'Empty bench slot. Bought turrets wait here until you place or sell them.') + '" data-act="slot:' + z + ':' + i + '"' + (locked ? ' disabled' : '') + '><span class="ml">' + (label || 'Empty') + '</span></button>';
   const R = ROSTER[u.r];
-  return '<button type="button" class="chip' + (sel ? ' sel' : '') + ((itemSel && u.items.length < 3) || unitSel ? ' target' : '') + '" data-act="slot:' + z + ':' + i + '" style="--t:' + TIER_C[R.tier] + '"' + (locked ? ' disabled' : '') + '>' +
+  return '<button type="button" class="chip' + (sel ? ' sel' : '') + ((itemSel && u.items.length < 3) || unitSel ? ' target' : '') + '" data-act="slot:' + z + ':' + i + '" data-tipk="' + z + ':' + i + '" style="--t:' + TIER_C[R.tier] + '"' + (locked ? ' disabled' : '') + '>' +
     wIcon(R.id) + (label ? '<span class="ml">' + label + '</span>' : '') +
     '<span class="cn">' + R.name + ' <span class="cs" style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span></span>' +
     (u.items.length ? '<span class="ci">' + u.items.map(it => '<i style="background:' + ITEMS[it].color + '"></i>').join('') + '</span>' : '') + '</button>';
@@ -3021,18 +3107,18 @@ function renderDock() {
   const locked = P.ready, onBoard = boardCount(P), interest = Math.min(5, Math.floor(P.gold / 10));
   const need = XPNEED[P.level];
   let h = '<div class="eco">' +
-    '<div class="stat"><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
-    '<div class="stat grow"><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
-    '<button type="button" class="btn small" data-act="xp"' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
-    '<button type="button" class="btn small" data-act="reroll"' + (locked || P.gold < 2 ? ' disabled' : '') + '>Reroll <b>2</b></button>' +
+    '<div class="stat" data-tip="Gold. Each round pays 5 + interest (1 per 10 gold held, max 5) + a win or loss streak bonus. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
+    '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
+    '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
+    '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop for 2 gold (key D)."' + (locked || P.gold < 2 ? ' disabled' : '') + '>Reroll <b>2</b></button>' +
     sound +
-    (locked ? '<button type="button" class="btn" data-act="unready">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready">Ready</button>') +
+    (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
     '</div><div class="shop">';
   for (let i = 0; i < 5; i++) {
     const r = P.shop[i];
     if (r < 0 || !ROSTER[r]) { h += '<div class="unit sold">Sold</div>'; continue; }
     const R = ROSTER[r], own = ownedCopies(P, r, 1);
-    h += '<button type="button" class="unit" data-act="buy:' + i + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
+    h += '<button type="button" class="unit" data-act="buy:' + i + '" data-tipk="r:' + r + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
       (own ? '<span class="own">' + own + '/3</span>' : '') + wIcon(R.id) +
       '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span><span class="ud">' + R.short + '</span></button>';
   }
@@ -3042,8 +3128,8 @@ function renderDock() {
     '<div><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6">';
   for (let i = 0; i < MAX_ITEMS; i++) {
     const it = P.items[i] ? ITEMS[P.items[i]] : null, sel = S.ui.sel && S.ui.sel.z === 'i' && S.ui.sel.i === i;
-    h += it ? '<button type="button" class="chip' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '>' + cIcon(P.items[i]) + '<span class="cn" style="color:' + it.color + '">' + it.name + '</span><span class="ml">' + it.fx + '</span></button>'
-      : '<div class="chip empty"><span class="ml">—</span></div>';
+    h += it ? '<button type="button" class="chip' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" data-tipk="i:' + P.items[i] + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '>' + cIcon(P.items[i]) + '<span class="cn" style="color:' + it.color + '">' + it.name + '</span><span class="ml">' + it.fx + '</span></button>'
+      : '<div class="chip empty" data-tip="Empty core slot. Cores drop from fallen mechs and arrive every 3rd round."><span class="ml">—</span></div>';
   }
   h += '</div></div></div>';
   h += '<div class="selbar" role="status">' + (S.ui.msg ? '<span class="m">' + S.ui.msg + '</span>' : selInfo(P) || '<span class="h">' + (locked ? 'Locked in. Waiting for the other keep… Tap Unlock to keep editing.' : 'Buy turrets, tap one to pick it up, then tap a mount. Three copies merge into a stronger star. Keys: D reroll, F buy XP, E sell.') + '</span>') + '</div>';
