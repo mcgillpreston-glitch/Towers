@@ -1259,27 +1259,6 @@ function solveAim(side, u, noise) {
   }
   return null;
 }
-function ballistaTick(side, dt) {
-  const P = S.p[side];
-  P.reload = Math.max(0, P.reload - dt);
-  if (P.reload > 0) return;
-  const foes = S.units.filter(u => u.side !== side && !u.gone && u.hp > 0 && !u.fly);
-  if (!foes.length) { P.reload = 0.3; return; }
-  let best = null, bs = -1;
-  for (let i = 0; i < Math.min(foes.length, 24); i++) {
-    const u = foes[Math.floor(Math.random() * foes.length)];
-    let n = 0; for (const v of foes) if (Math.abs(v.x - u.x) < 60) n++;
-    const sc = n + (u.type === 'titan' ? 4 : 0);
-    if (sc > bs) { bs = sc; best = u; }
-  }
-  const sol = solveAim(side, best, 18);
-  if (!sol) { P.reload = 0.3; return; }
-  P.aim.ang = sol.ang; P.aim.pow = sol.pow;
-  const L = launch(side, P.aim.ang);
-  S.projs.push({id: S.nextId++, kind: 'shell', side, x: L.x, y: L.y, vx: L.vx, vy: L.vy, dmg: 30 * (1 + 0.12 * (S.round - 1)), R: CANNON.radius, life: 4});
-  P.reload = P.reloadMax = CANNON.reload;
-  ev(['f', side]);
-}
 function stormTick(side, dt) {
   const P = S.p[side], lv = P.traitLv.storm || 0;
   if (!lv) return;
@@ -1344,7 +1323,7 @@ function simulate(dt) {
     S.spawnT = Math.max(0.06, 0.62 / (1 + 2.6 * I)) * rnd(0.5, 1.4);
     if (Math.random() < 0.12 + 0.2 * I) S.spawnT *= 0.2;
   }
-  for (let side = 0; side < 2; side++) { ballistaTick(side, dt); stormTick(side, dt); }
+  for (let side = 0; side < 2; side++) { stormTick(side, dt); }
   worldStep(dt, true);
   const f0 = S.p[0].keep <= 0, f1 = S.p[1].keep <= 0;
   if (f0 || f1) endCombat(f0 && f1 ? (S.p[0].keep < S.p[1].keep ? 0 : 1) : f0 ? 0 : 1);
@@ -1912,32 +1891,6 @@ function drawTower(side) {
       ctx.beginPath(); ctx.moveTo(x1 - 32, top + 78); ctx.lineTo(x1 - 10, top + 96); ctx.moveTo(x1 - 28, top + 96); ctx.lineTo(x1 - 14, top + 78); ctx.stroke();
     }
   }
-}
-function drawCannon(side) {
-  const P = S.p[side], F = SIDES[side], rgb = F.rgb;
-  const prog = S.phase === 'over' ? 1 : clamp(1 - P.reload / (P.reloadMax || 1), 0, 1);
-  ctx.save(); ctx.translate(CANNON_L.px, CANNON_L.py);
-  // carriage
-  ctx.fillStyle = metal(0, 24, '#8c89b8', '#4a4679', '#1a1830');
-  ctx.beginPath(); ctx.moveTo(-18, 24); ctx.lineTo(18, 24); ctx.lineTo(9, 2); ctx.lineTo(-9, 2); ctx.closePath(); ctx.fill(); outline();
-  ctx.fillStyle = 'rgba(' + rgb + ',.8)'; ctx.fillRect(-12, 16, 24, 1.5);
-  rivet(-13, 20); rivet(13, 20);
-  ctx.fillStyle = metal(-7, 7, '#c3c8d8', '#6b7086', '#2b2e3c'); ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); outline();
-  ctx.rotate(-P.aim.ang); ctx.translate(-P.recoil * 8, 0);
-  // breech and recoil cylinders
-  ctx.fillStyle = metal(-8, 8, '#9a97c8', '#5b5790', '#2e2b4d'); rrect(-18, -8, 26, 16, 3); ctx.fill(); outline();
-  for (const y of [-10, 7]) { ctx.fillStyle = metal(y, y + 3, '#e1e4ee', '#7d8296', '#2a2d3a'); ctx.fillRect(-14, y, 20, 3); }
-  // twin rails with copper coils, glowing as it charges
-  for (const y of [-4.2, 4.2]) barrel(6, 46, y, 1.6, ['#e1e4ee', '#7d8296', '#2a2d3a']);
-  for (let x = 10; x < 42; x += 6) { ctx.fillStyle = metal(-5.5, 5.5, '#f6c08e', MET.copper, MET.copperD); ctx.fillRect(x, -5.5, 2.4, 11); }
-  ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 5; i++) { ctx.fillStyle = 'rgba(' + rgb + ',' + (prog >= (i + 1) / 5 ? 0.9 : 0.1) + ')'; ctx.fillRect(10 + i * 7, -2, 3, 4); }
-  if (prog >= 1 && S.phase === 'combat') { const g = ctx.createRadialGradient(48, 0, 0, 48, 0, 12); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(' + rgb + ',0)'); ctx.fillStyle = g; ctx.fillRect(36, -12, 24, 24); }
-  ctx.globalCompositeOperation = 'source-over';
-  // muzzle crown
-  ctx.fillStyle = metal(-7, 7, '#c3c8d8', '#6b7086', '#2b2e3c'); ctx.fillRect(44, -7, 5, 14); outline();
-  ctx.fillStyle = MET.dark; ctx.fillRect(45.5, -7, 0.8, 14); ctx.fillRect(47.5, -7, 0.8, 14);
-  ctx.restore();
 }
 const MET = {hi: '#c3c8d8', mid: '#6b7086', lo: '#2b2e3c', dark: '#14151c', brass: '#d4a84e', brassD: '#7a5f24', copper: '#d88a4c', copperD: '#6e3a1c'};
 // the ancient vocabulary: aged bronze geometry around lit crystal
@@ -2632,7 +2585,7 @@ function render() {
   if (S.shake > 0 && !reduced && VIDEO.shake) ctx.translate((Math.random() - 0.5) * 10 * S.shake, (Math.random() - 0.5) * 10 * S.shake);
   drawScene();
   for (const u of S.units) drawUnit(u);
-  for (let side = 0; side < 2; side++) withSide(side, () => { ctx.save(); ctx.translate(0, GY - LG * TS); ctx.scale(TS, TS); drawTower(side); if (S.keepFlash[side] > 0) { ctx.fillStyle = 'rgba(255,80,60,' + S.keepFlash[side] * 0.6 + ')'; ctx.fillRect(TWL.x0, TWL.top, TWL.x1 - TWL.x0, LG - 30 - TWL.top); } drawCannon(side); ctx.restore(); });
+  for (let side = 0; side < 2; side++) withSide(side, () => { ctx.save(); ctx.translate(0, GY - LG * TS); ctx.scale(TS, TS); drawTower(side); if (S.keepFlash[side] > 0) { ctx.fillStyle = 'rgba(255,80,60,' + S.keepFlash[side] * 0.6 + ')'; ctx.fillRect(TWL.x0, TWL.top, TWL.x1 - TWL.x0, LG - 30 - TWL.top); } ctx.restore(); });
   for (let side = 0; side < 2; side++) drawTurrets(side);
   for (const p of S.projs) drawProj(p);
   drawStrikes();
