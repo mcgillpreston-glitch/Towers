@@ -2752,7 +2752,7 @@ addEventListener('pointermove', e => {
   setTip('<div>' + escA(txt) + '</div>', e.clientX, e.clientY, 's' + txt);
 });
 addEventListener('pointerdown', () => setTip(null));
-document.addEventListener('pointerleave', () => setTip(null));
+if (document.addEventListener) document.addEventListener('pointerleave', () => setTip(null));
 const inMatch = () => S.mode !== 'demo' && !['lobby', 'connecting', 'joined', 'neterr', 'gone'].includes(S.phase);
 addEventListener('keydown', e => {
   if (e.target && (e.target.tagName === 'INPUT' && e.target.type === 'text')) return;
