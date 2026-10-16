@@ -174,8 +174,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 </style>
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 </head>
-<body>
-<div class="app">
+<body><div class="app">
   <header class="hud panel">
     <div class="team l">
       <div class="tname"><b>HEX</b><span id="tag0">CPU</span></div>
@@ -485,7 +484,7 @@ function newMatch(mode, diff) {
   }
   for (const P of S.p) buildTurrets(P);
 }
-function clearField() { S.units = []; S.projs = []; S.drops = []; S.strikes = []; S.fields = []; S.beams = []; S.rings = []; S.fires = []; S.chaos = null; }
+function clearField() { S.units = []; S.projs = []; S.drops = []; S.strikes = []; S.fields = []; S.beams = []; S.rings = []; S.fires = []; S.chaos = null; if (S.eyes) { S.eyes.hit = [null, null]; S.eyes.dm = []; } }
 const streakBonus = st => { const a = Math.abs(st); return a >= 5 ? 3 : a >= 4 ? 2 : a >= 2 ? 1 : 0; };
 function setPhase(ph, t) { S.phase = ph; S.phaseT = t || 0; phaseFx(ph); }
 function startSetup() {
@@ -893,6 +892,7 @@ function applyEvent(d) {
     S.fires.push({x: x + rnd(-10, 10), y: y + rnd(-6, 6), life: big ? 8 : 4, max: big ? 8 : 4, r: big ? 14 : 8});
     if (S.fires.length > 24) S.fires.shift();
     S.keepFlash[ks] = Math.min(0.6, (S.keepFlash[ks] || 0) + (big ? 0.6 : 0.25));
+    eyeHit(ks, x, y, dmg, big);
     const tx = (ks ? W - TCX : TCX) + rnd(-50, 50);
     S.texts.push({x: tx, y: TW.top + rnd(20, 120), s: '−' + dmg, life: 1, c: '#ff5a5a', sz: big ? 26 : 17});
     S.shake = Math.max(S.shake, big ? 0.7 : 0.22);
@@ -1645,52 +1645,99 @@ function frontLine() {
   if (lead1 < 0) return lead0;
   return (lead0 + lead1) / 2;
 }
+function eyeState() { return S.eyes || (S.eyes = {x: W / 2, y: GY - 40, blink: 0, nextBlink: 3, gaze: 0, t: [null, null], hit: [null, null], dm: []}); }
+// a unit has just breached keep `ks`: that side's eye snaps onto it and the damage pops up beside the eye
+function eyeHit(ks, x, y, dmg, big) {
+  const E = eyeState();
+  E.hit[ks] = {x, y, life: big ? 1.3 : 0.8};
+  E.dm.push({ks, s: '−' + dmg, life: 1.3, y: 0, big: !!big});
+  if (E.dm.length > 12) E.dm.shift();
+}
+// the unit closest to keep `ks` (its attacker), or null
+function attackerOf(ks) {
+  let best = null;
+  for (const u of S.units) {
+    if (u.gone || u.hp <= 0 || u.side === ks) continue;
+    if (!best || (ks === 0 ? u.x < best.x : u.x > best.x)) best = u;
+  }
+  if (!best) return null;
+  const [x, y] = ucenter(best);
+  return {x, y};
+}
 function drawEyes(hx, hy, R0) {
-  const E = S.eyes || (S.eyes = {x: W / 2, y: GY - 40, blink: 0, nextBlink: 3, gaze: 0});
+  const E = eyeState();
   const fx = frontLine();
   const tx = fx === null ? W / 2 + Math.sin(S.t * 0.6) * 260 : fx, ty = fx === null ? GY - 40 : GY - 30;
   E.x += (tx - E.x) * 0.08; E.y += (ty - E.y) * 0.08;
   E.gaze += (((E.x - W / 2) / (W / 2 - TW.x1)) - E.gaze) * 0.05;
   if (!reduced) { E.nextBlink -= 1 / 60; if (E.nextBlink <= 0) { E.blink = 0.18; E.nextBlink = rnd(2.5, 6); } E.blink = Math.max(0, E.blink - 1 / 60); }
   const open = E.blink > 0 ? Math.abs(E.blink - 0.09) / 0.09 : 1;
-  // the iris tints toward the side whose army has pushed the line into enemy ground
-  const lean = clamp(E.gaze, -1, 1), rgb = lean < 0 ? SIDES[1].rgb : SIDES[0].rgb, tint = Math.abs(lean);
-  const pupils = [];
-  for (const side of [-1, 1]) {
-    const ex = hx + side * 36, ey = hy - 4, er = 27;
-    const dx = E.x - ex, dy = E.y - ey, d = Math.hypot(dx, dy) || 1, off = Math.min(11, d / 40);
-    const px = ex + dx / d * off, py = ey + dy / d * off;
-    pupils.push([px, py]);
+  const live = S.phase === 'combat' || S.phase === 'result';
+  // each eye guards one keep: left eye = HEX keep, right eye = VOLT keep. It locks onto whatever is hitting that keep.
+  const eyes = [];
+  for (let i = 0; i < 2; i++) {
+    const ks = i, sgn = i ? 1 : -1, ex = hx + sgn * 36, ey = hy - 4, er = 27;
+    const h = E.hit[ks];
+    let tgt = null, striking = false;
+    if (h && h.life > 0) { h.life -= 1 / 60; tgt = h; striking = true; }
+    else if (live) tgt = attackerOf(ks) || (fx !== null ? {x: fx, y: GY - 30} : null);
+    const T = E.t[i] || (E.t[i] = {x: tx, y: ty});
+    const gx = tgt ? tgt.x : tx, gy = tgt ? tgt.y : ty, k = striking ? 0.45 : 0.14;
+    T.x += (gx - T.x) * k; T.y += (gy - T.y) * k;
+    const dx = T.x - ex, dy = T.y - ey, d = Math.hypot(dx, dy) || 1, off = Math.min(11, d / 40);
+    eyes.push({ks, sgn, ex, ey, er, px: ex + dx / d * off, py: ey + dy / d * off, T, tgt, striking});
+  }
+  const lean = clamp(E.gaze, -1, 1), rgb0 = lean < 0 ? SIDES[1].rgb : SIDES[0].rgb, tint = Math.abs(lean);
+  for (const e of eyes) {
+    const {ex, ey, er, px, py} = e;
+    // the attacker's colour is the iris colour: the left eye watches VOLT, the right eye watches HEX
+    const rgb = e.tgt ? SIDES[e.ks ^ 1].rgb : rgb0, it = e.tgt ? (e.striking ? 1 : 0.55) : tint;
     ctx.save(); ctx.translate(ex, ey); ctx.scale(1, Math.max(0.06, open)); ctx.translate(-ex, -ey);
     ctx.fillStyle = '#f4f2ff'; ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = 'rgba(80,60,120,.6)'; ctx.lineWidth = 2; ctx.stroke();
     const ig = ctx.createRadialGradient(px, py, 2, px, py, 13);
-    ig.addColorStop(0, 'rgba(' + rgb + ',' + (0.35 + 0.55 * tint) + ')'); ig.addColorStop(1, 'rgba(60,40,110,1)');
+    ig.addColorStop(0, 'rgba(' + rgb + ',' + (0.35 + 0.55 * it) + ')'); ig.addColorStop(1, 'rgba(60,40,110,1)');
     ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#0a0612'; ctx.beginPath(); ctx.arc(px, py, 7 - 2 * S.kick, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0a0612'; ctx.beginPath(); ctx.arc(px, py, 7 - 2 * S.kick - (e.striking ? 2 : 0), 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(px - 4, py - 5, 3, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    // lid shadow
     ctx.strokeStyle = 'rgba(40,25,70,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, er - 1, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
   }
-  // laser tracker: both eyes beam onto the front line, half transparent, in the pushing side's colour
-  if (fx !== null && open > 0.3) {
-    const lc = tint > 0.08 ? rgb : '255,255,255', jitter = reduced ? 0 : Math.sin(S.t * 40) * 0.8;
+  // lasers: each eye tracks the enemy attacking its keep, and flares white-hot when one lands
+  if (live && open > 0.3) {
+    const jitter = reduced ? 0 : Math.sin(S.t * 40) * 0.8;
     ctx.save(); ctx.lineCap = 'round';
-    for (const [px, py] of pupils) {
-      ctx.strokeStyle = 'rgba(' + lc + ',0.5)'; ctx.lineWidth = 2.2;
-      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(E.x + jitter, E.y); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 0.8; ctx.stroke();
+    for (const e of eyes) {
+      if (!e.tgt) continue;
+      const rgb = SIDES[e.ks ^ 1].rgb, a = e.striking ? 0.85 : 0.5, T = e.T;
+      ctx.strokeStyle = 'rgba(' + rgb + ',' + a + ')'; ctx.lineWidth = e.striking ? 3.4 : 2.2;
+      ctx.beginPath(); ctx.moveTo(e.px, e.py); ctx.lineTo(T.x + jitter, T.y); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,' + a + ')'; ctx.lineWidth = 0.8; ctx.stroke();
+      ctx.globalAlpha = a; ctx.fillStyle = 'rgb(' + rgb + ')';
+      ctx.beginPath(); ctx.arc(T.x, T.y, (e.striking ? 8 : 5) + 2 * S.kick, 0, Math.PI * 2); ctx.fill();
+      if (e.striking) {
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(T.x, T.y, 15 + (1 - E.hit[e.ks].life) * 10, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
     }
-    // the tracked point on the ground
-    ctx.globalAlpha = 0.5;
-    ctx.fillStyle = 'rgb(' + lc + ')'; ctx.beginPath(); ctx.arc(E.x, E.y, 5 + 2 * S.kick, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgb(' + lc + ')'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(E.x, E.y - 14); ctx.lineTo(E.x, GY + 2); ctx.stroke(); ctx.setLineDash([]);
-    ctx.save(); ctx.translate(E.x, GY + 2); ctx.scale(1, 0.3); ctx.beginPath(); ctx.arc(0, 0, 26 + 6 * S.kick, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
     ctx.restore();
   }
+  // damage readout beside the eye of whoever took the hit
+  for (const m of E.dm) m.life -= 1 / 60, m.y += 34 / 60;
+  E.dm = E.dm.filter(m => m.life > 0);
+  ctx.save(); ctx.textAlign = 'center'; ctx.lineJoin = 'round';
+  const slot = [0, 0];
+  for (const m of E.dm) {
+    const e = eyes[m.ks], n = slot[m.ks]++, sz = m.big ? 24 : 17;
+    const x = e.ex + e.sgn * (er0() + 22 + (n % 2) * 14), y = e.ey - 10 - m.y - n * 6;
+    ctx.globalAlpha = Math.min(1, m.life * 1.6);
+    ctx.font = '700 ' + sz + 'px "Chakra Petch", sans-serif';
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(10,6,18,.9)'; ctx.strokeText(m.s, x, y);
+    ctx.fillStyle = m.big ? '#ffd24a' : '#ff5a5a'; ctx.fillText(m.s, x, y);
+  }
+  ctx.restore();
 }
+function er0() { return 27; }
 // drawn in the left keep's frame; the right keep is mirrored
 function withSide(side, fn) { ctx.save(); if (side === 1) { ctx.translate(W, 0); ctx.scale(-1, 1); } fn(); ctx.restore(); }
 // pre-painted plating texture for the keep walls (art units)
@@ -3047,6 +3094,5 @@ function frame(now) {
 requestAnimationFrame(frame);
 })();
 </script>
-
 </body>
 </html>
