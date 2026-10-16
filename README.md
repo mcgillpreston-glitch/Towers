@@ -21,4 +21,4 @@ Keys during planning: **D** reroll, **F** buy XP, **E** sell. **Tab** shows the 
 
 
 ## Art
-The keeps, turrets, minions, cores and arena background are painted sprites in `assets/`. If an image fails to load the game falls back to its built-in vector art.
+The keeps, turrets, minions, cores, projectiles and arena background are painted sprites in `assets/`. If an image fails to load the game falls back to its built-in vector art.

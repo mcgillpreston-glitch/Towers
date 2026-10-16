@@ -857,7 +857,11 @@ function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255
 function addTitle(text, sub, rgb, life, size, delay) {
   S.titles.push({text, sub: sub || '', rgb: rgb || null, life: life || 1.6, max: life || 1.6, size: size || 64, delay: delay || 0, age: 0});
 }
-function beam(x1, y1, x2, y2, rgb, w, life, kind) { if (S.beams.length < 240) S.beams.push({x1, y1, x2, y2, rgb, w, life, max: life, kind}); }
+const PLIFE = {vulcan: 1.9, needle: 1.7, flak: 2.2, cryo: 1.5};
+function beam(x1, y1, x2, y2, rgb, w, life, kind, id, side) {
+  if (id && pspr(id, side)) life *= PLIFE[id] || 1;
+  if (S.beams.length < 240) S.beams.push({x1, y1, x2, y2, rgb, w, life, max: life, kind, id, side, ph: Math.floor(Math.random() * 4)});
+}
 function spark(x, y, rgb, n, sp) {
   for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (sp || 120) * rnd(0.3, 1); S.parts.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, c: 'rgb(' + rgb + ')', life: rnd(0.2, 0.5), r: rnd(1.2, 2.4), glow: true}); }
 }
@@ -1071,7 +1075,7 @@ function fireTurret(side, T, u, mx, my, real, extra) {
     case 'hitscan': {
       const nd = s.id === 'needle';
       hurt(u, s.dmg, side, real, s);
-      beam(mzx, mzy, cx + rnd(-4, 4), cy + rnd(-5, 5), s.rgb, nd ? 1.8 : 1.2, nd ? 0.09 : 0.05, 'tracer');
+      beam(mzx, mzy, cx + rnd(-4, 4), cy + rnd(-5, 5), s.rgb, nd ? 1.8 : 1.2, nd ? 0.09 : 0.05, 'tracer', s.id, side);
       if (Math.random() < 0.3) spark(cx, cy, s.rgb, 2, 80);
       sfx('vul' + side + nd, t => zap(t, nd ? 2400 : 1500, 300, 0.03, 'square', 0.02 * loud), 0.07);
       break;
@@ -1084,7 +1088,7 @@ function fireTurret(side, T, u, mx, my, real, extra) {
         if (t < 0 || t > s.range) continue;
         if (Math.hypot(vx - (mzx + dx * t), vy - (mzy + dy * t)) < (v.w + v.h) / 4 + (big ? 8 : 3)) { hurt(v, s.dmg, side, real, s); spark(vx, vy, s.rgb, 4, 140); }
       }
-      beam(mzx, mzy, mzx + dx * s.range, mzy + dy * s.range, s.rgb, big ? 6 : 3, big ? 0.4 : 0.28, 'rail');
+      beam(mzx, mzy, mzx + dx * s.range, mzy + dy * s.range, s.rgb, big ? 6 : 3, big ? 0.4 : 0.28, 'rail', s.id, side);
       S.shake = Math.max(S.shake, big ? 0.2 : 0.1);
       sfx('rail' + side, t => zap(t, big ? 1600 : 2400, 60, big ? 0.5 : 0.32, 'sawtooth', 0.045 * loud), 0.08);
       break;
@@ -1105,14 +1109,14 @@ function fireTurret(side, T, u, mx, my, real, extra) {
         }
         cur = nx;
       }
-      if (S.beams.length < 240) S.beams.push({kind: 'arc', pts, rgb: s.rgb, w: s.id === 'tesla' ? 3 : 2, life: 0.18, max: 0.18});
+      if (S.beams.length < 240) S.beams.push({kind: 'arc', pts, rgb: s.rgb, w: s.id === 'tesla' ? 3 : 2, life: 0.18, max: 0.18, id: s.id, side, ph: Math.floor(Math.random() * 4)});
       sfx('arc' + side, t => nz(t, 0.1, 'highpass', 3000, 0, 0.04 * loud, 0.08, MUS.sfx), 0.08);
       break;
     }
     case 'flak': {
       const bx = cx + rnd(-6, 6), by = cy + rnd(-6, 6);
       splash(bx, by, s.splash, s.dmg, side, real, 'air', false, 3, s);
-      beam(mzx, mzy, bx, by, s.rgb, 1, 0.06, 'tracer');
+      beam(mzx, mzy, bx, by, s.rgb, 1, 0.06, 'tracer', s.id, side);
       fxBlast(bx, by, s.splash * 0.7, s.rgb, 0.3);
       sfx('flak' + side, t => nz(t, 0.15, 'lowpass', 1200, 0, 0.05 * loud, 0.12, MUS.sfx), 0.1);
       break;
@@ -1141,6 +1145,7 @@ function fireTurret(side, T, u, mx, my, real, extra) {
         let da = Math.atan2(vy - mzy, vx - mzx) - ang; da = Math.atan2(Math.sin(da), Math.cos(da));
         if (Math.abs(da) < s.cone) hurt(v, s.dmg, side, real, s);
       }
+      if (pspr('torch', side)) beam(mzx, mzy, mzx + Math.cos(ang) * s.range * 0.9, mzy + Math.sin(ang) * s.range * 0.9, s.rgb, 1, 0.3, 'flame', 'torch', side);
       for (let n = 0; n < 2; n++) {
         const a = ang + rnd(-s.cone, s.cone), v = rnd(260, 360);
         S.parts.push({x: mzx, y: mzy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, c: Math.random() < 0.5 ? '#ff6a2a' : '#ffd27a', life: rnd(0.3, 0.45), r: rnd(2, 4), glow: true, nograv: true, drag: true});
@@ -1150,7 +1155,7 @@ function fireTurret(side, T, u, mx, my, real, extra) {
     case 'cryo':
       hurt(u, s.dmg, side, real, s);
       if (real) u.slow = 1.5;
-      beam(mzx, mzy, cx, cy, s.rgb, 2, 0.12, 'cryo');
+      beam(mzx, mzy, cx, cy, s.rgb, 2, 0.12, 'cryo', s.id, side);
       break;
     case 'frost':
       for (const v of S.units) {
@@ -1160,18 +1165,18 @@ function fireTurret(side, T, u, mx, my, real, extra) {
         hurt(v, s.dmg, side, real, s);
         if (real) v.slow = 2;
       }
-      S.rings.push({x: mx, y: my, r: s.range, life: 0.55, max: 0.55, rgb: s.rgb});
+      S.rings.push({x: mx, y: my, r: s.range, life: 0.55, max: 0.55, rgb: s.rgb, id: s.id, side});
       sfx('frost' + side, t => { zap(t, 1800, 400, 0.4, 'sine', 0.04 * loud); nz(t, 0.4, 'highpass', 5000, 0, 0.03 * loud, 0.35, MUS.sfx); }, 0.2);
       break;
     case 'void':
-      S.fields.push({x: cx, y: u.fly ? cy : GY - 30, r: s.radius, t: 2.5, max: 2.5, dps: s.dmg, side, s, cos: !real});
+      S.fields.push({x: cx, y: u.fly ? cy : GY - 30, r: s.radius, t: 2.5, max: 2.5, dps: s.dmg, side, s, cos: !real, id: s.id, mx: mzx, my: mzy});
       sfx('void' + side, t => { zap(t, 70, 30, 1.2, 'sawtooth', 0.07 * loud); zap(t, 400, 60, 0.8, 'sine', 0.05 * loud); }, 0.3);
       break;
     case 'beam': {
       if (T.last !== u) { T.ramp = 0; T.last = u; }
       T.ramp = Math.min(2.5, T.ramp + 0.08);
       hurt(u, s.dmg * (1 + T.ramp), side, real, s, false, true);
-      beam(mzx, mzy, cx, cy, s.rgb, 2 + T.ramp * 1.6, 0.12, 'rail');
+      beam(mzx, mzy, cx, cy, s.rgb, 2 + T.ramp * 1.6, 0.12, 'rail', s.id, side);
       if (Math.random() < 0.4) spark(cx, cy, s.rgb, 2, 100);
       sfx('beam' + side, t => zap(t, 300 + T.ramp * 200, 280 + T.ramp * 200, 0.12, 'sawtooth', 0.02 * loud), 0.11);
       break;
@@ -1503,7 +1508,7 @@ const artOk = im => !!(im && im.ok);
 const artOn = () => artOk(ART.tb) && artOk(ART.tr);
 for (const c of ['b', 'r']) {
   loadArt('t' + c, 'tower_' + c + '.webp');
-  for (const R of ROSTER) loadArt('w' + c + R.id, 'w_' + c + '_' + R.id + '.webp');
+  for (const R of ROSTER) { loadArt('w' + c + R.id, 'w_' + c + '_' + R.id + '.webp'); loadArt('p' + c + R.id, 'p_' + c + '_' + R.id + '.webp'); }
   for (const k of ['trooper', 'bike', 'bulwark', 'drone', 'titan']) loadArt('m' + c + k, 'm_' + c + '_' + k + '.webp');
 }
 for (const k of ['N', 'O', 'T', 'X']) loadArt('c' + k, 'core_' + k + '.webp');
@@ -2312,6 +2317,11 @@ function drawProj(p) {
     ctx.fillStyle = metal(-2.2, 2.2, '#e1e4ee', '#7d8296', '#2a2d3a'); ctx.fillRect(-12, -2.2, 18, 4.4);
     ctx.fillStyle = 'rgb(' + rgb + ')'; ctx.beginPath(); ctx.moveTo(-12, -4.5); ctx.lineTo(-7, 0); ctx.lineTo(-12, 4.5); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(5, -3); ctx.lineTo(5, 3); ctx.closePath(); ctx.fill();
+  } else if (p.kind === 'mortar' && p.s && pspr(p.s.id, p.side)) {
+    const im = pspr(p.s.id, p.side), ang = Math.atan2(p.vy, p.vx);
+    ctx.restore(); ctx.save();
+    glowDot(p.x, p.y, 22, p.rgb || '255,63,174', 0.35);
+    drawPS(im, pframe(p.id), p.x, p.y, ang, PLEN[p.s.id] || 46, p.side);
   } else if (p.kind === 'mortar') {
     const rgb = p.rgb || '255,63,174';
     ctx.rotate(Math.atan2(p.vy, p.vx));
@@ -2325,6 +2335,9 @@ function drawProj(p) {
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#2b2e3c'; ctx.beginPath(); ctx.ellipse(0, 0, 5.5, 3.6, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(' + rgb + ',.9)'; ctx.beginPath(); ctx.ellipse(1, 0, 3, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (p.kind === 'missile' && pspr('swarm', p.side)) {
+    ctx.restore(); ctx.save();
+    drawPS(pspr('swarm', p.side), pframe(p.id), p.x, p.y, Math.atan2(p.vy, p.vx), PLEN.swarm, p.side);
   } else if (p.kind === 'missile') {
     ctx.rotate(Math.atan2(p.vy, p.vx));
     glowDot(-8, 0, 8, '125,255,176', 0.8);
@@ -2354,6 +2367,58 @@ function drawStrikes() {
     ctx.fillStyle = 'rgba(255,176,32,' + 0.25 * p + ')'; ctx.fillRect(s.x - 0.5, 0, 1, GY);
   }
 }
+/* ---------- painted projectiles: 4-frame strips, blue flies right and red flies left ---------- */
+function pspr(id, side) { const im = ART['p' + (side ? 'r' : 'b') + id]; return artOk(im) ? im : null; }
+const pframe = ph => ((ph || 0) + Math.floor(S.t * 16)) & 3;
+// one frame centred on (x, y), heading `ang`, `len` px long
+function drawPS(im, fr, x, y, ang, len, side, alpha) {
+  const fw = im.width / 4, fh = im.height, h = len * fh / fw;
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang - (side ? Math.PI : 0));
+  if (alpha !== undefined) ctx.globalAlpha = alpha;
+  ctx.drawImage(im, fr * fw, 0, fw, fh, -len / 2, -h / 2, len, h);
+  ctx.restore();
+}
+// one frame stretched from (x1, y1) to (x2, y2), `thick` px tall; `crop` skips the first fraction of the frame
+function drawPL(im, fr, x1, y1, x2, y2, thick, side, alpha, crop) {
+  const fw = im.width / 4, fh = im.height, d = Math.hypot(x2 - x1, y2 - y1) || 1, c0 = (crop || 0) * fw;
+  ctx.save(); ctx.translate((x1 + x2) / 2, (y1 + y2) / 2); ctx.rotate(Math.atan2(y2 - y1, x2 - x1) - (side ? Math.PI : 0));
+  if (alpha !== undefined) ctx.globalAlpha = alpha;
+  ctx.drawImage(im, fr * fw + c0, 0, fw - c0, fh, -d / 2, -thick / 2, d, thick);
+  ctx.restore();
+}
+const PLEN = {vulcan: 34, needle: 46, flak: 40, cryo: 54, rail: 62, lancer: 70, hellfire: 46, mortar: 48, swarm: 30};
+const PTRAVEL = {vulcan: 0.75, needle: 0.75, flak: 0.8, cryo: 0.75, rail: 0.5, lancer: 0.55};
+function drawBeamArt(b, im, a) {
+  const p = 1 - a, dx = b.x2 - b.x1, dy = b.y2 - b.y1, ang = Math.atan2(dy, dx), fr = pframe(b.ph);
+  ctx.globalCompositeOperation = 'source-over';
+  if (b.kind === 'flame') {
+    const k = Math.min(1, p * 2.6), x = b.x1 + dx * (0.25 + 0.75 * k), y = b.y1 + dy * (0.25 + 0.75 * k);
+    drawPL(im, fr, b.x1, b.y1, x, y, 38 + 70 * k, b.side, 0.8 * a);
+    ctx.globalCompositeOperation = 'lighter';
+    return;
+  }
+  if (b.id === 'sunlance') {
+    drawPL(im, fr, b.x1, b.y1, b.x2, b.y2, 14 + b.w * 3.2, b.side, 0.35 + 0.65 * a);
+    ctx.globalCompositeOperation = 'lighter';
+    return;
+  }
+  // a faint trace, with the round travelling down it
+  ctx.strokeStyle = 'rgba(' + b.rgb + ',' + (b.kind === 'rail' ? 0.35 : 0.18) * a + ')'; ctx.lineWidth = Math.max(1, b.w * 0.8);
+  ctx.beginPath(); ctx.moveTo(b.x1, b.y1); ctx.lineTo(b.x2, b.y2); ctx.stroke();
+  const t = Math.min(1, p / (PTRAVEL[b.id] || 0.7)), len = PLEN[b.id] || 40, fade = p > 0.88 ? (1 - p) / 0.12 : 1;
+  drawPS(im, fr, b.x1 + dx * t, b.y1 + dy * t, ang, len, b.side, Math.max(0, fade));
+  ctx.globalCompositeOperation = 'lighter';
+}
+function drawArcArt(b, im, a) {
+  const fr = pframe(b.ph), tesla = b.id === 'tesla';
+  ctx.globalCompositeOperation = 'source-over';
+  for (let i = 0; i < b.pts.length - 1; i++) {
+    const [x1, y1] = b.pts[i], [x2, y2] = b.pts[i + 1];
+    drawPL(im, fr, x1, y1, x2, y2, (tesla ? 40 : 30) * (i ? 0.8 : 1), b.side, Math.min(1, a * 1.6), tesla ? 0 : 0.3);
+  }
+  if (!tesla && b.pts.length > 1) { const [x1, y1] = b.pts[0], [x2, y2] = b.pts[1], ang = Math.atan2(y2 - y1, x2 - x1); drawPS(im, fr, x1 + Math.cos(ang) * 14, y1 + Math.sin(ang) * 14, ang, 34, b.side, Math.min(1, a * 1.6)); }
+  ctx.globalCompositeOperation = 'lighter';
+}
 function drawFx() {
   for (const p of S.parts) {
     if (!p.smoke) continue;
@@ -2364,8 +2429,10 @@ function drawFx() {
   ctx.globalCompositeOperation = 'lighter';
   ctx.lineCap = 'round';
   for (const b of S.beams) {
-    const a = clamp(b.life / b.max, 0, 1);
+    const a = clamp(b.life / b.max, 0, 1), bim = b.id ? pspr(b.id, b.side) : null;
+    if (bim && b.kind !== 'arc') { drawBeamArt(b, bim, a); continue; }
     if (b.kind === 'arc') {
+      if (bim) { drawArcArt(b, bim, a); continue; }
       ctx.strokeStyle = 'rgba(' + b.rgb + ',' + 0.9 * a + ')'; ctx.lineWidth = b.w;
       ctx.beginPath();
       for (let i = 0; i < b.pts.length - 1; i++) {
@@ -2463,7 +2530,15 @@ function drawDrops() {
 function drawRingsFields() {
   ctx.globalCompositeOperation = 'lighter';
   for (const r of S.rings) {
-    const p = 1 - r.life / r.max;
+    const p = 1 - r.life / r.max, rim = r.id ? pspr(r.id, r.side) : null;
+    if (rim) {
+      ctx.globalCompositeOperation = 'source-over';
+      const n = 14, rr = r.r * (0.12 + 0.88 * p), fade = 1 - p * p;
+      for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2 + r.x * 0.01; drawPS(rim, (k + Math.floor(S.t * 12)) & 3, r.x + Math.cos(a) * rr, r.y + Math.sin(a) * rr, a, 34, r.side, fade); }
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = 'rgba(' + r.rgb + ',' + 0.3 * (1 - p) + ')'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(r.x, r.y, rr, 0, Math.PI * 2); ctx.stroke();
+      continue;
+    }
     ctx.strokeStyle = 'rgba(' + r.rgb + ',' + 0.8 * (1 - p) + ')'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(r.x, r.y, r.r * (0.2 + 0.8 * p), 0, Math.PI * 2); ctx.stroke();
     ctx.fillStyle = 'rgba(' + r.rgb + ',' + 0.08 * (1 - p) + ')'; ctx.fill();
@@ -2477,6 +2552,14 @@ function drawRingsFields() {
     ctx.globalCompositeOperation = 'lighter';
     ctx.strokeStyle = 'rgba(220,160,255,' + 0.8 * a + ')'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.ellipse(f.x, f.y, f.r, f.r * 0.35, S.t * 3, 0, Math.PI * 2); ctx.stroke();
+    const fim = f.id ? pspr(f.id, f.side) : null;
+    if (fim) {
+      // the orb is thrown from the muzzle and settles into a black hole
+      const age = f.max - f.t, k = f.mx === undefined ? 1 : Math.min(1, age / 0.4), ox = f.mx === undefined ? f.x : f.mx + (f.x - f.mx) * k, oy = f.my === undefined ? f.y : f.my + (f.y - f.my) * k - Math.sin(k * Math.PI) * 30;
+      ctx.globalCompositeOperation = 'source-over';
+      drawPS(fim, pframe(0), ox, oy, f.side ? Math.PI : 0, (30 + f.r * 1.5 * k) , f.side, Math.min(1, a * 1.5));
+      ctx.globalCompositeOperation = 'lighter';
+    }
   }
   ctx.globalCompositeOperation = 'source-over';
 }
