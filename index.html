@@ -31,7 +31,10 @@
 }
 html,body{height:100%}
 body{background:var(--void);color:var(--ink);font-family:var(--f-ui);font-size:15px;overflow:hidden}
-.app{height:100%;display:flex;flex-direction:column;gap:8px;padding-inline:16px;padding-block:10px;box-sizing:border-box;max-width:1280px;margin:0 auto}
+.app{height:100%;display:flex;flex-direction:column;gap:8px;padding-inline:16px;padding-block:10px;box-sizing:border-box;max-width:1280px;margin:0 auto;transition:max-width .5s ease}
+.app.battle{max-width:none}
+.app.battle header.hud{padding-block:5px}
+.app.battle .dock{padding-block:6px}
 .panel{position:relative;background:linear-gradient(180deg,var(--glass-hi),var(--glass)) padding-box,var(--gild) border-box;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px rgba(232,201,138,.28),0 0 28px rgba(62,200,230,.08)}
 .panel::before,.panel::after{content:"";position:absolute;top:50%;width:9px;height:9px;transform:translateY(-50%) rotate(45deg);background:var(--gild);box-shadow:0 0 8px rgba(62,200,230,.6);pointer-events:none;z-index:2}
 .panel::before{left:-5px}
@@ -137,6 +140,17 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .cline{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px}
 .cline b{font-variant-numeric:tabular-nums}
 button:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
+table.stats{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.stats th,table.stats td{padding:4px 8px;text-align:right;border-bottom:1px solid var(--line)}
+table.stats th:first-child{text-align:left;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-size:11px}
+table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
+.rounds{display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto;font-size:12px}
+.rr{display:grid;grid-template-columns:36px 1fr 1fr 1fr;gap:8px;padding:3px 6px;background:rgba(0,0,0,.3)}
+.rr i{font-style:normal;font-variant-numeric:tabular-nums}
+.setrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:13px}
+.setrow label{display:flex;gap:8px;align-items:center;white-space:nowrap}
+.setrow input[type=range]{width:120px;accent-color:var(--hex)}
+.setrow input[type=checkbox]{accent-color:var(--volt);width:16px;height:16px}
 .sound{position:absolute;right:6px;bottom:6px;z-index:3;display:flex;gap:12px;align-items:center;padding:4px 12px 4px 4px;font:700 10px var(--f-display);letter-spacing:.18em;text-transform:uppercase;color:var(--bz-hi)}
 .sound::before,.sound::after{display:none}
 .sound label{display:flex;gap:8px;align-items:center;white-space:nowrap}
@@ -180,6 +194,8 @@ button:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
     <canvas id="cv" aria-label="Arena between two keeps. During planning, tap a mount on your keep to select or place a turret."></canvas>
     <div class="overlay" id="overlay"></div>
     <div class="sound panel" id="sound">
+      <button class="btn small quiet" id="statsBtn" type="button" hidden>Stats · Tab</button>
+      <button class="btn small quiet" id="menuBtn" type="button" hidden>Menu · Esc</button>
       <button class="btn small quiet" id="muteBtn" type="button" aria-pressed="false">Mute</button>
       <label for="volMusic">Music <input type="range" id="volMusic" min="0" max="100" step="1" value="70" aria-label="Music volume"></label>
       <label for="volFx">Effects <input type="range" id="volFx" min="0" max="100" step="1" value="80" aria-label="Effects volume"></label>
@@ -192,7 +208,7 @@ button:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
 <script>
 (() => {
 const W = 1400, H = 620, GY = 530, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
-const SETUP_LEN = 60, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 4.5, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
+const BATTLE_ZOOM = 1.12, SETUP_LEN = 60, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 4.5, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
 const TS = 1.4, US = 1.15, LG = 480;
 const tw = (x, y) => [x * TS, GY + (y - LG) * TS];
@@ -272,7 +288,7 @@ const TYPES = {
   bike:    {name: 'Razor Bike',   hp: 30,  spd: 150, w: 42, h: 24, dps: 7,  armor: 0},
   bulwark: {name: 'Bulwark',      hp: 150, spd: 44,  w: 30, h: 42, dps: 11, armor: 4},
   drone:   {name: 'Wasp Drone',   hp: 22,  spd: 105, w: 28, h: 16, dps: 6,  armor: 0, fly: true},
-  titan:   {name: 'Titan Walker', hp: 560, spd: 30,  w: 70, h: 76, dps: 32, armor: 6}
+  titan:   {name: 'Titan Walker', hp: 560, spd: 68,  w: 70, h: 76, dps: 32, armor: 6}
 };
 const TYPE_KEYS = Object.keys(TYPES);
 for (const k in TYPES) { TYPES[k].w *= US; TYPES[k].h *= US; TYPES[k].spd *= 1.25; }
@@ -294,6 +310,7 @@ const DIFF = {easy: {label: 'Easy'}, hard: {label: 'Hard'}};
 const unitOf = (r, star) => ({r, star: star || 1, items: []});
 const randItem = () => ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)];
 function randomOfTier(t) { const pool = ROSTER.map((R, i) => R.tier === t ? i : -1).filter(i => i >= 0); return pool[Math.floor(Math.random() * pool.length)]; }
+function newStat() { return {kills: 0, breach: 0, spent: 0, rerolls: 0, xp: 0, stars: 0, dealt: 0, wins: 0}; }
 function newPlayer() {
   return {
     hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
@@ -333,6 +350,7 @@ function mergeAll(P, side) {
       if (g.length < 3) continue;
       const [keep, a, b] = g;
       keep.u.star++;
+      if (side !== undefined && S.stats) S.stats.p[side].stars++;
       const its = keep.u.items.concat(a.u.items, b.u.items);
       keep.u.items = its.slice(0, 3);
       for (const x of its.slice(3)) if (P.items.length < MAX_ITEMS) P.items.push(x);
@@ -357,11 +375,12 @@ function buyShop(P, i, side) {
   const u = unitOf(r);
   if (slot >= 0) P.bench[slot] = u; else P.bench.push(u);
   P.gold -= cost; P.shop[i] = -1;
+  if (side !== undefined && S.stats) S.stats.p[side].spent += cost;
   mergeAll(P, side);
   return '';
 }
-function reroll(P) { if (P.gold < 2) return 'Rerolling costs 2 gold.'; P.gold -= 2; rollShop(P); return ''; }
-function buyXp(P) { if (P.level >= 10) return 'Already at max level.'; if (P.gold < 4) return 'Buying XP costs 4 gold.'; P.gold -= 4; addXp(P, 4); return ''; }
+function reroll(P, side) { if (P.gold < 2) return 'Rerolling costs 2 gold.'; P.gold -= 2; rollShop(P); if (side !== undefined && S.stats) { S.stats.p[side].spent += 2; S.stats.p[side].rerolls++; } return ''; }
+function buyXp(P, side) { if (P.level >= 10) return 'Already at max level.'; if (P.gold < 4) return 'Buying XP costs 4 gold.'; P.gold -= 4; addXp(P, 4); if (side !== undefined && S.stats) { S.stats.p[side].spent += 4; S.stats.p[side].xp++; } return ''; }
 function moveUnit(P, f, fi, t, ti) {
   const src = f === 'm' ? P.board : P.bench, dst = t === 'm' ? P.board : P.bench;
   if (!(fi >= 0 && fi < src.length && ti >= 0 && ti < dst.length)) return '';
@@ -395,8 +414,8 @@ function applyAct(side, a) {
   if (P.ready) return 'You are locked in for this round.';
   switch (a.t) {
     case 'buy': return buyShop(P, a.i | 0, side);
-    case 'reroll': return reroll(P);
-    case 'xp': return buyXp(P);
+    case 'reroll': return reroll(P, side);
+    case 'xp': return buyXp(P, side);
     case 'move': return moveUnit(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
     case 'sell': return sellUnit(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'equip': return equipItem(P, a.ii | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
@@ -453,10 +472,11 @@ function newMatch(mode, diff) {
     units: [], projs: [], drops: [], strikes: [], fields: [], rings: [], fires: [], parts: [], texts: [], decals: [], beams: [], blasts: [], titles: [], events: [],
     spawnT: 1, nextId: 1, shake: 0, flash: 0, flashC: '255,255,255', t: 0, kick: 0, energy: 0.3,
     me: mode === 'host' || mode === 'cpu' ? 0 : -1, winner: -1, rw: -1, loser: -1,
-    chaos: null, chaosAt: [], wind: 0, dropDone: false,
+    chaos: null, chaosAt: [], wind: 0, dropDone: 0,
     cam: {x: W / 2, y: H / 2, z: 1}, letter: 0, keepFlash: [0, 0], timeScale: 1, slowT: 0,
     lastSeq: 0, matchId: Math.random().toString(36).slice(2, 7),
-    ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0}
+    ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0, tab: false, menu: false},
+    stats: {rounds: [], p: [newStat(), newStat()]}
   };
   if (mode !== 'guest') {
     for (const P of S.p) { P.board[4] = unitOf(randomOfTier(1)); rollShop(P); }
@@ -494,7 +514,7 @@ function startCombat() {
     P.reload = rnd(0.6, 1.4); P.stormT = 3; P.roundKills = 0;
   }
   clearField();
-  S.timeLeft = COMBAT_LEN; S.spawnT = 0.5; S.dropDone = false; S.rw = -1; S.loser = -1;
+  S.timeLeft = COMBAT_LEN; S.spawnT = 0.5; S.dropDone = 0; S.rw = -1; S.loser = -1;
   S.chaosAt = S.round >= 2 ? [rnd(5, 9)].concat(S.round >= 5 ? [rnd(17, 21)] : []) : [];
   if (S.mode === 'demo') setPhase('combat'); else setPhase('intro', INTRO_LEN);
 }
@@ -502,6 +522,7 @@ function hitKeep(side, amt) {
   const P = S.p[side];
   if (P.shield > 0) { const a = Math.min(P.shield, amt); P.shield -= a; amt -= a; }
   P.keep -= amt;
+  if (S.stats) S.stats.p[side].breach += amt;
 }
 function endCombat(fallen) {
   const P0 = S.p[0], P1 = S.p[1];
@@ -519,6 +540,8 @@ function endCombat(fallen) {
   } else for (const P of S.p) { P.hp = Math.max(0, P.hp - 1); P.lastDmg = 1; P.streak = 0; }
   for (const P of S.p) P.keep = Math.max(0, P.keep);
   S.rw = w; S.loser = fallen; S.slowT = 1.6;
+  if (w >= 0) { S.stats.p[w].wins++; S.stats.p[w].dealt += dmg; }
+  S.stats.rounds.push({r: S.round, w, keep: [Math.ceil(Math.max(0, P0.keep)), Math.ceil(Math.max(0, P1.keep))], kills: [P0.roundKills, P1.roundKills], dmg, lv: [P0.level, P1.level]});
   setPhase('result', S.mode === 'demo' ? 1.5 : RESULT_LEN);
   ev(['r', w, fallen, dmg]);
 }
@@ -561,7 +584,7 @@ function cpuSetup(side, diff) {
   const P = S.p[side], hard = diff === 'hard';
   if (!hard) {
     // a casual tactician: a couple of buys, no rerolls, rare levels, a mount left empty
-    if (S.round % 3 === 0 && P.gold >= 8) buyXp(P);
+    if (S.round % 3 === 0 && P.gold >= 8) buyXp(P, side);
     let buys = 0;
     for (let i = 0; i < 5 && buys < 2; i++) { const r = P.shop[i]; if (r >= 0 && P.gold >= ROSTER[r].tier && Math.random() < 0.6 && P.bench.indexOf(null) >= 0) { buyShop(P, i, side); buys++; } }
     cpuArrange(P, false);
@@ -574,7 +597,7 @@ function cpuSetup(side, diff) {
     const curve = [3, 3, 4, 5, 5, 6, 6, 7, 7, 7, 8, 8, 8, 9, 9, 9, 10];
     const target = curve[Math.min(curve.length - 1, S.round - 1)];
     let g = 0;
-    while (P.level < target && P.gold >= 4 && g++ < 20) buyXp(P);
+    while (P.level < target && P.gold >= 4 && g++ < 20) buyXp(P, side);
   }
   const reserve = S.round >= 3 ? Math.min(30, 10 * Math.floor(P.gold / 10)) : 0;
   for (let pass = 0; pass < 8; pass++) {
@@ -589,7 +612,7 @@ function cpuSetup(side, diff) {
       if (want && afford) buyShop(P, i, side);
     }
     const spare = P.gold - reserve;
-    if (spare >= 6) reroll(P); else break;
+    if (spare >= 6) reroll(P, side); else break;
   }
   cpuArrange(P, hard);
   P.ready = true;
@@ -622,6 +645,9 @@ const ENERGY = {menu: 0.35, intro: 0.6, groove: 0.75, drop: 1, build: 0.55, drop
 // the soundtrack: the theme plays in menus and planning, the battle track plays in combat
 const TRACKS = {theme: 'ballista_bby.mp3', battle: 'OoooooOOOooo.mp3'};
 const VOL = {music: 0.7, fx: 0.8};
+const VIDEO = {shake: true, low: false};
+try { const v = JSON.parse(localStorage.getItem('bk-video') || 'null'); if (v && typeof v === 'object') { VIDEO.shake = v.shake !== false; VIDEO.low = !!v.low; } } catch (e) {}
+function saveVideo() { try { localStorage.setItem('bk-video', JSON.stringify(VIDEO)); } catch (e) {} }
 try { const v = JSON.parse(localStorage.getItem('bk-vol') || 'null'); if (v && typeof v === 'object') { if (Number.isFinite(v.music)) VOL.music = clamp(v.music, 0, 1); if (Number.isFinite(v.fx)) VOL.fx = clamp(v.fx, 0, 1); if (v.muted) muted = true; } } catch (e) {}
 MUS.tracks = {};
 for (const key in TRACKS) {
@@ -833,6 +859,7 @@ function spark(x, y, rgb, n, sp) {
   for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = (sp || 120) * rnd(0.3, 1); S.parts.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 40, c: 'rgb(' + rgb + ')', life: rnd(0.2, 0.5), r: rnd(1.2, 2.4), glow: true}); }
 }
 function smoke(x, y, n, size) {
+  if (VIDEO.low) return;
   for (let i = 0; i < n; i++) { const l = rnd(0.8, 1.5); S.parts.push({x: x + rnd(-8, 8), y: y + rnd(-6, 6), vx: rnd(-30, 30), vy: rnd(-45, -12), c: '70,70,86', life: l, max: l, r: (size || 8) * rnd(0.7, 1.3), smoke: true, nograv: true}); }
 }
 function fxBlast(x, y, r, rgb, life, delay) {
@@ -920,7 +947,7 @@ function applyEvent(d) {
     sfx('chaos', t => zap(t, 80, 600, 0.6, 'sawtooth', 0.06), 0.3);
   } else if (type === 'd') {
     if (demo) return;
-    addTitle('DROP', 'Titans enter the arena', null, 1.5, 110);
+    addTitle('DROP', d[1] === 2 ? 'Second mech wave' : 'Titans enter the arena', null, 1.5, 110);
     S.flash = 0.7; S.flashC = '255,255,255'; S.shake = Math.max(S.shake, 0.8);
   } else if (type === 'r') {
     const [, w, fallen, dmg] = d;
@@ -1282,11 +1309,16 @@ function simulate(dt) {
   if (S.phase !== 'combat') return;
   S.timeLeft -= dt;
   const el = COMBAT_LEN - S.timeLeft, I = heat();
-  if (!S.dropDone && el >= 14) {
-    S.dropDone = true;
+  // mech drops: the first at 6 s, a second at 17 s from round 3
+  if (S.dropDone < 1 && el >= 6) {
+    S.dropDone = 1;
     for (let n = 0; n < 1 + Math.floor((S.round - 1) / 3); n++) { spawn('titan', 0); spawn('titan', 1); }
     for (let n = 0; n < 3; n++) { spawn('bike', 0); spawn('bike', 1); }
-    ev(['d']);
+    ev(['d', 1]);
+  } else if (S.dropDone < 2 && S.round >= 3 && el >= 17) {
+    S.dropDone = 2;
+    for (let n = 0; n < 1 + Math.floor((S.round - 2) / 4); n++) { spawn('titan', 0); spawn('titan', 1); }
+    ev(['d', 2]);
   }
   if (S.chaosAt.length && el >= S.chaosAt[0]) { S.chaosAt.shift(); startChaos(); }
   if (S.chaos && (S.chaos.t -= dt) <= 0) S.chaos = null;
@@ -1348,7 +1380,7 @@ function worldStep(dt, live) {
     u.gone = true;
     if (u.breached) continue;
     const killer = u.side ^ 1, byW = u.byShot && u.lastBy === killer, KP = S.p[killer];
-    if (byW && live) { KP.kills++; KP.roundKills++; }
+    if (byW && live) { KP.kills++; KP.roundKills++; S.stats.p[killer].kills++; }
     const cy = ucenter(u)[1];
     ev(['k', Math.round(u.x), Math.round(cy), u.side, TYPE_KEYS.indexOf(u.type), killer, byW ? 1 : 0]);
     const pending = S.drops.filter(d => d.side === killer).length;
@@ -1417,7 +1449,8 @@ function cosmetic(dt, rdt) {
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
     if (p.y > GY && !p.nograv) { p.y = GY; p.vy *= -0.25; p.vx *= 0.5; }
   }
-  if (S.parts.length > 1400) S.parts.splice(0, S.parts.length - 1400);
+  const cap = VIDEO.low ? 350 : 1400;
+  if (S.parts.length > cap) S.parts.splice(0, S.parts.length - cap);
   S.parts = S.parts.filter(p => p.life > 0);
   for (const t of S.texts) { t.y -= 30 * dt; t.life -= dt; }
   S.texts = S.texts.filter(t => t.life > 0);
@@ -1434,6 +1467,7 @@ function cosmetic(dt, rdt) {
   while (S.events.length && S.events[0].t < S.t - 0.6) S.events.shift();
   const cine = S.phase === 'intro' || S.phase === 'result';
   let tx = W / 2, ty = H / 2, tz = 1;
+  if (S.mode !== 'demo' && (S.phase === 'combat' || S.phase === 'result')) { tz = BATTLE_ZOOM; ty = 30 + H / (2 * BATTLE_ZOOM); }
   if (S.phase === 'result' && S.loser >= 0 && S.phaseT > RESULT_LEN - 2.4) { tx = S.loser ? W - 260 : 260; ty = GY - 190; tz = 1.6; }
   const cr = Math.min(1, rdt * (S.phase === 'intro' ? 1.8 : 2.6));
   S.cam.x += (tx - S.cam.x) * cr; S.cam.y += (ty - S.cam.y) * cr; S.cam.z += (tz - S.cam.z) * cr;
@@ -1522,6 +1556,9 @@ function drawScene() {
   ctx.strokeStyle = 'rgba(236,232,255,' + (0.5 + 0.4 * kk) + ')'; ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.arc(hx, hy, R0, 0, Math.PI * 2); ctx.stroke();
   ctx.strokeStyle = 'rgba(166,107,255,.35)'; ctx.lineWidth = 8; ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  drawEyes(hx, hy, R0);
+  ctx.globalCompositeOperation = 'lighter';
 
   // searchlights
   for (let i = 0; i < 4; i++) {
@@ -1595,6 +1632,46 @@ function drawScene() {
   }
 }
 
+// the ring's googly eyes follow the front line, where the two armies meet
+function frontLine() {
+  let lead0 = -1, lead1 = -1;
+  for (const u of S.units) {
+    if (u.fly || u.gone || u.hp <= 0) continue;
+    if (u.side === 0) { if (lead0 < 0 || u.x > lead0) lead0 = u.x; }
+    else if (lead1 < 0 || u.x < lead1) lead1 = u.x;
+  }
+  if (lead0 < 0 && lead1 < 0) return null;
+  if (lead0 < 0) return lead1;
+  if (lead1 < 0) return lead0;
+  return (lead0 + lead1) / 2;
+}
+function drawEyes(hx, hy, R0) {
+  const E = S.eyes || (S.eyes = {x: W / 2, y: GY - 40, blink: 0, nextBlink: 3, gaze: 0});
+  const fx = frontLine();
+  const tx = fx === null ? W / 2 + Math.sin(S.t * 0.6) * 260 : fx, ty = fx === null ? GY - 40 : GY - 30;
+  E.x += (tx - E.x) * 0.08; E.y += (ty - E.y) * 0.08;
+  E.gaze += (((E.x - W / 2) / (W / 2 - TW.x1)) - E.gaze) * 0.05;
+  if (!reduced) { E.nextBlink -= 1 / 60; if (E.nextBlink <= 0) { E.blink = 0.18; E.nextBlink = rnd(2.5, 6); } E.blink = Math.max(0, E.blink - 1 / 60); }
+  const open = E.blink > 0 ? Math.abs(E.blink - 0.09) / 0.09 : 1;
+  // the iris tints toward the side whose army has pushed the line into enemy ground
+  const lean = clamp(E.gaze, -1, 1), rgb = lean < 0 ? SIDES[1].rgb : SIDES[0].rgb, tint = Math.abs(lean);
+  for (const side of [-1, 1]) {
+    const ex = hx + side * 36, ey = hy - 4, er = 27;
+    const dx = E.x - ex, dy = E.y - ey, d = Math.hypot(dx, dy) || 1, off = Math.min(11, d / 40);
+    const px = ex + dx / d * off, py = ey + dy / d * off;
+    ctx.save(); ctx.translate(ex, ey); ctx.scale(1, Math.max(0.06, open)); ctx.translate(-ex, -ey);
+    ctx.fillStyle = '#f4f2ff'; ctx.beginPath(); ctx.arc(ex, ey, er, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(80,60,120,.6)'; ctx.lineWidth = 2; ctx.stroke();
+    const ig = ctx.createRadialGradient(px, py, 2, px, py, 13);
+    ig.addColorStop(0, 'rgba(' + rgb + ',' + (0.35 + 0.55 * tint) + ')'); ig.addColorStop(1, 'rgba(60,40,110,1)');
+    ctx.fillStyle = ig; ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0a0612'; ctx.beginPath(); ctx.arc(px, py, 7 - 2 * S.kick, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(px - 4, py - 5, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // lid shadow
+    ctx.strokeStyle = 'rgba(40,25,70,.5)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(ex, ey, er - 1, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+  }
+}
 // drawn in the left keep's frame; the right keep is mirrored
 function withSide(side, fn) { ctx.save(); if (side === 1) { ctx.translate(W, 0); ctx.scale(-1, 1); } fn(); ctx.restore(); }
 // pre-painted plating texture for the keep walls (art units)
@@ -2228,7 +2305,8 @@ function drawRingsFields() {
 function drawKeepBars() {
   if (S.phase !== 'combat' && S.phase !== 'result' && S.phase !== 'intro') return;
   for (let s = 0; s < 2; s++) {
-    const P = S.p[s], cx = s ? W - TCX : TCX, y = TW.top - 122, w = 200;
+    const P = S.p[s], y = TW.top - 122, w = 200, edge = (W / 2) / S.cam.z;
+    const cx = s ? Math.min(W - TCX, S.cam.x + edge - w / 2 - 12) : Math.max(TCX, S.cam.x - edge + w / 2 + 12);
     ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(cx - w / 2 - 2, y - 2, w + 4, 18);
     ctx.fillStyle = S.keepFlash[s] > 0.05 ? '#ff5a5a' : 'rgb(' + SIDES[s].rgb + ')'; ctx.fillRect(cx - w / 2, y, w * clamp(P.keep / KEEP_HP, 0, 1), 14);
     if (P.shield > 0) { ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(cx - w / 2, y, w * clamp(P.shield / KEEP_HP, 0, 1), 4); }
@@ -2290,7 +2368,7 @@ function render() {
   ctx.setTransform(k, 0, 0, k, 0, 0);
   ctx.save();
   if (S.cam.z !== 1 || S.cam.x !== W / 2 || S.cam.y !== H / 2) { ctx.translate(W / 2, H / 2); ctx.scale(S.cam.z, S.cam.z); ctx.translate(-S.cam.x, -S.cam.y); }
-  if (S.shake > 0 && !reduced) ctx.translate((Math.random() - 0.5) * 10 * S.shake, (Math.random() - 0.5) * 10 * S.shake);
+  if (S.shake > 0 && !reduced && VIDEO.shake) ctx.translate((Math.random() - 0.5) * 10 * S.shake, (Math.random() - 0.5) * 10 * S.shake);
   drawScene();
   for (const u of S.units) drawUnit(u);
   for (let side = 0; side < 2; side++) withSide(side, () => { ctx.save(); ctx.translate(0, GY - LG * TS); ctx.scale(TS, TS); drawTower(side); if (S.keepFlash[side] > 0) { ctx.fillStyle = 'rgba(255,80,60,' + S.keepFlash[side] * 0.6 + ')'; ctx.fillRect(TWL.x0, TWL.top, TWL.x1 - TWL.x0, LG - 30 - TWL.top); } drawCannon(side); ctx.restore(); });
@@ -2375,13 +2453,21 @@ cv.addEventListener('pointerdown', e => {
   if (best >= 0) onSlot('m', best);
   else if (S.ui.sel) S.ui.sel = null;
 });
+const inMatch = () => S.mode !== 'demo' && !['lobby', 'connecting', 'joined', 'neterr', 'gone'].includes(S.phase);
 addEventListener('keydown', e => {
-  if (e.target && e.target.tagName === 'INPUT') return;
-  if (!canPlan()) return;
+  if (e.target && (e.target.tagName === 'INPUT' && e.target.type === 'text')) return;
+  if (e.key === 'Tab' && inMatch() && !S.ui.menu) { e.preventDefault(); if (!e.repeat) S.ui.tab = !S.ui.tab; return; }
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (S.ui.tab) { S.ui.tab = false; return; }
+    if (S.ui.sel && !S.ui.menu) { S.ui.sel = null; return; }
+    if (inMatch()) S.ui.menu = !S.ui.menu;
+    return;
+  }
+  if (!canPlan() || S.ui.menu) return;
   if (e.key === 'd' || e.key === 'D') act({t: 'reroll'});
   else if (e.key === 'f' || e.key === 'F') act({t: 'xp'});
   else if (e.key === 'e' || e.key === 'E') { const sel = S.ui.sel; if (sel && sel.z !== 'i') { act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; } }
-  else if (e.key === 'Escape') S.ui.sel = null;
 });
 
 /* =========================================================================
@@ -2513,7 +2599,9 @@ function snapshot() {
     pr: S.projs.filter(p => p.kind === 'shell').slice(0, 12).map(p => [p.id, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.side]),
     os: S.strikes.map(k2 => [r1(k2.x), r1(k2.t * 10)]),
     dr: S.drops.map(d => [ITEM_KEYS.indexOf(d.kind), r1(d.x), r1(d.y), d.side, d.st === 'fly' ? 1 : 0]),
-    ev: S.events.map(e => [e.s, ...e.d])
+    ev: S.events.map(e => [e.s, ...e.d]),
+    sr: S.stats.rounds.map(r => [r.r, r.w, r.keep[0], r.keep[1], r.kills[0], r.kills[1], r.dmg, r.lv[0], r.lv[1]]),
+    sp: S.stats.p.map(q => [q.kills, Math.round(q.breach), q.spent, q.rerolls, q.xp, q.stars, q.dealt, q.wins])
   };
   let txt = JSON.stringify(s);
   while (txt.length > 3900) {
@@ -2552,7 +2640,7 @@ function applySnap(s) {
   if (s.ph === 'lobby') { if (S.phase === 'connecting') S.phase = 'joined'; return; }
   if (s.m !== S.matchId) {
     S.matchId = s.m; clearField(); S.decals = []; S.texts = []; S.titles = [];
-    S.p = [newPlayer(), newPlayer()];
+    S.p = [newPlayer(), newPlayer()]; S.stats = {rounds: [], p: [newStat(), newStat()]};
     if (net) { net.in.m = s.m; net.in.acts = []; net.in.r = 0; net.actN = 0; }
     S.lastSeq = Math.max(0, ...((s.ev || []).map(e => (Array.isArray(e) ? e[0] | 0 : 0))));
     S.phase = '';
@@ -2568,6 +2656,8 @@ function applySnap(s) {
   S.timeLeft = (s.tl | 0) / 10; S.phaseT = (s.pt | 0) / 10;
   S.rw = Number.isInteger(s.rw) ? s.rw : -1; S.loser = Number.isInteger(s.ls) ? s.ls : -1; S.winner = Number.isInteger(s.win) ? s.win : -1;
   S.hostRematch = !!s.hr;
+  if (Array.isArray(s.sr)) S.stats.rounds = s.sr.filter(Array.isArray).map(a => ({r: a[0] | 0, w: a[1] | 0, keep: [a[2] | 0, a[3] | 0], kills: [a[4] | 0, a[5] | 0], dmg: a[6] | 0, lv: [a[7] | 0, a[8] | 0]}));
+  if (Array.isArray(s.sp)) S.stats.p = [0, 1].map(i => { const a = Array.isArray(s.sp[i]) ? s.sp[i] : []; return {kills: a[0] | 0, breach: a[1] | 0, spent: a[2] | 0, rerolls: a[3] | 0, xp: a[4] | 0, stars: a[5] | 0, dealt: a[6] | 0, wins: a[7] | 0}; });
   S.chaos = Array.isArray(s.ch) && CHAOS[s.ch[0]] ? {id: CHAOS[s.ch[0]].id, i: s.ch[0], t: (s.ch[1] | 0) / 10} : null;
   S.timeScale = Number.isFinite(s.ts) ? clamp(s.ts / 100, 0.1, 1) : 1;
   (Array.isArray(s.P) ? s.P : []).slice(0, 2).forEach((a, side) => {
@@ -2652,6 +2742,10 @@ function updateHUD() {
     setText('sub' + s, 'Lv ' + P.level + ' · ' + P.gold + ' gold' + (streakTxt(P.streak) ? ' · ' + streakTxt(P.streak) : ''));
   }
   const t = tags();
+  const battle = S.mode !== 'demo' && (S.phase === 'intro' || S.phase === 'combat' || S.phase === 'result');
+  const im = inMatch();
+  if (hudCache.im !== im) { hudCache.im = im; $('statsBtn').hidden = !im; $('menuBtn').hidden = !im; }
+  if (hudCache.battle !== battle) { hudCache.battle = battle; document.querySelector('.app').classList.toggle('battle', battle); }
   setText('tag0', t[0]); setText('tag1', t[1]);
   $('tag0').className = t[0] === 'You' ? 'you' : ''; $('tag1').className = t[1] === 'You' ? 'you' : '';
   const timeEl = $('sTime');
@@ -2740,16 +2834,70 @@ function renderDock() {
   d.innerHTML = h;
 }
 function sigNow() {
-  const parts = [S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || ''];
+  const parts = [S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
   if (S.mode === 'guest') parts.push(net && net.in.r, S.hostRematch, S.phase === 'connecting' && performance.now() - S.connectAt > 8000);
   return parts.join('|');
 }
 function card(html, narrow) { const d = document.createElement('div'); d.className = 'card' + (narrow ? ' narrow' : ''); d.innerHTML = html; $('overlay').appendChild(d); return d; }
+function statsHtml(final) {
+  const st = S.stats, R = st.rounds, me = S.me;
+  const name = i => SIDES[i].name + (i === me ? ' (you)' : '');
+  const row = (label, f) => '<tr><th>' + label + '</th><td style="color:' + SIDES[0].c + '">' + f(0) + '</td><td style="color:' + SIDES[1].c + '">' + f(1) + '</td></tr>';
+  let h = '<table class="stats"><thead><tr><th></th><th style="color:' + SIDES[0].c + '">' + name(0) + '</th><th style="color:' + SIDES[1].c + '">' + name(1) + '</th></tr></thead><tbody>' +
+    row('Tactician HP', i => Math.max(0, Math.ceil(S.p[i].hp))) +
+    row('Rounds won', i => st.p[i].wins) +
+    row('Damage dealt', i => st.p[i].dealt) +
+    row('Kills', i => st.p[i].kills) +
+    row('Keep damage taken', i => Math.round(st.p[i].breach)) +
+    row('Level', i => S.p[i].level) +
+    row('Turrets fielded', i => boardCount(S.p[i])) +
+    row('Gold spent', i => st.p[i].spent) +
+    row('Rerolls · XP buys', i => st.p[i].rerolls + ' · ' + st.p[i].xp) +
+    row('Star-ups', i => st.p[i].stars) +
+    '</tbody></table>';
+  if (R.length) {
+    h += '<div class="zl" style="margin-top:8px">Rounds</div><div class="rounds">';
+    for (const r of R) {
+      const wc = r.w < 0 ? 'var(--muted)' : SIDES[r.w].c;
+      h += '<div class="rr"><b>R' + r.r + '</b><span style="color:' + wc + '">' + (r.w < 0 ? 'Draw' : SIDES[r.w].name + ' +' + r.dmg) + '</span><span><i style="color:' + SIDES[0].c + '">' + r.keep[0] + '</i> / <i style="color:' + SIDES[1].c + '">' + r.keep[1] + '</i> keep</span><span><i style="color:' + SIDES[0].c + '">' + r.kills[0] + '</i> / <i style="color:' + SIDES[1].c + '">' + r.kills[1] + '</i> kills</span></div>';
+    }
+    h += '</div>';
+  } else h += '<p class="hint">No rounds fought yet.</p>';
+  return h;
+}
+function menuHtml() {
+  return '<div class="kicker">Paused for you only · the match keeps running</div><h1>Menu</h1>' +
+    '<div class="btns"><button class="btn prime" data-act="resume" type="button">Resume</button><button class="btn" data-act="stats" type="button">Match stats</button></div>' +
+    '<h2>Audio</h2><div class="setrow">' +
+      '<label>Music <input type="range" id="mVolMusic" min="0" max="100" value="' + Math.round(VOL.music * 100) + '" aria-label="Music volume"></label>' +
+      '<label>Effects <input type="range" id="mVolFx" min="0" max="100" value="' + Math.round(VOL.fx * 100) + '" aria-label="Effects volume"></label>' +
+      '<button class="btn small" data-act="mute" type="button">' + (muted ? 'Unmute' : 'Mute') + '</button></div>' +
+    '<h2>Video</h2><div class="setrow">' +
+      '<label><input type="checkbox" id="mShake"' + (VIDEO.shake ? ' checked' : '') + '> Screen shake</label>' +
+      '<label><input type="checkbox" id="mLow"' + (VIDEO.low ? ' checked' : '') + '> Reduced effects (fewer particles, no smoke)</label></div>' +
+    '<h2>Leave</h2><p class="hint">' + (S.mode === 'cpu' ? 'Leaving ends this match against the CPU.' : 'Leaving forfeits the match for your rival.') + '</p>' +
+    '<div class="btns"><button class="btn" data-act="leave" type="button">Leave game</button><button class="btn quiet" data-act="menu" type="button">Main menu</button></div>';
+}
 function showOverlay() {
   $('overlay').innerHTML = '';
   const ph = S.phase, mode = S.mode;
+  if (S.ui.menu && inMatch()) {
+    card(menuHtml(), true);
+    const mm = $('mVolMusic'), mf = $('mVolFx');
+    if (mm) mm.addEventListener('input', e => { VOL.music = clamp((+e.target.value || 0) / 100, 0, 1); $('volMusic').value = e.target.value; applyVolumes(); });
+    if (mf) mf.addEventListener('input', e => { VOL.fx = clamp((+e.target.value || 0) / 100, 0, 1); $('volFx').value = e.target.value; applyVolumes(); });
+    if ($('mShake')) $('mShake').addEventListener('change', e => { VIDEO.shake = !!e.target.checked; saveVideo(); });
+    if ($('mLow')) $('mLow').addEventListener('change', e => { VIDEO.low = !!e.target.checked; saveVideo(); });
+    return;
+  }
+  if (S.ui.tab && inMatch() && ph !== 'over') {
+    card('<div class="kicker">Round ' + S.round + ' · ' + (ph === 'setup' ? 'Planning' : ph === 'combat' ? 'Combat' : ph) + '</div><h1>Match stats</h1>' + statsHtml(false) +
+      '<div class="btns"><button class="btn quiet" data-act="stats" type="button">Close · Tab</button></div>');
+    return;
+  }
   if (mode === 'demo') {
     const online = roomChecked && roomNS;
     card(
@@ -2801,7 +2949,8 @@ function showOverlay() {
     else if (mode === 'guest' && me >= 0) btns = net && net.in.r ? '<button class="btn" type="button" disabled>Waiting for rival…</button>' : '<button class="btn prime" data-act="again" type="button">' + (S.hostRematch ? 'Accept rematch' : 'Rematch') + '</button>';
     card('<div class="kicker">Match over · ' + S.round + ' rounds</div><h1>' + title + '</h1>' +
       (P ? '<p>You finished on ' + Math.max(0, Math.ceil(P.hp)) + ' HP at level ' + P.level + ', with ' + P.kills + ' kills across the match.</p>' : '') +
-      '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button></div>', true);
+      '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button></div>' +
+      '<h2>Match summary</h2>' + statsHtml(true));
   } else if (ph === 'gone') {
     card('<h1>Rival left</h1><p>The other keep is empty. Head back to choose another match.</p><div class="btns"><button class="btn" data-act="menu" type="button">Main menu</button></div>', true);
   } else if (ph === 'neterr') {
@@ -2813,7 +2962,10 @@ function startCpu(diff) { leaveRoom(); newMatch('cpu', diff); }
 function onAct(a, btn) {
   audio();
   const parts = String(a).split(':'), k0 = parts[0];
-  if (k0 === 'cpu') startCpu(parts[1]);
+  if (k0 === 'resume') S.ui.menu = false;
+  else if (k0 === 'stats') { S.ui.menu = false; S.ui.tab = !S.ui.tab; }
+  else if (k0 === 'leave') { leaveRoom(); newMatch('demo'); }
+  else if (k0 === 'cpu') startCpu(parts[1]);
   else if (k0 === 'host') { S.joinErr = ''; hostRoom(); }
   else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; S.joinErr = ''; joinRoom(v); }
   else if (k0 === 'slot') onSlot(parts[1], parts[2] | 0);
@@ -2830,6 +2982,7 @@ function onAct(a, btn) {
     else if (S.mode === 'host' && net) net.rematch = true;
     else if (S.mode === 'guest' && net) net.in.r = 1;
   } else if (k0 === 'menu') { leaveRoom(); newMatch('demo'); }
+  if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute') S.ui.menu = false; if (k0 !== 'stats') S.ui.tab = false; }
   dockSig = ''; overlaySig = '';
 }
 for (const id of ['overlay', 'dock']) {
@@ -2845,6 +2998,8 @@ $('volFx').value = String(Math.round(VOL.fx * 100));
 $('volMusic').addEventListener('input', e => { audio(); VOL.music = clamp((+e.target.value || 0) / 100, 0, 1); applyVolumes(); });
 $('volFx').addEventListener('input', e => { audio(); VOL.fx = clamp((+e.target.value || 0) / 100, 0, 1); applyVolumes(); });
 $('muteBtn').addEventListener('click', () => { audio(); setMute(!muted); });
+$('statsBtn').addEventListener('click', () => { audio(); S.ui.menu = false; S.ui.tab = !S.ui.tab; });
+$('menuBtn').addEventListener('click', () => { audio(); S.ui.tab = false; S.ui.menu = !S.ui.menu; });
 applyVolumes();
 addEventListener('pointerdown', () => audio(), {once: true});
 addEventListener('keydown', () => audio(), {once: true});

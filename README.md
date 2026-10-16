@@ -11,7 +11,7 @@ Open `index.html` in a browser, or play it on GitHub Pages once Pages is turned 
 - **Against the CPU:** Easy or Hard.
 - **Against a friend:** one player chooses **Create room** and sends the page link and room code. The other opens the link, types the code and chooses **Join**. Browsers connect directly to each other, introduced by the free PeerJS service, so no account is needed.
 
-Keys during planning: **D** reroll, **F** buy XP, **E** sell, **Esc** cancel a selection.
+Keys during planning: **D** reroll, **F** buy XP, **E** sell. **Tab** shows the match stats, **Esc** opens the menu (audio and video settings, leave game).
 
 ## Files
 
