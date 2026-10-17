@@ -382,6 +382,7 @@ function mergeAll(P, side) {
       if (g.length < 3) continue;
       const [keep, a, b] = g;
       keep.u.star++;
+      keep.u.td = (keep.u.td || 0) + (a.u.td || 0) + (b.u.td || 0); keep.u.tk = (keep.u.tk || 0) + (a.u.tk || 0) + (b.u.tk || 0); keep.u.nr = Math.max(keep.u.nr || 0, a.u.nr || 0, b.u.nr || 0);
       if (side !== undefined && S.stats) S.stats.p[side].stars++;
       const its = keep.u.items.concat(a.u.items, b.u.items);
       keep.u.items = its.slice(0, 3);
@@ -578,7 +579,20 @@ function endCombat(fallen) {
   if (w >= 0) { S.stats.p[w].wins++; S.stats.p[w].dealt += dmg; }
   S.stats.rounds.push({r: S.round, w, keep: [Math.ceil(Math.max(0, P0.keep)), Math.ceil(Math.max(0, P1.keep))], kills: [P0.roundKills, P1.roundKills], dmg, lv: [P0.level, P1.level]});
   setPhase('result', S.mode === 'demo' ? 1.5 : RESULT_LEN);
+  recordUnitStats();
   ev(['r', w, fallen, dmg, S.mode === 'demo' ? null : buildPost(w, fallen)]);
+}
+function recordUnitStats() {
+  const R = S.rs; if (!R) return;
+  for (let i = 0; i < 2; i++) {
+    const P = S.p[i], tot = P.turrets.reduce((a, T, k) => a + (T ? R.sl[i][k].d : 0), 0) + R.storm[i];
+    P.turrets.forEach((T, k) => {
+      if (!T) return;
+      const c = R.sl[i][k], u = T.u;
+      u.ld = Math.round(c.d); u.lk = c.k; u.lp = tot > 0 ? Math.round(100 * c.d / tot) : 0;
+      u.td = (u.td || 0) + u.ld; u.tk = (u.tk || 0) + c.k; u.nr = (u.nr || 0) + 1;
+    });
+  }
 }
 function buildPost(w, fallen) {
   const R = S.rs; if (!R) return null;
@@ -600,7 +614,7 @@ function buildPost(w, fallen) {
     else { head = 'Time expired'; ln.push('Time ran out with ' + nm(L) + ' behind: ' + S_L.kp + ' keep HP against ' + sides[L ^ 1].kp + (S_L.kp === sides[L ^ 1].kp ? ', settled on kills (' + sides[L].k + ' to ' + sides[L ^ 1].k + ')' : '') + '.'); }
     if (S_L.nl) { ln.push(S_L.nl + ' enem' + (S_L.nl === 1 ? 'y' : 'ies') + ' reached the ' + nm(L) + ' keep: ' + S_L.lk.map(x => x[1] + '× ' + TYPES[x[0]].name + ' (−' + x[2] + ')').join(', ') + '.'); const top = S_L.lk[0]; if (top) ln.push('Biggest leak: ' + sug[top[0]] + '.'); }
     else ln.push('Nothing reached the ' + nm(L) + ' keep. The loss came from output, not defence.');
-    const idle = S_L.sl.map((x, k) => x && x[2] === 0 ? MOUNT_LABEL[k] + ' ' + ROSTER[x[0]].name : null).filter(Boolean);
+    const idle = S_L.sl.map((x, k) => { const T = S.p[L].turrets[k]; return x && x[2] === 0 ? MOUNT_LABEL[k] + ' ' + ROSTER[x[0]].name + (k < 4 && T && T.s.range < 400 ? ' (too short-range for a roof mount)' : '') : null; }).filter(Boolean);
     if (idle.length) ln.push('Idle turrets (0 damage): ' + idle.join(', ') + '.');
     const cmp = sides[L ^ 1].d > 0 ? Math.round(100 * S_L.d / sides[L ^ 1].d) : 100;
     ln.push(nm(L) + ' turrets dealt ' + S_L.d + ' damage, ' + cmp + '% of ' + nm(L ^ 1) + "'s " + sides[L ^ 1].d + '.');
@@ -2779,6 +2793,12 @@ function unitTipHtml(u, lv) {
   if (s.cone) h += '<span>Cone</span><span>wide flame at the gate</span>';
   h += '</div>';
   for (const t of R.traits) { const l = lv[t] || 0, T = TRAITS[t]; h += '<div class="tl ' + (l === T.tiers.length ? 'max' : l ? 'on' : '') + '"><b>' + T.name + '</b> ' + (l ? '· ' + T.desc[l - 1] : '· inactive, needs ' + T.tiers[0] + ' different ' + T.name + ' turrets') + '</div>'; }
+  if (u.nr) {
+    const fm = n => Math.round(n).toLocaleString('en-US');
+    h += '<div class="ts" style="margin-top:8px">Battle record · ' + u.nr + ' round' + (u.nr === 1 ? '' : 's') + '</div><div class="tg">' +
+      '<span>This match</span><span>' + fm(u.td || 0) + ' damage · ' + (u.tk || 0) + ' kill' + (u.tk === 1 ? '' : 's') + '</span>' +
+      '<span>Last round</span><span>' + (u.ld ? fm(u.ld) + ' damage · <b style="color:#ffd23a">' + (u.lp || 0) + '%</b> of team · ' + (u.lk || 0) + ' kill' + (u.lk === 1 ? '' : 's') : '<span style="color:#ff8a8a">idle · 0 damage</span>') + '</span></div>';
+  }
   if (u.items.length) { h += '<div class="ts" style="margin-top:8px">Cores fitted</div>'; for (const k of u.items) h += '<div class="tl on"><b style="color:' + ITEMS[k].color + '">' + ITEMS[k].name + '</b> · ' + ITEMS[k].fx + '</div>'; }
   return h;
 }
@@ -2817,7 +2837,7 @@ function canvasTip(e) {
   for (let side = 0; side < 2; side++) for (let i = 0; i < 10; i++) {
     const u = S.p[side].board[i]; if (!u) continue;
     const [x, y] = mountWorld(side, i);
-    if (Math.hypot(wx - x, wy - y) < 22) return [unitTipHtml(u, traitLevels(S.p[side].board).lv), 'u' + side + i + u.r + u.star + u.items.join('')];
+    if (Math.hypot(wx - x, wy - y) < 22) return [unitTipHtml(u, traitLevels(S.p[side].board).lv), 'u' + side + i + u.r + u.star + u.items.join('') + (u.td || 0) + ':' + (u.ld || 0)];
   }
   return null;
 }
@@ -2963,8 +2983,8 @@ function hostReadGuest() {
     if (m) { P.msg = m; P.msgN++; }
   }
 }
-const packUnit = u => u ? [u.r, u.star, u.items.join('')] : 0;
-function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3)} : null; }
+const packUnit = u => u ? [u.r, u.star, u.items.join(''), u.td || 0, u.tk || 0, u.ld || 0, u.lk || 0, u.lp || 0, u.nr || 0] : 0;
+function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3), td: a[3] | 0, tk: a[4] | 0, ld: a[5] | 0, lk: a[6] | 0, lp: a[7] | 0, nr: a[8] | 0} : null; }
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
     it: P.items.join(''), rd: P.ready ? 1 : 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
