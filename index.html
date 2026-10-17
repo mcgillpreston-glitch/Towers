@@ -310,7 +310,8 @@ const ITEMS = {
 };
 const ITEM_KEYS = 'NOTXL';
 const ODDS = {3: [75, 25, 0, 0, 0], 4: [55, 30, 15, 0, 0], 5: [45, 33, 20, 2, 0], 6: [30, 40, 25, 5, 0], 7: [19, 30, 35, 15, 1], 8: [15, 22, 33, 25, 5], 9: [10, 15, 30, 33, 12], 10: [5, 10, 20, 40, 25]};
-const XPNEED = {3: 6, 4: 10, 5: 20, 6: 36, 7: 48, 8: 60, 9: 80};
+const XPNEED = {3: 4, 4: 5, 5: 8, 6: 12, 7: 17, 8: 22, 9: 28};
+const BASE_INCOME = 10, PASSIVE_XP = 5;
 const STAR_D = [0, 1, 2.1, 3.8], STAR_R = [0, 1, 1.1, 1.2];
 const BENCH = 8, MAX_ITEMS = 6;
 
@@ -526,9 +527,9 @@ function startSetup() {
   clearField();
   for (let s = 0; s < 2; s++) {
     const P = S.p[s];
-    const inc = 5 + Math.min(5, Math.floor(P.gold / 10)) + streakBonus(P.streak) + (S.rw === s ? 1 : 0);
+    const inc = BASE_INCOME + Math.min(5, Math.floor(P.gold / 10)) + streakBonus(P.streak) + (S.rw === s ? 1 : 0);
     P.gold += inc; P.lastIncome = inc;
-    addXp(P, 2);
+    addXp(P, PASSIVE_XP);
     rollShop(P);
     P.ready = false; P.keep = KEEP_HP; P.shield = 0;
     if (S.round % 3 === 0 && P.items.length < MAX_ITEMS) P.items.push(randItem());
@@ -675,7 +676,7 @@ function cpuSetup(side, diff) {
 /* ---------- the hard tactician ---------- */
 // rough strength of each weapon at 1 star, learned from balance sweeps (higher is better)
 const CPU_V = {lancer: 85, rail: 80, singularity: 80, sunlance: 75, hellfire: 70, mortar: 60, needle: 60, tesla: 52, swarm: 50, glacier: 42, cryo: 42, arc: 42, torch: 38, vulcan: 36, flak: 36};
-const CPU_EDGE = 5;
+const CPU_EDGE = 5, CPU_XP = 2;
 const CPU_AIR = new Set(['swarm', 'flak', 'arc', 'tesla', 'needle', 'vulcan', 'cryo', 'sunlance']);
 const CPU_ANTI = {drone: ['swarm', 'flak', 'arc', 'tesla', 'needle'], bike: ['cryo', 'arc', 'needle', 'vulcan', 'tesla', 'glacier'], titan: ['rail', 'lancer', 'mortar', 'hellfire', 'singularity', 'sunlance'], bulwark: ['rail', 'lancer', 'mortar', 'hellfire'], trooper: ['mortar', 'arc', 'tesla', 'glacier', 'hellfire']};
 function cpuAdapt(side) {
@@ -732,30 +733,60 @@ function cpuArrangeHard(P, side) {
   }
 }
 function cpuHard(P, side) {
-  if (P.cpuBonus !== S.round) { P.cpuBonus = S.round; P.gold += CPU_EDGE; addXp(P, 2); }   // hard mode plays with a small economic edge
-  const curve = [3, 4, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 9, 10];
-  const target = curve[Math.min(curve.length - 1, S.round - 1)];
+  if (P.cpuBonus !== S.round) { P.cpuBonus = S.round; P.gold += CPU_EDGE; addXp(P, CPU_XP); }   // hard mode plays with a small economic edge
+  const adapt = cpuAdapt(side), rd = S.round;
+  // level schedule: be full (ten turrets) by about round ten
+  const curve = [3, 4, 5, 6, 7, 8, 9, 10];
+  const target = curve[Math.min(curve.length - 1, rd - 1)];
+  const nUnits = () => P.board.concat(P.bench).filter(Boolean).length;
+  // bodies first: a keep with empty mounts loses, so never save while the board is short or HP is low
+  const desperate = P.hp < 45 || (P.streak < -2 && P.hp < 70);
+  const board = () => boardCount(P);
+  const stable = () => board() >= Math.min(P.level, 10) && !desperate;
+  // 1. level up on schedule, but keep the interest bands once the board is stable
+  const bank = () => (rd >= 3 && rd <= 8 && stable()) ? Math.min(30, 10 * Math.floor(P.gold / 10)) : 0;
   let g = 0;
-  while (P.level < target && P.gold >= 4 && g++ < 20) buyXp(P, side);
-  const adapt = cpuAdapt(side);
-  const reserve = S.round >= 7 ? 0 : S.round >= 3 ? Math.min(20, 10 * Math.floor(P.gold / 10)) : 0;
-  for (let pass = 0; pass < 10; pass++) {
+  while (P.level < target && g++ < 20) {
+    const floor = (P.level < target - 1 || rd >= 7) ? 0 : bank();
+    if (P.gold - 4 < floor || P.gold < 4) break;
+    buyXp(P, side);
+  }
+  // 2. shopping: complete merges first, then strong weapons, then bodies
+  const reserveFor = () => (rd >= 9 || desperate) ? 0 : bank();
+  for (let pass = 0; pass < 12; pass++) {
     if (P.bench.indexOf(null) < 0) cpuArrangeHard(P, side);
     const all = P.board.concat(P.bench).filter(Boolean), lv = traitLevels(P.board).lv;
     const weakest = all.length >= P.level ? Math.min(...all.map(u => cpuVal(u, lv, adapt))) : 0;
+    const reserve = reserveFor();
+    const cand = [];
     for (let i = 0; i < 5; i++) {
-      const r = P.shop[i];
-      if (r < 0) continue;
-      const R = ROSTER[r], cost = R.tier, owned = ownedCopies(P, r, 1) + ownedCopies(P, r, 2), units = all.length;
-      const v = (CPU_V[R.id] || 40) * ((adapt && adapt[R.id]) || 1);
-      const dup = all.some(u => u.r === r) && owned === 0 ? 0 : 1;   // never stack a third flak with no purpose
-      const want = (owned > 0 && dup) || units < P.level + 1 || v > weakest * 1.1;
-      const afford = owned > 0 || v >= 70 ? P.gold >= cost : P.gold - cost >= reserve;
-      if (want && afford && !(R.id === 'flak' && owned === 0 && all.filter(u => u.r === r).length >= 2)) buyShop(P, i, side);
+      const r = P.shop[i]; if (r < 0) continue;
+      const R = ROSTER[r], cost = R.tier, c1 = ownedCopies(P, r, 1), c2 = ownedCopies(P, r, 2), v = (CPU_V[R.id] || 40) * (adapt[R.id] || 1);
+      if (P.gold < cost) continue;
+      let pr = -1, free = false;
+      if (c1 >= 2) { pr = 2000 + v; free = true; }                   // this copy makes a star-up right now
+      else if (c2 >= 2 && ownedCopies(P, r, 3) === 0) { pr = 1800 + v; free = true; }   // heading for 3 stars
+      else if (c1 === 1 && v >= 45) { pr = 900 + v; free = cost <= 2; }   // second copy of something decent
+      else if (c2 === 1 && v >= 45) { pr = 700 + v; free = true; }
+      else if (v >= 70 && all.filter(u => u.r === r).length < 3) { pr = 500 + v; free = true; }   // a top weapon
+      else if (all.length < P.level + 1) { pr = 100 + v; }
+      else if (v > weakest * 1.1 && !(R.id === 'flak' && all.filter(u => u.r === r).length >= 2)) { pr = 50 + v; }
+      if (pr < 0) continue;
+      if (!free && P.gold - cost < reserve) continue;
+      cand.push({i, pr, cost, free});
     }
-    const spare = P.gold - reserve;
-    if (spare >= 4) reroll(P, side); else break;
+    cand.sort((a, b) => b.pr - a.pr);
+    let bought = false;
+    for (const c of cand) { if (P.gold >= c.cost && (c.free || P.gold - c.cost >= reserveFor())) { buyShop(P, c.i, side); bought = true; break; } }   // buy one, then re-evaluate: merges change the board
+    if (bought) continue;
+    // 3. roll: when hunting a star-up spend down to the interest band, otherwise only spare gold
+    const hunting = all.some(u => u.star < 3 && ownedCopies(P, u.r, u.star) >= 2) || all.some(u => u.star === 2 && CPU_V[ROSTER[u.r].id] >= 60);
+    const keep = hunting ? Math.min(reserve, 10) : reserve;
+    if (P.gold - 2 >= keep && (hunting || P.gold - keep >= 6 || all.length < P.level)) reroll(P, side); else break;
   }
+  // 4. leftover gold buys experience once the shop has nothing to offer
+  g = 0;
+  while (P.level < 10 && P.gold - 4 >= reserveFor() && g++ < 10 && (rd >= 5 || P.level < target)) buyXp(P, side);
   cpuArrangeHard(P, side);
   P.ready = true;
 }
@@ -3274,7 +3305,7 @@ function renderDock() {
   const locked = P.ready, onBoard = boardCount(P), interest = Math.min(5, Math.floor(P.gold / 10));
   const need = XPNEED[P.level];
   let h = '<div class="eco">' +
-    '<div class="stat" data-tip="Gold. Each round pays 5 + interest (1 per 10 gold held, max 5) + a win or loss streak bonus. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
+    '<div class="stat" data-tip="Gold. Each round pays 10 + interest (1 per 10 gold held, max 5) + a win or loss streak bonus. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
     '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop for 2 gold (key D)."' + (locked || P.gold < 2 ? ' disabled' : '') + '>Reroll <b>2</b></button>' +
