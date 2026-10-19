@@ -383,7 +383,7 @@ const SLOTS = SLOT_DEFS.map((arr, side) => arr.map(s => {
 const TERRAIN_ART = {barrier: ['art/terrain/barrier_blue.webp', 'art/terrain/barrier_red.webp'], slow: ['art/terrain/slow_field_blue.webp', 'art/terrain/slow_field_red.webp']};
 const TERRAIN_DRAW = {barrier: {w: 176, px: 0.5, py: 0.80}, slow: {w: 200, px: 0.5, py: 0.62}};   // world width and floor-centre pivot (fractions of the sprite)
 
-const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d', {alpha: false});
 const stage = document.getElementById('stage');
 const $ = id => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1446,15 +1446,33 @@ const RES = {
   '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp'},
   '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp'}
 };
-const VIDEO = {shake: true, low: false, res: '4k'};
-try { const v = JSON.parse(localStorage.getItem('bk-video') || 'null'); if (v && typeof v === 'object') { VIDEO.shake = v.shake !== false; VIDEO.low = !!v.low; if (v.res === 'auto' || RES[v.res]) VIDEO.res = v.res; } } catch (e) {}
+const VIDEO = {shake: true, low: false, res: '4k', adapt: true};
+try { const v = JSON.parse(localStorage.getItem('bk-video') || 'null'); if (v && typeof v === 'object') { VIDEO.shake = v.shake !== false; VIDEO.low = !!v.low; VIDEO.adapt = v.adapt !== false; if (v.res === 'auto' || RES[v.res]) VIDEO.res = v.res; } } catch (e) {}
+// Adaptive resolution: if combat runs below about 30 fps for a few seconds, the canvas drops one step (4K > 1440p > 1080p > 720p) until it keeps up.
+// It never climbs back by itself (that would oscillate); picking a resolution in Settings starts again from the chosen one.
+const RES_ORDER = ['4k', '1440', '1080', '720'];
+const PERF = {step: 0, ema: 1 / 60, n: 0, cool: 3};
+function effRes() { if (!RES[VIDEO.res]) return VIDEO.res; return RES_ORDER[Math.max(RES_ORDER.indexOf(VIDEO.res), PERF.step)]; }
+function perfGov(raw) {
+  if (!VIDEO.adapt || !RES[VIDEO.res]) return;
+  if ((S.phase !== 'combat' && S.phase !== 'intro') || document.hidden || raw > 0.5) { PERF.n = 0; return; }
+  PERF.ema = PERF.ema * 0.9 + raw * 0.1;
+  if (PERF.cool > 0) { PERF.cool -= raw; PERF.n = 0; return; }
+  if (PERF.ema > 0.034) PERF.n += raw; else PERF.n = Math.max(0, PERF.n - 2 * raw);   // seconds spent running slowly
+  const cur = RES_ORDER.indexOf(effRes());
+  if (PERF.n > 2.5 && cur < RES_ORDER.length - 1) {
+    PERF.step = cur + 1; PERF.cool = 4; PERF.n = 0; PERF.ema = 1 / 60; fit();
+    S.texts.push({x: W / 2, y: H * 0.96, s: 'Resolution lowered to ' + RES[effRes()].name + ' to keep combat smooth', life: 4, c: '#9ff0ff', sz: 11});
+  }
+}
 function fit() {
   const r = stage.getBoundingClientRect();
   const scale = Math.min((r.width - 4) / W, (r.height - 4) / H);
   const w = Math.max(1, Math.floor(W * scale)), h = Math.max(1, Math.floor(H * scale));
   cv.style.width = w + 'px'; cv.style.height = h + 'px';
   let bw, bh;
-  if (RES[VIDEO.res]) { bw = RES[VIDEO.res].w; bh = RES[VIDEO.res].h; }
+  const er = effRes();
+  if (RES[er]) { bw = RES[er].w; bh = RES[er].h; }
   else { const dpr = Math.min(window.devicePixelRatio || 1, 2); bw = Math.max(1, Math.floor(w * dpr)); bh = Math.max(1, Math.floor(h * dpr)); }
   if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
   k = cv.width / W;
@@ -2458,7 +2476,7 @@ for (const k of ['N', 'O', 'T', 'X']) loadArt('c' + k, 'core_' + k + '.webp');
 function loadImg(path) { if (typeof Image === 'undefined') return null; const im = new Image(); im.onload = () => { im.ok = true; }; im.onerror = () => { im.bad = true; }; im.src = path; return im; }
 const TART = {barrier: TERRAIN_ART.barrier.map(loadImg), slow: TERRAIN_ART.slow.map(loadImg)};
 const BGS = {};
-function bgKey() { const r = VIDEO.res; if (RES[r]) return r; const w = cv.width; return w >= 3000 ? '4k' : w >= 2200 ? '1440' : w >= 1500 ? '1080' : '720'; }
+function bgKey() { const r = effRes(); if (RES[r]) return r; const w = cv.width; return w >= 3000 ? '4k' : w >= 2200 ? '1440' : w >= 1500 ? '1080' : '720'; }
 function bgImage() {
   const key = bgKey();
   if (!(key in BGS)) BGS[key] = loadImg(RES[key].bg);
@@ -2488,12 +2506,30 @@ const FLYP = FLY_MASK.map(([u, v]) => [u * W, v * H]);
 function inFlyPoly(x, y) { let c = false; for (let i = 0, j = FLYP.length - 1; i < FLYP.length; j = i++) { const [xi, yi] = FLYP[i], [xj, yj] = FLYP[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
 const FLYB = (() => { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (const [u, v] of FLY_MASK) { a = Math.min(a, u * W); b = Math.min(b, v * H); c = Math.max(c, u * W); d = Math.max(d, v * H); } return [a, b, c, d]; })();
 const DEV = {on: typeof location !== 'undefined' && /[?&]dev\b/.test(location.search || '')};
-function bgLayer() {   // the painted battlefield with its light tint (clipped by whatever clip is active)
+const BGC = {cv: null, src: null, w: 0, h: 0, tint: -1};
+function bgLayer() {   // the painted battlefield with its light tint (clipped by whatever clip is active); picture and tint are baked once and re-baked only when the texture, canvas size or tint changes
   const BG = bgImage();
   if (!BG) return false;
-  ctx.drawImage(BG, 0, 0, W, H);
-  ctx.fillStyle = 'rgba(3,4,22,' + (S.phase === 'combat' ? 0.2 : 0.07) + ')'; ctx.fillRect(0, 0, W, H);
+  const tint = S.phase === 'combat' ? 0.2 : 0.07;
+  if (!BGC.cv) BGC.cv = document.createElement('canvas');
+  if (BGC.src !== BG || BGC.w !== cv.width || BGC.h !== cv.height || BGC.tint !== tint) {
+    BGC.cv.width = cv.width; BGC.cv.height = cv.height;
+    const c = BGC.cv.getContext('2d');
+    c.drawImage(BG, 0, 0, cv.width, cv.height);
+    c.fillStyle = 'rgba(3,4,22,' + tint + ')'; c.fillRect(0, 0, cv.width, cv.height);
+    BGC.src = BG; BGC.w = cv.width; BGC.h = cv.height; BGC.tint = tint;
+  }
+  ctx.drawImage(BGC.cv, 0, 0, W, H);
   return true;
+}
+let VIG = null;
+function vignette() {   // the edge darkening is baked once into a small picture and stretched, instead of a full-screen gradient every frame
+  if (VIG) return VIG;
+  VIG = document.createElement('canvas'); VIG.width = 400; VIG.height = 225;
+  const c = VIG.getContext('2d'), g = c.createRadialGradient(200, 112.5, 65, 200, 112.5, 215);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.6)');
+  c.fillStyle = g; c.fillRect(0, 0, 400, 225);
+  return VIG;
 }
 function drawFlyoverMask() {
   ctx.save(); ctx.beginPath();
@@ -3092,12 +3128,26 @@ function drawTurrets(side) {
   }
 }
 /* units face -x in their own frame; HEX units are mirrored to face right */
+// glows are drawn from small cached sprites (one per colour and size) instead of building a gradient every time
+const GLOWS = new Map();
+function glowSprite(rgb, r) {
+  const px = Math.max(4, Math.min(256, Math.ceil(r * k * 2 / 4) * 4)), key = rgb + '|' + px;
+  let c = GLOWS.get(key);
+  if (!c) {
+    if (GLOWS.size > 400) GLOWS.clear();
+    c = document.createElement('canvas'); c.width = c.height = px;
+    const g2 = c.getContext('2d'), g = g2.createRadialGradient(px / 2, px / 2, 0, px / 2, px / 2, px / 2);
+    g.addColorStop(0, 'rgba(' + rgb + ',1)'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
+    g2.fillStyle = g; g2.fillRect(0, 0, px, px);
+    GLOWS.set(key, c);
+  }
+  return c;
+}
 function glowDot(x, y, r, rgb, a) {
-  ctx.globalCompositeOperation = 'lighter';
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-  g.addColorStop(0, 'rgba(' + rgb + ',' + a + ')'); g.addColorStop(1, 'rgba(' + rgb + ',0)');
-  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
-  ctx.globalCompositeOperation = 'source-over';
+  const pa = ctx.globalAlpha;
+  ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pa * a;
+  ctx.drawImage(glowSprite(rgb, r), x - r, y - r, r * 2, r * 2);
+  ctx.globalAlpha = pa; ctx.globalCompositeOperation = 'source-over';
 }
 // painted minions: blue art faces right, red art faces left, so no mirroring
 function teamRing(e, rgb, w, h, fly) {
@@ -3661,9 +3711,7 @@ function render() {
   ctx.globalAlpha = 1;
   ctx.restore();
   if (chaosIs('frenzy')) { ctx.fillStyle = 'rgba(255,40,70,' + (0.06 + 0.08 * S.kick) + ')'; ctx.fillRect(0, 0, W, H); }
-  const vg = ctx.createRadialGradient(W / 2, H / 2, 260, W / 2, H / 2, 860);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.6)');
-  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(vignette(), 0, 0, W, H);
   if (S.flash > 0) { ctx.fillStyle = 'rgba(' + S.flashC + ',' + S.flash * 0.5 + ')'; ctx.fillRect(0, 0, W, H); }
   if (S.energy > 0.9 && !reduced) { ctx.fillStyle = 'rgba(255,255,255,' + 0.035 * S.kick + ')'; ctx.fillRect(0, 0, W, H); }
   if (S.letter > 0.5) {
@@ -4377,7 +4425,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [S.ui.set, VIDEO.res, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [S.ui.set, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -4524,7 +4572,9 @@ function settingsHtml() {
     '<h2>Video</h2><div class="setrow">' +
       '<label>Resolution <select id="mRes" aria-label="Render resolution">' + opts + '</select></label>' +
       '<label><input type="checkbox" id="mShake"' + (VIDEO.shake ? ' checked' : '') + '> Screen shake</label>' +
-      '<label><input type="checkbox" id="mLow"' + (VIDEO.low ? ' checked' : '') + '> Reduced effects (fewer particles, no smoke)</label></div>' +
+      '<label><input type="checkbox" id="mLow"' + (VIDEO.low ? ' checked' : '') + '> Reduced effects (fewer particles, no smoke)</label>' +
+      '<label><input type="checkbox" id="mAdapt"' + (VIDEO.adapt ? ' checked' : '') + '> Adaptive resolution (lowers it automatically if combat lags)</label></div>' +
+    (RES[VIDEO.res] && effRes() !== VIDEO.res ? '<p class="hint">Now drawing at ' + RES[effRes()].name + ', lowered automatically because combat was running slowly.</p>' : '') +
     '<p class="hint">4K draws the battlefield at 3840 × 2160 and is the default. If the game runs slowly, choose a lower resolution: it also loads a smaller background picture.</p>';
 }
 function bindSettings() {
@@ -4532,8 +4582,9 @@ function bindSettings() {
   if (mm) mm.addEventListener('input', e => { VOL.music = clamp((+e.target.value || 0) / 100, 0, 1); $('volMusic').value = e.target.value; applyVolumes(); });
   if (mf) mf.addEventListener('input', e => { VOL.fx = clamp((+e.target.value || 0) / 100, 0, 1); $('volFx').value = e.target.value; applyVolumes(); });
   if ($('mShake')) $('mShake').addEventListener('change', e => { VIDEO.shake = !!e.target.checked; saveVideo(); });
+  if ($('mAdapt')) $('mAdapt').addEventListener('change', e => { VIDEO.adapt = !!e.target.checked; PERF.step = 0; PERF.n = 0; saveVideo(); fit(); });
   if ($('mLow')) $('mLow').addEventListener('change', e => { VIDEO.low = !!e.target.checked; saveVideo(); });
-  if ($('mRes')) $('mRes').addEventListener('change', e => { VIDEO.res = e.target.value === 'auto' || RES[e.target.value] ? e.target.value : '4k'; saveVideo(); fit(); });
+  if ($('mRes')) $('mRes').addEventListener('change', e => { VIDEO.res = e.target.value === 'auto' || RES[e.target.value] ? e.target.value : '4k'; PERF.step = 0; PERF.n = 0; PERF.cool = 3; saveVideo(); fit(); });
 }
 function menuHtml() {
   return '<div class="kicker">Paused for you only · the match keeps running</div><h1>Menu</h1>' +
@@ -4745,6 +4796,7 @@ newMatch('demo');
 pvpInit();
 let last = performance.now(), acc = 0;
 function frame(now) {
+  perfGov((now - last) / 1000);
   const rdt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
   const dt = rdt * S.timeScale;
   if (S.mode === 'guest') { guestTween(dt); cosmetic(dt, rdt); }

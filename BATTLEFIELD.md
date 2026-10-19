@@ -22,3 +22,6 @@ GAME_VER is 2 (old async builds are ignored).
 - The ten mounts now sit on the painted tower: three roof barrels and five side barrels exactly, R4 on the corner pinnacle and S6 on the pillar base (no painted socket for those two). Weapon sprites are drawn 30% larger (roof weapons keep their old size) so they cover the painted barrels.
 - Weapon and projectile art (`assets/w_*`, `assets/p_*`) are the 4K sources cropped to the same framing as before (weapons 1120 px long side, projectile strips 1920 px wide).
 - Top HUD rebuilt as live HTML/CSS from the HUD handoff (phase / timer / round centre panel, equal health tracks, LV | G | streak row).
+
+## Performance notes
+Profiling a heavy combat (both boards full, ~45 units) showed game logic under 2% of frame time; the cost is canvas fill rate, which grows with the 4K default. Changes: the background and its tint are baked once into a cached layer, the vignette is a small baked picture, glows are drawn from cached sprites, the canvas is opaque, and an adaptive-resolution governor steps 4K > 1440p > 1080p > 720p when combat stays under about 30 fps for 2.5 s (never climbs back by itself; Settings has a switch). Per frame at 1080p: filled pixels 6.9M -> 0.26M, radial gradients 259 -> 109.
