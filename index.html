@@ -160,7 +160,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .sc{position:relative;display:flex;flex-direction:column;gap:3px}.sc>.unit{flex:1;min-width:0}
 .lockb{text-align:center;font:700 9px var(--f-display);letter-spacing:.16em;padding:3px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
 .lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
-.mode input[type=text]{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:inherit;min-width:0}.mode .btns{flex-wrap:nowrap}.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}table.wk tr.me th,table.wk tr.me td{color:var(--warn)}
+.mode input[type=text]{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:inherit;min-width:0}.mode .btns{flex-wrap:nowrap}.namebar{display:flex;gap:12px;flex-wrap:wrap}.namebar label{display:flex;flex-direction:column;gap:3px;font:700 10px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.namebar input{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:14px var(--f-body,inherit);letter-spacing:0;text-transform:none;width:170px}.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}table.wk tr.me th,table.wk tr.me td{color:var(--warn)}
 .card.wikic{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:hidden;z-index:70}
 .wtabs{display:flex;gap:6px;flex-wrap:wrap}
 .wiki{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
@@ -801,9 +801,49 @@ const GHKEY = 'bk-ghosts-v1', LBKEY = 'bk-lb-v1', HKEY = 'bk-handle', MYKEY = 'b
 const PVP = {db: null, uid: null, init: false, busy: false, lb: [], lbLoaded: false, lbBusy: false, err: '', n: 0, shared: 0};
 const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-let HANDLE = String(lsGet(HKEY, '') || '').slice(0, 14) || 'Tactician' + (100 + Math.floor(Math.random() * 900));
 const cleanHandle = v => String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 14);
-function setHandle(v) { const h = cleanHandle(v); if (!h) return; HANDLE = h; lsSet(HKEY, h); const me = myLb(); me.handle = h; lsSet(LBKEY, me); pvpPushLb(); }
+const BAD = ['fuck', 'shit', 'bitch', 'cunt', 'dick', 'cock', 'pussy', 'nigg', 'fagg', 'whore', 'slut', 'rape', 'nazi', 'hitler', 'asshole', 'bastard', 'twat', 'wank', 'porn', 'penis', 'vagina', 'tits', 'boob', 'sex', 'kike', 'spic', 'chink', 'retard', 'molest', 'pedo', 'cum', 'jizz', 'dildo', 'anus'];
+const RESERVED = ['you', 'cpu', 'rival', 'admin', 'claude', 'system', 'player', 'waiting', 'anthropic', 'yourpastself'];
+const nameKey = v => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14);
+function nameErr(v) {
+  const h = cleanHandle(v);
+  if (h.length < 3) return 'Names need at least 3 characters.';
+  if (!/[a-z0-9]/i.test(h)) return 'Names need letters or numbers.';
+  const flat = h.toLowerCase().replace(/[013457@$!|]/g, c => ({'0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i', '|': 'i'}[c])).replace(/[^a-z]/g, '');
+  if (BAD.some(w => flat.includes(w))) return 'That name is not allowed.';
+  if (RESERVED.includes(nameKey(h))) return 'That name is reserved.';
+  return '';
+}
+let HANDLE = cleanHandle(lsGet(HKEY, '')), PIN = String(lsGet('bk-pin', '') || '').replace(/\D/g, '').slice(0, 4);
+if (!HANDLE || nameErr(HANDLE)) HANDLE = 'Tactician' + (100 + Math.floor(Math.random() * 900));
+const RANK = {ok: false};
+function setHandle(v) {
+  const e = nameErr(v);
+  if (e) { PVP.err = e; overlaySig = ''; return; }
+  HANDLE = cleanHandle(v); lsSet(HKEY, HANDLE); PVP.err = '';
+  const me = myLb(); if (me.m) { me.handle = HANDLE; lsSet(LBKEY, me); pvpPushLb(); }
+  overlaySig = '';
+}
+function setPin(v) { PIN = String(v || '').replace(/\D/g, '').slice(0, 4); lsSet('bk-pin', PIN); }
+async function hashPin(key, pin) {
+  const txt = 'bk1:' + key + ':' + pin;
+  try { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)); return Array.from(new Uint8Array(d)).map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 32); }
+  catch (e) { let h = 2166136261; for (let i = 0; i < txt.length; i++) { h ^= txt.charCodeAt(i); h = Math.imul(h, 16777619); } return 'f' + (h >>> 0).toString(16); }
+}
+/* online play: a 4 digit PIN claims your name and puts the match on the leaderboard; no PIN means an unranked friendly */
+async function rankedGate() {
+  RANK.ok = false; S.joinErr = '';
+  const e = nameErr(HANDLE); if (e) { S.joinErr = e; return false; }
+  if (!PIN) return true;
+  if (!/^\d{4}$/.test(PIN)) { S.joinErr = 'The PIN is 4 digits. Leave it blank to play unranked.'; return false; }
+  if (!PVP.db) return true;
+  try {
+    const key = nameKey(HANDLE), h = await hashPin(key, PIN), ref = PVP.db.doc('names/' + key), snap = await ref.get(), d = snap.exists ? snap.data() : null;
+    if (d && d.h !== h) { S.joinErr = 'The name ' + HANDLE + ' belongs to another player. Enter its PIN or choose another name.'; return false; }
+    if (!d) await ref.set({h, uid: PVP.uid, handle: HANDLE, t: Date.now()});
+    RANK.ok = true; return true;
+  } catch (er) { S.joinErr = 'Could not check your name. Try again, or clear the PIN to play unranked.'; return false; }
+}
 function newLb() { return {handle: HANDLE, m: 0, w: 0, l: 0, d: 0, aw: 0, al: 0, ad: 0, rounds: 0, dmg: 0, kills: 0, units: {}, cores: {}, best: 0, t: 0}; }
 function myLb() { const v = lsGet(LBKEY, null); return v && typeof v === 'object' ? Object.assign(newLb(), v, {handle: v.handle || HANDLE}) : newLb(); }
 async function pvpInit() {
@@ -838,16 +878,15 @@ function ghostFromLog(log, side, handle) {
   return {id: String(log.id || '').slice(0, 12), handle: cleanHandle(handle || log.handle) || 'Imported', rounds, won, n: log.rounds.length};
 }
 function pvpRecord() {
-  if (!S.log || S.mode === 'guest' || S.mode === 'demo') return;
-  const side = 0, st = S.stats.p[side], w = S.winner, async_ = !!S.ghost;
+  if (!RANK.ok || !PVP.db || !S.log || (S.mode !== 'host' && S.mode !== 'guest') || S.me < 0) return;     // only ranked player-vs-player matches count
+  const side = S.me, st = S.stats.p[side], w = S.winner;
   const me = myLb(); me.handle = HANDLE;
   me.m++; me.rounds += S.round; me.dmg += st.dealt | 0; me.kills += st.kills | 0; me.t = Date.now();
   const res = w === side ? 'w' : w < 0 ? 'd' : 'l';
-  me[res]++; if (async_) me['a' + res]++;
+  me[res]++;
   if (res === 'w') me.best = Math.max(me.best, S.round);
-  for (const R of S.log.rounds) { const p = R.p[side]; for (const a of p.board) if (a) { me.units[a[0]] = (me.units[a[0]] || 0) + 1; for (const c of String(a[2] || '')) me.cores[c] = (me.cores[c] || 0) + 1; } }
+  for (const R of S.log.rounds) { const p = R.p[side]; if (!p) continue; for (const a of p.board) if (a) { me.units[a[0]] = (me.units[a[0]] || 0) + 1; for (const c of String(a[2] || '')) me.cores[c] = (me.cores[c] || 0) + 1; } }
   lsSet(LBKEY, me);
-  if (S.mode === 'cpu' && S.diff === 'easy') { pvpPushLb(); return; }     // easy-CPU builds are not worth fighting
   const g = ghostFromLog(S.log, side, HANDLE);
   if (g) { const mine = lsGet(MYKEY, []).filter(x => x.id !== g.id); mine.push(g); const keep = mine.slice(-4); lsSet(MYKEY, keep); pvpPushBuilds(keep); }
   pvpPushLb();
@@ -879,7 +918,7 @@ async function startGhost() {
     if (S.log) { S.log.mode = 'ghost'; S.log.ghost = {id: S.ghost.id, handle: S.ghost.handle, src: S.ghost.src}; }
     ghostSetup(1); buildTurrets(S.p[1]);
     S.ui.msg = 'Rival found: ' + S.ghost.handle; S.ui.msgT = 4;
-  } else { S.ui.msg = 'No saved builds yet, so this one is against the Hard CPU. Play a match and yours becomes a rival for others.'; S.ui.msgT = 6; }
+  } else { S.ui.msg = 'No ranked builds are saved yet, so this one is against the Hard CPU. Ranked online matches (with a PIN) become async rivals.'; S.ui.msgT = 6; }
   overlaySig = ''; dockSig = '';
 }
 function ghostSetup(side) {
@@ -918,22 +957,22 @@ async function pvpLoadLb() {
 function lbHtml() {
   const mine = myLb(), rows = PVP.lb.filter(r => r.id !== PVP.uid);
   if (mine.m) rows.push(Object.assign({id: PVP.uid || 'me', me: 1}, mine));
-  const wr = r => (r.aw + r.al) ? r.aw / (r.aw + r.al) : -1;
-  rows.sort((a, b) => (b.aw | 0) - (a.aw | 0) || wr(b) - wr(a) || (b.w | 0) - (a.w | 0));
+  const wr = r => (r.w + r.l) ? r.w / (r.w + r.l) : -1;
+  rows.sort((a, b) => (b.w | 0) - (a.w | 0) || wr(b) - wr(a));
   const top = o => { const e = Object.entries(o || {}).sort((a, b) => b[1] - a[1])[0]; return e ? e[0] : null; };
   const tn = r => { const k = top(r.units); return k != null && ROSTER[k] ? ROSTER[k].name : '–'; };
   const cn = r => { const k = top(r.cores); return k && ITEMS[k] ? ITEMS[k].name : '–'; };
-  const pct = r => (r.aw + r.al) ? Math.round(100 * r.aw / (r.aw + r.al)) + '%' : '–';
+  const pct = r => (r.w + r.l) ? Math.round(100 * r.w / (r.w + r.l)) + '%' : '–';
   const agg = {u: {}, c: {}};
   for (const r of rows) { for (const k in (r.units || {})) agg.u[k] = (agg.u[k] || 0) + r.units[k]; for (const k in (r.cores || {})) agg.c[k] = (agg.c[k] || 0) + r.cores[k]; }
   const best = (o, f) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => f(e[0])).filter(Boolean).join(', ') || '–';
-  const body = rows.length ? rows.map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(cleanHandle(r.handle) || 'Player') + (r.me ? ' (you)' : '') + '</td><td>' + (r.aw | 0) + ' – ' + (r.al | 0) + '</td><td>' + pct(r) + '</td><td>' + (r.m | 0) + '</td><td>' + (r.rounds ? Math.round(r.dmg / r.rounds) : 0) + '</td><td>' + (r.best | 0) + '</td><td class="l">' + tn(r) + '</td><td class="l">' + cn(r) + '</td></tr>').join('')
-    : '<tr><td colspan="9" class="l">No results yet. Finish a match and you appear here.</td></tr>';
-  return '<div class="kicker">Async PvP</div><h1>Leaderboard</h1>' +
-    '<div class="wiki"><p class="hint">' + (PVP.db ? 'Shared with everyone who can open this page. Ranked by async PvP wins.' : 'Shared ranking needs this page opened in Claude. Showing this device only.') + (PVP.err ? ' ' + escA(PVP.err) : '') + '</p>' +
-    '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>Async W–L</th><th>Win %</th><th>Matches</th><th>Dmg / rd</th><th>Best win (rds)</th><th>Fav turret</th><th>Fav core</th></tr></thead><tbody>' + body + '</tbody></table>' +
+  const body = rows.length ? rows.map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(cleanHandle(r.handle) || 'Player') + (r.me ? ' (you)' : '') + '</td><td>' + (r.w | 0) + ' – ' + (r.l | 0) + '</td><td>' + pct(r) + '</td><td>' + (r.m | 0) + '</td><td>' + (r.rounds ? Math.round(r.dmg / r.rounds) : 0) + '</td><td>' + (r.best | 0) + '</td><td class="l">' + tn(r) + '</td><td class="l">' + cn(r) + '</td></tr>').join('')
+    : '<tr><td colspan="9" class="l">No results yet. Win an online match with a PIN set and you appear here.</td></tr>';
+  return '<div class="kicker">Ranked player vs player</div><h1>Leaderboard</h1>' +
+    '<div class="wiki"><p class="hint">' + (PVP.db ? 'Ranked by wins in online matches played with a PIN. Async and CPU matches are not counted.' : 'Shared ranking needs this page opened in Claude. Showing this device only.') + (PVP.err ? ' ' + escA(PVP.err) : '') + '</p>' +
+    '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>PvP W–L</th><th>Win %</th><th>Matches</th><th>Dmg / rd</th><th>Best win (rds)</th><th>Fav turret</th><th>Fav core</th></tr></thead><tbody>' + body + '</tbody></table>' +
     '<p><b>Most fielded turrets:</b> ' + best(agg.u, k => ROSTER[k] ? ROSTER[k].name : '') + '</p><p><b>Most fitted cores:</b> ' + best(agg.c, k => ITEMS[k] ? ITEMS[k].name : '') + '</p>' +
-    '<p class="hint">Your account: ' + mine.w + ' wins, ' + mine.l + ' losses, ' + mine.d + ' draws over ' + mine.m + ' matches, ' + mine.kills + ' kills.</p></div>' +
+    '<p class="hint">Your ranked record: ' + mine.w + ' wins, ' + mine.l + ' losses, ' + mine.d + ' draws over ' + mine.m + ' matches, ' + mine.kills + ' kills.</p></div>' +
     '<div class="btns"><button class="btn quiet" data-act="lbx" type="button">Back</button><label class="btn filebtn">Import builds from a match file<input id="ghIn" type="file" accept=".json,application/json"></label></div>';
 }
 function afterResult() {
@@ -3584,6 +3623,13 @@ function onHostPeers(ch) {
     if (g) { net.guestPeer = g.peer; newMatch('host'); }
   }
 }
+function hostGuestName() {
+  const g = guestPresence();
+  let n = cleanHandle(g && g.nm);
+  if (!n || nameErr(n)) n = 'Rival';
+  if (nameKey(n) === nameKey(HANDLE)) n = (n.slice(0, 12) + ' 2');
+  return n;
+}
 function guestPresence() {
   if (!net || !net.room || net.role !== 'host') return null;
   const g = net.room.peers().find(p => p.peer === net.guestPeer);
@@ -3612,7 +3658,7 @@ function snapshot() {
   const r1 = Math.round;
   const s = {
     ph: S.phase, m: S.matchId, rd: S.round, tl: r1(S.timeLeft * 10), pt: r1(S.phaseT * 10), rw: S.rw, ls: S.loser, win: S.winner,
-    ch: S.chaos ? [S.chaos.i, r1(S.chaos.t * 10)] : 0, ts: r1(S.timeScale * 100), gp: net.guestPeer, hr: net.rematch ? 1 : 0,
+    nm: [HANDLE, hostGuestName()], ch: S.chaos ? [S.chaos.i, r1(S.chaos.t * 10)] : 0, ts: r1(S.timeScale * 100), gp: net.guestPeer, hr: net.rematch ? 1 : 0,
     P: [packP(S.p[0]), packP(S.p[1])],
     u: S.units.slice(0, 100).map(u => [u.id, u.side * 10 + TYPE_KEYS.indexOf(u.type), r1(u.x), r1(u.y), Math.max(0, r1(u.hp / u.max * 100)), (u.atk ? 1 : 0) | (u.slow > 0 ? 2 : 0) | (u.burn && u.burn.t > 0 ? 4 : 0) | (u.warp > 0 ? 8 : 0)]),
     pr: S.projs.filter(p => p.kind === 'shell').slice(0, 12).map(p => [p.id, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.side]),
@@ -3640,7 +3686,7 @@ async function joinRoom(code) {
   newMatch('guest'); S.phase = 'connecting'; S.connectAt = performance.now(); S.code = code;
   try {
     const r = await roomNS.join('bk-' + code, 'guest');
-    net = {room: r, role: 'guest', code, hostPeer: null, myPeer: null, lastSend: 0, lastIn: '', actN: 0, in: {m: '', acts: [], r: 0}, unsub: []};
+    net = {room: r, role: 'guest', code, hostPeer: null, myPeer: null, lastSend: 0, lastIn: '', actN: 0, in: {m: '', acts: [], r: 0, nm: HANDLE}, unsub: []};
     r.presence({role: 'guest', in: net.in}).catch(() => {});
     net.unsub.push(r.onPeers(onGuestPeers, netLost));
   } catch (e) { S.phase = 'neterr'; S.netMsg = netErrText(e && e.code || 'error', code); }
@@ -3660,6 +3706,7 @@ function applySnap(s) {
   if (s.m !== S.matchId) {
     S.matchId = s.m; clearField(); S.decals = []; S.texts = []; S.titles = [];
     S.p = [newPlayer(), newPlayer()]; S.stats = {rounds: [], p: [newStat(), newStat()]};
+    S.log = {id: String(s.m).slice(0, 8), mode: 'guest', diff: '', started: new Date().toISOString(), side: 1, handle: HANDLE, rounds: [], end: null};
     if (net) { net.in.m = s.m; net.in.acts = []; net.in.r = 0; net.actN = 0; }
     S.lastSeq = Math.max(0, ...((s.ev || []).map(e => (Array.isArray(e) ? e[0] | 0 : 0))));
     S.phase = '';
@@ -3669,12 +3716,14 @@ function applySnap(s) {
   const ph = String(s.ph);
   if (['setup', 'intro', 'combat', 'result', 'over'].includes(ph) && ph !== S.phase) {
     S.phase = ph;
+    if (ph === 'over' && S.mode === 'guest' && S.me >= 0 && S.log && !S.log.end) { S.winner = Number.isInteger(s.win) ? s.win : -1; S.round = s.rd | 0 || S.round; setTimeout(() => { if (S.log && !S.log.end && S.phase === 'over') logEnd(); }, 400); }
     if (ph === 'setup') { clearField(); S.ui.sel = null; }
     phaseFx(ph);
   }
   S.timeLeft = (s.tl | 0) / 10; S.phaseT = (s.pt | 0) / 10;
   S.rw = Number.isInteger(s.rw) ? s.rw : -1; S.loser = Number.isInteger(s.ls) ? s.ls : -1; S.winner = Number.isInteger(s.win) ? s.win : -1;
   S.hostRematch = !!s.hr;
+  if (Array.isArray(s.nm)) S.names = s.nm.slice(0, 2).map(x => cleanHandle(x) || 'Player');
   if (Array.isArray(s.sr)) S.stats.rounds = s.sr.filter(Array.isArray).map(a => ({r: a[0] | 0, w: a[1] | 0, keep: [a[2] | 0, a[3] | 0], kills: [a[4] | 0, a[5] | 0], dmg: a[6] | 0, lv: [a[7] | 0, a[8] | 0]}));
   if (Array.isArray(s.sp)) S.stats.p = [0, 1].map(i => { const a = Array.isArray(s.sp[i]) ? s.sp[i] : []; return {kills: a[0] | 0, breach: a[1] | 0, spent: a[2] | 0, rerolls: a[3] | 0, xp: a[4] | 0, stars: a[5] | 0, dealt: a[6] | 0, wins: a[7] | 0}; });
   S.chaos = Array.isArray(s.ch) && CHAOS[s.ch[0]] ? {id: CHAOS[s.ch[0]].id, i: s.ch[0], t: (s.ch[1] | 0) / 10} : null;
@@ -3753,9 +3802,9 @@ const streakTxt = st => st > 1 ? 'W' + st : st < -1 ? 'L' + (-st) : '';
 function tags() {
   const d = DIFF[S.diff] ? DIFF[S.diff].label : '';
   if (S.mode === 'demo') return ['CPU', 'CPU'];
-  if (S.mode === 'cpu') return S.ghost ? ['You', S.ghost.handle + ' · ghost'] : ['You', 'CPU · ' + d];
-  if (S.mode === 'host') return ['You', net && net.guestPeer ? 'Rival' : 'Waiting'];
-  if (S.mode === 'guest') return S.me === 1 ? ['Rival', 'You'] : ['Player 1', 'Player 2'];
+  if (S.mode === 'cpu') return S.ghost ? [HANDLE, S.ghost.handle + ' · ghost'] : [HANDLE, 'CPU · ' + d];
+  if (S.mode === 'host') return [HANDLE, net && net.guestPeer ? hostGuestName() : 'Waiting'];
+  if (S.mode === 'guest') { const n = S.names || []; return [n[0] || 'Player 1', n[1] || 'Player 2']; }
   return ['', ''];
 }
 function updateHUD() {
@@ -4041,9 +4090,11 @@ function showOverlay() {
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
+      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><label>PIN for ranked online play<input id="pinIn" type="password" inputmode="numeric" maxlength="4" placeholder="4 digits" value="' + escA(PIN) + '" autocomplete="off"></label></div>' +
+      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Online with a PIN counts on the leaderboard and shares your build as an async rival. Leave the PIN blank for an unranked game.</p>') +
       '<div class="modes">' +
         '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU runs VOLT on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
-        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by another player. Your builds become rivals for them.</p><input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" aria-label="Your name" autocomplete="off" spellcheck="false"><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div>' + (PVP.err ? '<p class="hint">' + escA(PVP.err) + '</p>' : '') + '</div>' +
+        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked, no PIN needed.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
         '<div class="mode"><h2>Against a friend</h2>' +
           (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
             '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
@@ -4101,8 +4152,8 @@ function onAct(a, btn) {
   else if (k0 === 'ghost') { PVP.err = ''; startGhost(); }
   else if (k0 === 'lb') { S.ui.lb = true; pvpLoadLb(); }
   else if (k0 === 'lbx') S.ui.lb = false;
-  else if (k0 === 'host') { S.joinErr = ''; hostRoom(); }
-  else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; S.joinErr = ''; joinRoom(v); }
+  else if (k0 === 'host') { rankedGate().then(ok => { if (ok) hostRoom(); else overlaySig = ''; }); }
+  else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; rankedGate().then(ok => { if (ok) joinRoom(v); else overlaySig = ''; }); }
   else if (k0 === 'slot') onSlot(parts[1], parts[2] | 0);
   else if (k0 === 'buy') act({t: 'buy', i: parts[1] | 0});
   else if (k0 === 'bet') { const P = myP(); if (P) { let n = BETS[(BETS.indexOf(P.bet) + 1) % BETS.length]; if (n - P.bet > P.gold) n = 0; act({t: 'bet', v: n}); } }
@@ -4132,7 +4183,8 @@ for (const id of ['overlay', 'dock']) {
     if (b && !b.disabled) onAct(b.getAttribute('data-act'), b);
   });
 }
-$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
+$('overlay').addEventListener('input', e => { if (e.target && e.target.id === 'pinIn') setPin(e.target.value); });
+$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'pinIn') setPin(t.value); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
 $('overlay').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'codeIn') onAct('join'); });
 
 $('volMusic').value = String(Math.round(VOL.music * 100));
