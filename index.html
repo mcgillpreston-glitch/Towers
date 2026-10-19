@@ -167,6 +167,12 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 table.wk td.l{text-align:left}
 table.wk th{white-space:nowrap}
 .bet em{font-style:normal;opacity:.8;margin-left:3px;font-size:10px}
+.unit.merge{animation:mglow 1.3s ease-in-out infinite}
+.unit.merge::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.38) 50%,transparent 62%);background-size:260% 100%;animation:sheen 1.9s linear infinite}
+.unit.merge .own{background:#fff4c0;box-shadow:0 0 10px #ffd96a}
+.chip.mglow{outline:2px solid #ffe28a;outline-offset:1px;animation:mglow 1s ease-in-out infinite}
+@keyframes mglow{0%,100%{box-shadow:0 0 6px rgba(255,210,90,.4)}50%{box-shadow:0 0 22px rgba(255,230,140,.95)}}
+@keyframes sheen{from{background-position:130% 0}to{background-position:-130% 0}}
 .bet.on{color:var(--warn);box-shadow:0 0 10px rgba(255,200,80,.45)}
 #cdown{position:absolute;top:6px;left:50%;transform:translateX(-50%);font:900 92px/1 var(--f-display);color:#fff;text-shadow:0 0 28px rgba(255,190,70,.95),0 3px 0 #000;pointer-events:none;z-index:25;opacity:0}
 #cdown.pop{animation:cdpop .9s ease-out}
@@ -408,6 +414,7 @@ function newPlayer() {
 let S = null, net = null, seq = 0, overlaySig = '', dockSig = '';
 function boardCount(P) { return P.board.filter(Boolean).length; }
 function ownedCopies(P, r, star) { let n = 0; for (const u of P.board.concat(P.bench)) if (u && u.r === r && u.star === (star || 1)) n++; return n; }
+function mergeStar(P, r) { for (let st = 1; st <= 2; st++) if (ownedCopies(P, r, st) >= 2) return st; return 0; }
 function sellValue(u) { return ROSTER[u.r].tier * Math.pow(3, u.star - 1); }
 function rollShop(P) {
   const odds = ODDS[P.level];
@@ -2524,6 +2531,10 @@ function drawTurrets(side) {
       ctx.strokeStyle = 'rgba(255,255,255,' + (u ? pulse * 0.5 : pulse) + ')'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 2]);
       ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
+    if (planning && S.ui.mhl && u && u.r === S.ui.mhl.r && u.star === S.ui.mhl.s) {
+      const pu = 0.55 + 0.45 * Math.sin(S.t * 8);
+      ctx.strokeStyle = 'rgba(255,226,138,' + pu + ')'; ctx.lineWidth = 2.5; ctx.shadowColor = '#ffd96a'; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0;
+    }
     if (i === selM) { ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke(); }
     if (!u && AON) {
       if (S.phase === 'setup') { ctx.strokeStyle = 'rgba(' + F.rgb + ',' + (0.35 + 0.25 * Math.sin(S.t * 3 + i)) + ')'; ctx.lineWidth = 1.2; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
@@ -3265,7 +3276,7 @@ function traitTipHtml(t, l, c) {
 }
 function tipFromKey(k) {
   const P = S.p[S.me] || S.p[0], lv = traitLevels(P.board).lv, [a, b, c] = k.split(':');
-  if (a === 'r') return unitTipHtml(unitOf(+b, 1), lv);
+  if (a === 'r') { let h = unitTipHtml(unitOf(+b, 1), lv); const ms = mergeStar(P, +b); if (ms) h += '<div style="margin-top:8px;color:#ffe28a;font-weight:700">✦ Combines: with your two ' + ROSTER[+b].name + ' ' + '★'.repeat(ms) + ' it makes one ' + '★'.repeat(ms + 1) + ' turret and frees two slots. Hover to see which ones.</div>'; return h; }
   if (a === 'm' || a === 'b') { const u = (a === 'm' ? P.board : P.bench)[+b]; return u ? unitTipHtml(u, lv) : ''; }
   if (a === 'i') return itemTipHtml(b);
   return '';
@@ -3662,6 +3673,24 @@ function selInfo(P) {
   return '<span><b style="color:' + TIER_C[R.tier] + '">' + R.name + '</b> <span style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span> · ' + R.traits.map(t => TRAITS[t].name).join(' · ') + ' · ' + perShot + (s.kind === 'beam' ? ' dps' : ' dmg') + ' · ' + Math.round(s.range / PX_PER_M) + '&nbsp;m</span>' +
     (u.items.length ? '<button type="button" class="btn small" data-act="strip" data-tip="Take every core off this turret and back into the rack. 1 gold per core.">Remove cores <b>' + u.items.length + 'g</b></button>' : '') + '<button type="button" class="btn small" data-act="sell">Sell for <b>' + sellValue(u) + '</b></button><span class="h">Tap a mount or bench slot to move it.</span>';
 }
+function applyMergeHl() {
+  const d = $('dock'), m = S.ui && S.ui.mhl, P = myP();
+  if (!d || !d.querySelectorAll) return;
+  d.querySelectorAll('.mglow').forEach(e => e.classList.remove('mglow'));
+  if (!m || !P) return;
+  d.querySelectorAll('[data-tipk^="m:"],[data-tipk^="b:"]').forEach(e => {
+    const q = e.getAttribute('data-tipk').split(':'), u = (q[0] === 'm' ? P.board : P.bench)[q[1] | 0];
+    if (u && u.r === m.r && u.star === m.s) e.classList.add('mglow');
+  });
+}
+$('dock').addEventListener('mouseover', e => {
+  const c = e.target && e.target.closest ? e.target.closest('[data-merge]') : null;
+  const v = c ? c.getAttribute('data-merge').split(':') : null;
+  const m = v ? {r: +v[0], s: +v[1]} : null;
+  if ((m && S.ui.mhl && S.ui.mhl.r === m.r && S.ui.mhl.s === m.s) || (!m && !S.ui.mhl)) return;
+  S.ui.mhl = m; applyMergeHl();
+});
+$('dock').addEventListener('mouseleave', () => { if (S.ui.mhl) { S.ui.mhl = null; applyMergeHl(); } });
 function renderDock() {
   const d = $('dock'), P = myP(), sound = '';
   if (!P || S.mode === 'demo') {
@@ -3689,7 +3718,8 @@ function renderDock() {
     const r = P.shop[i];
     if (r < 0 || !ROSTER[r]) { h += '<div class="sc"><div class="unit sold">Sold</div></div>'; continue; }
     const R = ROSTER[r], own = ownedCopies(P, r, 1);
-    h += '<div class="sc"><button type="button" class="unit" data-act="buy:' + i + '" data-tipk="r:' + r + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
+    const mst = mergeStar(P, r);
+    h += '<div class="sc"><button type="button" class="unit' + (mst ? ' merge' : '') + '" ' + (mst ? 'data-merge="' + r + ':' + mst + '" ' : '') + 'data-act="buy:' + i + '" data-tipk="r:' + r + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
       (own ? '<span class="own">' + own + '/3</span>' : '') + wIcon(R.id) +
       '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span><span class="ud">' + R.short + '</span></button><span class="lockb' + (P.lock[i] ? ' on' : '') + '" data-act="lock:' + i + '" data-tip="' + (P.lock[i] ? 'Locked: this turret stays in the shop through rerolls and into the next round. Tap to unlock.' : 'Lock this turret so rerolls and the next round keep it.') + '">' + (P.lock[i] ? 'LOCKED' : 'LOCK') + '</span></div>';
   }
@@ -3705,6 +3735,7 @@ function renderDock() {
   h += '</div></div></div>';
   h += '<div class="selbar" role="status">' + (S.ui.msg ? '<span class="m">' + S.ui.msg + '</span>' : selInfo(P) || '<span class="h">' + (locked ? 'Locked in. Waiting for the other keep… Tap Unlock to keep editing.' : 'Buy turrets, tap one to pick it up, then tap a mount. Three copies merge into a stronger star. Keys: D reroll, F buy XP, E sell.') + '</span>') + '</div>';
   d.innerHTML = h;
+  applyMergeHl();
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
