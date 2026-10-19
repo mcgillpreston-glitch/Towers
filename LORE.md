@@ -11,6 +11,7 @@ Source of truth: *Of Blood & Glass: Master Lore Book* (kept by the project owner
 | Ten station chiefs, five per Keep, paired stations | Install line when a turret is seated; losing crew's lines on the match-over screen; Crews wiki tab | `CHIEFS`, `STATION`, `chiefBark`, `endingHtml` |
 | Last Witness (16 Romeo/Juliette exchanges) | Start of planning in rounds 1, 4, 7...; Voices wiki tab | `WITNESS`, `updateWitness` |
 | Blue and red endings | Match-over screen after a decisive result, with the matching exchange | `ENDING`, `endingHtml` |
+| Portraits (12 supplied images: Romeo, Juliette, the ten chiefs) | Last Witness plates, the chief card shown when you seat a turret, Crews and Voices wiki tabs, match-over screen | `PORT` (200x300 WebP inlined as data URIs), `showBark`, `updateWitness` |
 | World, towns, arsenal, machines, cores | Wiki tabs (also reachable from the main menu) | `wikiHtml` |
 
 ## Rules from the lore book to keep
@@ -22,10 +23,12 @@ Source of truth: *Of Blood & Glass: Master Lore Book* (kept by the project owner
 
 ## Not built yet (described in the book)
 - **Path defences:** each attack path has two designated areas for barriers or slow fields, a continuous route always remains, and planning gains 30 seconds to build them. This is a new gameplay mechanic and is not in the game.
-- Portrait art for Romeo and Juliette (the book reserves portrait ids; the game shows name plates only).
 - Chief lines for low tower integrity and for casual fire orders (only some chiefs have them in the book).
 - The thirteen-day story chapters (days 1 to 13) and campaign gating of dialogue.
 - Nano Lens core art.
 
 ## When the lore book changes
 Update the data blocks in `ballista-keep.html` (`CHIEFS`, `WITNESS`, `ENDING`, the wiki text), keep quoted lines word for word, then follow the publish steps in `ONLINE.md`'s checklist. Names stored in saved builds are turret indexes, not lore names, so lore edits never invalidate saved builds.
+
+## Portraits
+The source art is 1024x1536 PNG with transparent glow. The game embeds 200x300 WebP copies (about 25 KB each) in the `PORT` block of `ballista-keep.html`. To replace one, resize the new image the same way and swap that entry; the character keys are `romeo, juliette, ivo, sera, neris, tomas, mira, cassian, tavia, edda, lucan, ysra`. If the page gets too large for a Steam build, move the images to files and load them by path.
