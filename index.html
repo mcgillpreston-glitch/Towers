@@ -66,6 +66,11 @@ header.hud::before,header.hud::after{display:none}
 .sub .gd{color:var(--gold)}
 .sub .win{color:var(--win)}
 .sub .loss{color:var(--loss)}
+.bench{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px;font-variant-numeric:tabular-nums}
+.bench th,.bench td{text-align:left;padding:3px 8px;border-bottom:1px solid rgba(232,199,106,.25)}
+.bench tr.rec td{color:#5bf0ad;font-weight:700}
+.card>*{flex-shrink:0}
+.benchtxt{min-height:58px;width:100%;box-sizing:border-box;background:#080d1d;color:#b8bbdd;border:1px solid rgba(232,199,106,.4);border-radius:4px;font:12px var(--f-ui);padding:6px;resize:none}
 .sub .st:empty{display:none}
 .sub:has(.st:empty) i:nth-of-type(2){display:none}
 .clock{text-align:center;padding:6px 14px;background:linear-gradient(180deg,#0b0f2a,#10132b) padding-box,var(--gild) border-box;border:1.5px solid transparent;border-radius:3px;box-shadow:0 0 0 1px rgba(5,3,11,.9),0 0 18px rgba(62,200,230,.12);position:relative;min-width:0}
@@ -3714,6 +3719,7 @@ function render() {
   ctx.drawImage(vignette(), 0, 0, W, H);
   if (S.flash > 0) { ctx.fillStyle = 'rgba(' + S.flashC + ',' + S.flash * 0.5 + ')'; ctx.fillRect(0, 0, W, H); }
   if (S.energy > 0.9 && !reduced) { ctx.fillStyle = 'rgba(255,255,255,' + 0.035 * S.kick + ')'; ctx.fillRect(0, 0, W, H); }
+  if (GFX.on && GFX.setup) benchOverlay();
   if (S.letter > 0.5) {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, S.letter); ctx.fillRect(0, H - S.letter, W, S.letter);
     const lg = ctx.createLinearGradient(0, 0, W, 0);
@@ -4425,7 +4431,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [S.ui.set, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [S.ui.set, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -4575,7 +4581,7 @@ function settingsHtml() {
       '<label><input type="checkbox" id="mLow"' + (VIDEO.low ? ' checked' : '') + '> Reduced effects (fewer particles, no smoke)</label>' +
       '<label><input type="checkbox" id="mAdapt"' + (VIDEO.adapt ? ' checked' : '') + '> Adaptive resolution (lowers it automatically if combat lags)</label></div>' +
     (RES[VIDEO.res] && effRes() !== VIDEO.res ? '<p class="hint">Now drawing at ' + RES[effRes()].name + ', lowered automatically because combat was running slowly.</p>' : '') +
-    '<p class="hint">4K draws the battlefield at 3840 × 2160 and is the default. If the game runs slowly, choose a lower resolution: it also loads a smaller background picture.</p>';
+    '<p class="hint">4K draws the battlefield at 3840 × 2160 and is the default. If the game runs slowly, choose a lower resolution: it also loads a smaller background picture.</p>' + benchHtml();
 }
 function bindSettings() {
   const mm = $('mVolMusic'), mf = $('mVolFx');
@@ -4742,6 +4748,8 @@ function onAct(a, btn) {
   else if (k0 === 'logdl') logDownload(true);
   else if (k0 === 'stats') { S.ui.menu = false; S.ui.tab = !S.ui.tab; }
   else if (k0 === 'leave') { leaveRoom(); newMatch('demo'); }
+  else if (k0 === 'bench') startBench();
+  else if (k0 === 'benchuse') { if (RES[parts[1]]) { VIDEO.res = parts[1]; PERF.step = 0; PERF.n = 0; PERF.cool = 3; saveVideo(); fit(); overlaySig = ''; } }
   else if (k0 === 'cpu') startCpu(parts[1]);
   else if (k0 === 'ghost') { PVP.err = ''; startGhost(); }
   else if (k0 === 'lb') { S.ui.lb = true; pvpLoadLb(); }
@@ -4795,8 +4803,78 @@ addEventListener('keydown', () => audio(), {once: true});
 newMatch('demo');
 pvpInit();
 let last = performance.now(), acc = 0;
+
+/* ---------- graphics test: a scripted heavy combat run at each resolution on the player's own hardware ---------- */
+const GFX_RES = ['4k', '1440', '1080', '720'];
+const GFX = {on: false, i: 0, warm: 0, samples: [], out: [], setup: false, prev: null, results: null};
+try { GFX.results = JSON.parse(localStorage.getItem('bk-bench') || 'null'); } catch (e) {}
+function gpuInfo() { try { const c = document.createElement('canvas'), gl = c.getContext('webgl'), e = gl && gl.getExtension('WEBGL_debug_renderer_info'); return e ? String(gl.getParameter(e.UNMASKED_RENDERER_WEBGL)) : 'unknown'; } catch (e) { return 'unknown'; } }
+function startBench() {
+  if (GFX.on) return;
+  GFX.prev = {res: VIDEO.res, adapt: VIDEO.adapt};
+  leaveRoom(); startCpu('hard'); S.ui.set = false;
+  Object.assign(GFX, {on: true, i: 0, warm: 1.5, samples: [], out: [], setup: false});
+}
+function benchApply() { VIDEO.res = GFX_RES[GFX.i]; VIDEO.adapt = false; PERF.step = 0; fit(); GFX.warm = 1.5; GFX.samples = []; }
+function benchStats(sm) {
+  const a = sm.slice().sort((x, y) => x - y), sum = sm.reduce((x, y) => x + y, 0);
+  const p99 = a[Math.min(a.length - 1, Math.floor(a.length * 0.99))];
+  return {fps: Math.round(sm.length / sum * 10000) / 10, low: Math.round(1000 / p99 * 10) / 10, slow: Math.round(sm.filter(x => x > 33.4).length / sm.length * 1000) / 10, n: sm.length};
+}
+function benchFinish() {
+  const o = GFX.out;
+  let rec = '720';
+  const good = o.find(r => r.fps >= 55 && r.low >= 40) || o.find(r => r.fps >= 40 && r.low >= 28);
+  if (good) rec = good.res;
+  GFX.results = {t: Date.now(), rec, out: o, gpu: gpuInfo(), dpr: window.devicePixelRatio || 1, screen: screen.width + 'x' + screen.height, cores: navigator.hardwareConcurrency || 0, mem: navigator.deviceMemory || 0};
+  try { localStorage.setItem('bk-bench', JSON.stringify(GFX.results)); } catch (e) {}
+  VIDEO.res = GFX.prev.res; VIDEO.adapt = GFX.prev.adapt; PERF.step = 0; fit();
+  GFX.on = false; $('overlay').style.display = '';
+  leaveRoom(); newMatch('demo'); S.ui.set = true; overlaySig = '';
+}
+function benchTick(raw) {
+  $('overlay').style.display = 'none';
+  if (!GFX.setup) {
+    if (S.phase !== 'setup' && S.phase !== 'intro' && S.phase !== 'combat') return;
+    for (let sd = 0; sd < 2; sd++) { const P = S.p[sd]; for (let i = 0; i < 10; i++) P.board[i] = {r: (i * 2 + sd * 5) % ROSTER.length, star: 2, items: []}; }
+    startCombat(); setPhase('combat'); GFX.setup = true; benchApply(); return;
+  }
+  S.timeLeft = 30; S.cam = {x: W / 2, y: H / 2, z: 1}; S.titles = []; S.spawnT = 999;
+  for (const sd of [0, 1]) { S.p[sd].keep = KEEP_HP; S.p[sd].shield = 0; }
+  if (S.units.length < 44) for (let sd = 0; sd < 2; sd++) {
+    for (let n = 0; n < 4; n++) { spawn(['trooper', 'bike', 'bulwark'][n % 3], sd); const u = S.units[S.units.length - 1]; u.hp = u.max = 1e7; u.d = rnd(0, 700); placeUnit(u); }
+    for (let n = 0; n < 2; n++) { spawn('drone', sd); const u = S.units[S.units.length - 1]; u.hp = u.max = 1e7; u.d = -n * 20; placeUnit(u); }
+    if (Math.random() < 0.1) { spawn('titan', sd); S.units[S.units.length - 1].hp = S.units[S.units.length - 1].max = 1e7; }
+  }
+  if (raw > 0.5) return;
+  if (GFX.warm > 0) { GFX.warm -= raw; return; }
+  GFX.samples.push(raw * 1000);
+  if (GFX.samples.reduce((x, y) => x + y, 0) >= 5000) {
+    GFX.out.push(Object.assign({res: GFX_RES[GFX.i]}, benchStats(GFX.samples)));
+    GFX.i++;
+    if (GFX.i >= GFX_RES.length) benchFinish(); else benchApply();
+  }
+}
+function benchOverlay() {
+  ctx.save(); ctx.fillStyle = 'rgba(5,4,18,.78)'; ctx.fillRect(W / 2 - 250, 70, 500, 46);
+  ctx.strokeStyle = '#e8c76a'; ctx.lineWidth = 1.5; ctx.strokeRect(W / 2 - 250, 70, 500, 46);
+  ctx.fillStyle = '#f3f4fc'; ctx.font = '700 17px "Chakra Petch", sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('Graphics test: ' + (RES[GFX_RES[Math.min(GFX.i, 3)]].name) + ' (' + (Math.min(GFX.i, 3) + 1) + ' of 4). Please keep this tab open.', W / 2, 98);
+  ctx.restore();
+}
+function benchHtml() {
+  const r = GFX.results;
+  let h = '<h2>Performance</h2><div class="setrow"><button class="btn small" data-act="bench" type="button">Run graphics test (about 35 s)</button></div>';
+  if (!r) return h + '<p class="hint">Plays a heavy scripted battle at each resolution on this device and recommends the sharpest one that stays smooth.</p>';
+  h += '<table class="bench"><tr><th>Resolution</th><th>Avg fps</th><th>1% low</th><th>Slow frames</th><th></th></tr>' +
+    r.out.map(o => '<tr' + (o.res === r.rec ? ' class="rec"' : '') + '><td>' + RES[o.res].name + '</td><td>' + o.fps + '</td><td>' + o.low + '</td><td>' + o.slow + '%</td><td>' + (o.res === r.rec ? 'recommended' : '') + '</td></tr>').join('') + '</table>' +
+    '<div class="setrow"><button class="btn small prime" data-act="benchuse:' + r.rec + '" type="button">Use ' + RES[r.rec].name + '</button></div>';
+  const txt = 'Of Blood & Glass graphics test | ' + r.out.map(o => o.res + ' ' + o.fps + 'fps (1% low ' + o.low + ', slow ' + o.slow + '%)').join(' | ') + ' | recommended ' + r.rec + ' | GPU ' + r.gpu + ' | screen ' + r.screen + ' @' + r.dpr + 'x | cores ' + r.cores + (r.mem ? ' | mem ' + r.mem + 'GB' : '');
+  return h + '<p class="hint">Copy this line if you want to send the result to someone:</p><textarea class="benchtxt" readonly rows="3" onclick="this.select()">' + escA(txt) + '</textarea>';
+}
 function frame(now) {
   perfGov((now - last) / 1000);
+  if (GFX.on) benchTick((now - last) / 1000);
   const rdt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
   const dt = rdt * S.timeScale;
   if (S.mode === 'guest') { guestTween(dt); cosmetic(dt, rdt); }
