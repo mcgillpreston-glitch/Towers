@@ -153,8 +153,21 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .unit .ud{padding-right:62px}
 .chip .ti{position:absolute;right:3px;bottom:2px;width:34px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 2px #000);pointer-events:none}
 .chip .ti.core{width:26px;height:26px;border-radius:50%;bottom:auto;top:50%;transform:translateY(-50%)}
-.chip .ci{position:absolute;right:4px;top:4px;display:flex;gap:2px}
-.chip .ci i{width:6px;height:6px;transform:rotate(45deg);box-shadow:0 0 5px currentColor}
+.chip .ci{position:absolute;right:5px;top:5px;display:flex;gap:5px}
+.chip .ci i{width:9px;height:9px;transform:rotate(45deg);box-shadow:0 0 5px currentColor;cursor:grab;touch-action:none;outline:1px solid rgba(255,255,255,.35)}
+.chip .ci i:hover{outline-color:#fff;box-shadow:0 0 9px #fff}
+.chip .kb{display:inline-block;margin-left:3px;padding:0 4px;border:1px solid var(--bz-hi);color:var(--ink);font-size:9px;letter-spacing:0}
+.sc{position:relative;display:flex}.sc>.unit{flex:1;min-width:0}
+.lockb{position:absolute;right:5px;top:5px;z-index:2;font:700 8px var(--f-display);letter-spacing:.1em;padding:2px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
+.lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
+.drop{outline:2px dashed var(--ether);outline-offset:1px;background-color:rgba(62,200,230,.12)}
+[data-act^="slot:i:"]{touch-action:none}
+.upgs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.upgs .zl{margin:0}.upgs .h{color:var(--muted);font-size:12px}
+.upg .pips{letter-spacing:.1em;color:var(--ether);font-size:9px}
+.calls{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.call kbd{font:700 10px var(--f-display);border:1px solid var(--bz-hi);padding:0 4px}
+.call.dim{opacity:.55}.call.cool{opacity:.4}
 .selbar{display:flex;gap:10px;align-items:center;min-height:30px;font-size:13px;flex-wrap:wrap}
 .selbar .m{color:var(--warn)}
 .selbar .h{color:var(--muted)}
@@ -326,6 +339,18 @@ const TYPES = {
 const TYPE_KEYS = Object.keys(TYPES);
 for (const k in TYPES) { TYPES[k].w *= US; TYPES[k].h *= US; TYPES[k].spd *= 1.25; }
 const BREACH = {trooper: 22, bike: 18, bulwark: 40, drone: 16, titan: 160};
+const UPG = [
+  {id: 'a', name: 'Plating',   cost: [6, 10, 15], fx: 'Your mechs have +15% HP per level.'},
+  {id: 'w', name: 'Warheads',  cost: [6, 10, 15], fx: 'Mechs that reach the enemy keep hit 12% harder per level.'},
+  {id: 't', name: 'Thrusters', cost: [5, 8, 12],  fx: 'Your mechs move 6% faster per level.'}
+];
+const CALLS = [
+  {id: 'rally',  key: 'Q', name: 'Rally',      cost: 20, cd: 14, fx: 'Your mechs move 35% faster and take 25% less damage for 8 s.'},
+  {id: 'drones', key: 'W', name: 'Drone wave', cost: 18, cd: 10, fx: 'Six Wasp Drones launch from your keep and fly at theirs.'},
+  {id: 'bikes',  key: 'E', name: 'Bike rush',  cost: 22, cd: 10, fx: 'Five fast Razor Bikes race down the lane.'},
+  {id: 'titan',  key: 'R', name: 'Titan',      cost: 55, cd: 22, fx: 'A Titan Walker marches out now. Huge keep damage if it lands.'},
+  {id: 'aegis',  key: 'T', name: 'Aegis',      cost: 25, cd: 18, fx: 'Your keep gains a 200-point shield.'}
+];
 const DROP_CH = {trooper: 0.01, bike: 0.02, bulwark: 0.035, drone: 0.02, titan: 1};
 
 const CHAOS = [
@@ -346,7 +371,7 @@ function randomOfTier(t) { const pool = ROSTER.map((R, i) => R.tier === t ? i : 
 function newStat() { return {kills: 0, breach: 0, spent: 0, rerolls: 0, xp: 0, stars: 0, dealt: 0, wins: 0}; }
 function newPlayer() {
   return {
-    hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
+    lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: [0, 0, 0, 0, 0], rally: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
     shop: [-1, -1, -1, -1, -1], bench: Array(BENCH).fill(null), board: Array(10).fill(null), items: [],
     ready: false, kills: 0, roundKills: 0, lastDmg: 0, lastIncome: 0, msg: '', msgN: 0, actSeen: 0,
     turrets: [], traitLv: {}, boardSig: '',
@@ -360,6 +385,8 @@ function sellValue(u) { return ROSTER[u.r].tier * Math.pow(3, u.star - 1); }
 function rollShop(P) {
   const odds = ODDS[P.level];
   for (let i = 0; i < 5; i++) {
+    if (P.lock[i] && P.shop[i] >= 0) continue;
+    P.lock[i] = 0;
     let x = Math.random() * 100, t = 1;
     for (let k = 0; k < 5; k++) { x -= odds[k]; if (x < 0) { t = k + 1; break; } }
     P.shop[i] = randomOfTier(t);
@@ -408,7 +435,7 @@ function buyShop(P, i, side) {
   if (slot < 0 && ownedCopies(P, r, 1) < 2) return 'Bench is full. Sell or place a turret first.';
   const u = unitOf(r);
   if (slot >= 0) P.bench[slot] = u; else P.bench.push(u);
-  P.gold -= cost; P.shop[i] = -1;
+  P.gold -= cost; P.shop[i] = -1; P.lock[i] = 0;
   if (side !== undefined && S.stats) S.stats.p[side].spent += cost;
   mergeAll(P, side);
   return '';
@@ -433,6 +460,55 @@ function sellUnit(P, z, i) {
   arr[i] = null;
   return '';
 }
+function stripCores(P, f, fi) {
+  const u = (f === 'm' ? P.board : P.bench)[fi];
+  if (!u || !u.items.length) return 'No cores to remove.';
+  let n = 0;
+  while (u.items.length && P.gold >= 1 && P.items.length < MAX_ITEMS) { P.items.push(u.items.pop()); P.gold -= 1; n++; }
+  if (!n) return P.gold < 1 ? 'Removing a core costs 1 gold.' : 'The core rack is full.';
+  return u.items.length ? 'Removed ' + n + '; no room or gold for the rest.' : '';
+}
+function buyUpg(P, side, i) {
+  const U = UPG[i]; if (!U) return '';
+  const lv = P.up[i] | 0;
+  if (lv >= 3) return U.name + ' is already maxed.';
+  const c = U.cost[lv];
+  if (P.gold < c) return U.name + ' ' + (lv + 1) + ' costs ' + c + ' gold.';
+  P.gold -= c; P.up[i] = lv + 1;
+  if (side !== undefined && S.stats) S.stats.p[side].spent += c;
+  return '';
+}
+function mvItem(P, f, fi, k, t, ti) {
+  const src = (f === 'm' ? P.board : P.bench)[fi];
+  if (!src || !(k >= 0 && k < src.items.length)) return '';
+  if (t === 'i') { if (P.items.length >= MAX_ITEMS) return 'The core rack is full.'; if (P.gold < 1) return 'Removing a core costs 1 gold.'; P.gold -= 1; P.items.push(src.items.splice(k, 1)[0]); return ''; }
+  const dst = (t === 'm' ? P.board : P.bench)[ti];
+  if (!dst) return 'Drop a core onto a turret.';
+  if (dst === src) return '';
+  if (dst.items.length >= 3) return ROSTER[dst.r].name + ' already holds 3 cores.';
+  dst.items.push(src.items.splice(k, 1)[0]);
+  return '';
+}
+function spawnN(type, side, n) {
+  const dir = side ? -1 : 1;
+  for (let j = 0; j < n; j++) { spawn(type, side); const u = S.units[S.units.length - 1]; if (u) u.x += dir * j * 15; }
+}
+function callIn(side, i) {
+  const P = S.p[side], C = CALLS[i];
+  if (!C) return '';
+  if (S.phase !== 'combat') return 'Call-ins work during combat.';
+  if (P.cd[i] > 0) return C.name + ' recharges in ' + Math.ceil(P.cd[i]) + ' s.';
+  if (P.gold < C.cost) return C.name + ' costs ' + C.cost + ' gold.';
+  P.gold -= C.cost; P.cd[i] = C.cd;
+  if (S.stats) S.stats.p[side].spent += C.cost;
+  if (C.id === 'rally') P.rally = 8;
+  else if (C.id === 'drones') spawnN('drone', side, 6);
+  else if (C.id === 'bikes') spawnN('bike', side, 5);
+  else if (C.id === 'titan') spawn('titan', side);
+  else if (C.id === 'aegis') P.shield += 200;
+  ev(['q', side, i]);
+  return '';
+}
 function equipItem(P, ii, z, i) {
   const it = P.items[ii], arr = z === 'm' ? P.board : P.bench, u = arr[i];
   if (!it || !u) return '';
@@ -443,6 +519,7 @@ function equipItem(P, ii, z, i) {
 function applyAct(side, a) {
   const P = S.p[side];
   if (!a || typeof a !== 'object') return '';
+  if (a.t === 'call') return callIn(side, a.i | 0);
   if (S.phase !== 'setup') return 'Planning is over for this round.';
   if (a.t === 'unready') { P.ready = false; return ''; }
   if (P.ready) return 'You are locked in for this round.';
@@ -453,6 +530,10 @@ function applyAct(side, a) {
     case 'move': return moveUnit(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
     case 'sell': return sellUnit(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'equip': return equipItem(P, a.ii | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
+    case 'strip': return stripCores(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
+    case 'lock': { const i = a.i | 0; if (i >= 0 && i < 5 && P.shop[i] >= 0) P.lock[i] = P.lock[i] ? 0 : 1; return ''; }
+    case 'upg': return buyUpg(P, side, a.i | 0);
+    case 'mvitem': return mvItem(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.k | 0, a.to === 'm' ? 'm' : a.to === 'i' ? 'i' : 'b', a.ti | 0);
     case 'ready': P.ready = true; return '';
   }
   return '';
@@ -550,6 +631,7 @@ function startCombat() {
   const rec = () => Array.from({length: 10}, () => ({d: 0, h: 0, k: 0}));
   S.rs = {sl: [rec(), rec()], storm: [0, 0], stormK: [0, 0], h: [0, 0], br: [[], []], t0: 0};
   clearField();
+  for (const P of S.p) { P.cd = [0, 0, 0, 0, 0]; P.rally = 0; }
   S.timeLeft = COMBAT_LEN; S.spawnT = 0.5; S.dropDone = 0; S.rw = -1; S.loser = -1;
   S.chaosAt = S.round >= 2 ? [rnd(5, 9)].concat(S.round >= 5 ? [rnd(17, 21)] : []) : [];
   if (S.mode === 'demo') setPhase('combat'); else setPhase('intro', INTRO_LEN);
@@ -732,6 +814,21 @@ function cpuArrangeHard(P, side) {
     best.items.push(P.items.shift());
   }
 }
+function cpuCalls(side, dt) {
+  const P = S.p[side];
+  P.cpuT = (P.cpuT || 0) - dt;
+  if (P.cpuT > 0) return;
+  P.cpuT = 0.7;
+  const el = COMBAT_LEN - S.timeLeft, weak = P.keep < KEEP_HP * 0.5;
+  const spare = P.gold - (weak ? 0 : 15);
+  const ready = i => P.cd[i] <= 0 && spare >= CALLS[i].cost;
+  const mine = S.units.filter(u => u.side === side && u.hp > 0).length;
+  if (weak && ready(4)) callIn(side, 4);
+  else if (el > 9 && ready(3) && Math.random() < 0.5) callIn(side, 3);
+  else if (mine >= 6 && P.rally <= 0 && ready(0) && Math.random() < 0.35) callIn(side, 0);
+  else if (ready(1) && Math.random() < 0.3) callIn(side, 1);
+  else if (ready(2) && Math.random() < 0.25) callIn(side, 2);
+}
 function cpuHard(P, side) {
   if (P.cpuBonus !== S.round) { P.cpuBonus = S.round; P.gold += CPU_EDGE; addXp(P, CPU_XP); }   // hard mode plays with a small economic edge
   const adapt = cpuAdapt(side), rd = S.round;
@@ -783,6 +880,14 @@ function cpuHard(P, side) {
     const hunting = all.some(u => u.star < 3 && ownedCopies(P, u.r, u.star) >= 2) || all.some(u => u.star === 2 && CPU_V[ROSTER[u.r].id] >= 60);
     const keep = hunting ? Math.min(reserve, 10) : reserve;
     if (P.gold - 2 >= keep && (hunting || P.gold - keep >= 6 || all.length < P.level)) reroll(P, side); else break;
+  }
+  // 3b. army upgrades once the keep is staffed
+  if (rd >= 2 && board() >= Math.min(P.level, 10)) {
+    for (let n = 0; n < 4; n++) {
+      const i = [0, 1, 2].sort((a, b) => P.up[a] - P.up[b])[0];
+      if (P.up[i] >= 3 || P.gold - UPG[i].cost[P.up[i]] < reserveFor()) break;
+      buyUpg(P, side, i);
+    }
   }
   // 4. leftover gold buys experience once the shop has nothing to offer
   g = 0;
@@ -1121,6 +1226,14 @@ function applyEvent(d) {
     const side = d[2], F = SIDES[side] || SIDES[0];
     if (d[1] === 0) { addTitle('TITAN INCOMING', F.name + ' sends a walker', F.rgb, 1.6, 34); sfx('titan', t => boom(t, 0.1, 1.2), 0.1); }
     else if (d[1] === 1) { addTitle(F.name + ' KEEP CRITICAL', 'Under 25% — hold the line', '255,90,90', 1.8, 34); }
+  } else if (type === 'q') {
+    const side = d[1], C = CALLS[d[2]], F = SIDES[side];
+    if (!C || !F) return;
+    const x = side ? W - TW.x1 : TW.x1;
+    fxBlast(x + (side ? -50 : 50), GY - 40, C.id === 'aegis' ? 110 : 60, F.rgb, 0.5);
+    spark(x, GY - 60, F.rgb, 14, 220);
+    if (!demo && C.id !== 'titan') addTitle(C.name.toUpperCase(), F.name + ' calls it in', F.rgb, 1.1, 28);
+    sfx('call', t => zap(t, 330, 990, 0.22, 'triangle', 0.06), 0.1);
   } else if (type === 'u') {
     if (!demo) addTitle('SUPPLY DROP', 'A free core for both keeps', '125,255,176', 1.8, 54);
   } else if (type === 'c') {
@@ -1170,8 +1283,9 @@ function pickType(I) {
 function spawn(type, side) {
   const d = TYPES[type], I = heat(), dir = side ? -1 : 1;
   const u = {id: S.nextId++, type, side, ...d, hp: d.hp * 0.75 * (1 + 0.6 * I + 0.3 * I * I), t: Math.random() * 6, flash: 0, atk: false, slow: 0, burn: null, byShot: false, lastBy: -1};
-  u.max = u.hp;
-  u.spd = d.spd * (1 + 0.2 * I) * rnd(0.8, 1.25);
+  const up = S.p[side].up;
+  u.hp *= 1 + 0.15 * up[0]; u.max = u.hp;
+  u.spd = d.spd * (1 + 0.2 * I) * rnd(0.8, 1.25) * (1 + 0.06 * up[2]);
   u.x = (side ? W - TW.x1 : TW.x1) + dir * (d.w / 2 + 16);
   u.y = d.fly ? rnd(170, 330) : GY + ((u.id % 5) - 2) * 3.5;
   u.alt = u.y;
@@ -1186,6 +1300,7 @@ function rsCredit(side, s, eff, pure) {
 function hurt(u, d, side, real, s, num, pure) {
   u.flash = 0.07;
   if (!real) return;
+  if (S.p[u.side].rally > 0) d *= 0.75;
   if (s) { if (u.fly) d *= s.sky; if (u.slow > 0) d *= s.cryoBonus; if (s.burn) u.burn = {dps: s.burn, t: 2, side, slot: s.slot}; }
   if (!pure) d = Math.max(d * 0.3, d - u.armor);
   rsCredit(side, s, Math.max(0, Math.min(d, u.hp)), pure); u.lastSlot = s && s.slot != null ? s.slot : -1;
@@ -1493,6 +1608,9 @@ function simulate(dt) {
   }
   if (S.phase !== 'combat') return;
   S.timeLeft -= dt;
+  if (S.mode === 'host') hostReadGuest();
+  for (const P of S.p) { P.rally = Math.max(0, P.rally - dt); for (let j = 0; j < 5; j++) P.cd[j] = Math.max(0, P.cd[j] - dt); }
+  if (S.mode === 'cpu' && S.diff === 'hard') cpuCalls(1, dt);
   const el = COMBAT_LEN - S.timeLeft, I = heat();
   // mech drops: the first at 6 s, a second at 17 s from round 3
   if (S.dropDone < 1 && el >= 6) {
@@ -1528,7 +1646,7 @@ function simulate(dt) {
 }
 function breach(u) {
   if (u.breached) return;
-  const dmg = BREACH[u.type] * (1 + 0.15 * (S.round - 1)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
+  const dmg = BREACH[u.type] * (1 + 0.12 * S.p[u.side].up[1]) * (1 + 0.15 * (S.round - 1)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
   u.breached = true; u.hp = 0;
   if (S.rs) S.rs.br[u.side ^ 1].push([u.type, Math.round(dmg), Math.round((COMBAT_LEN - S.timeLeft) * 10) / 10]);
   hitKeep(u.side ^ 1, dmg);
@@ -1540,7 +1658,7 @@ function worldStep(dt, live) {
   for (const u of S.units) {
     u.t += dt * fz; u.flash = Math.max(0, u.flash - dt); u.slow = Math.max(0, u.slow - dt);
     if (u.burn && u.burn.t > 0) { u.burn.t -= dt; rsCredit(u.burn.side, {slot: u.burn.slot}, Math.max(0, Math.min(u.burn.dps * dt, u.hp)), true); u.lastSlot = u.burn.slot == null ? -1 : u.burn.slot; u.hp -= u.burn.dps * dt; u.byShot = true; u.lastBy = u.burn.side; }
-    const dir = u.side ? -1 : 1, front = u.side ? TW.x1 : W - TW.x1, sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
+    const dir = u.side ? -1 : 1, front = u.side ? TW.x1 : W - TW.x1, sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.35 : 1) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
     if (u.fly) {
       const stop = front - dir * (u.w / 2 + 4);
       if ((stop - u.x) * dir > 0) { u.x += dir * sp * dt; u.y = u.alt + Math.sin(u.t * 3) * 10; u.atk = false; }
@@ -2260,6 +2378,18 @@ function drawTurrets(side) {
   for (let i = 0; i < 10; i++) {
     const [x, y] = mountWorld(side, i), u = P.board[i];
     const T = turrets ? turrets[i] : null;
+    if (planning && S.ui.sel && (i === selM || (selBench && i === S.ui.hov))) {
+      const su = selM >= 0 ? u : P.bench[S.ui.sel.i];
+      if (su) {
+        const rs = statsFor(su, traitLevels(P.board).lv);
+        ctx.save(); ctx.strokeStyle = 'rgba(' + F.rgb + ',.95)'; ctx.fillStyle = 'rgba(' + F.rgb + ',.1)'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(' + F.rgb + ',1)'; ctx.shadowBlur = 8; ctx.setLineDash([10, 7]);
+        ctx.beginPath(); ctx.arc(x, y, rs.range, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        if (rs.min) { ctx.beginPath(); ctx.arc(x, y, rs.min, 0, Math.PI * 2); ctx.stroke(); }
+        ctx.setLineDash([]); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.font = '700 12px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(Math.round(rs.range / PX_PER_M) + ' m', x, y - rs.range - 6);
+        ctx.restore();
+      }
+    }
     ctx.save(); ctx.translate(x, y); ctx.scale(TS, TS);
     const AON = artOn();
     // bronze corbel and a faceted crystal plinth lit in the team colour
@@ -2353,6 +2483,7 @@ function glowDot(x, y, r, rgb, a) {
 function teamRing(e, rgb, w, h, fly) {
   if (S.phase !== 'combat' && S.phase !== 'intro') return;
   ctx.save(); ctx.lineWidth = 1.8;
+  if (S.p[e.side] && S.p[e.side].rally > 0) { ctx.strokeStyle = 'rgba(255,235,150,.95)'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(0, fly ? 0 : 1.5, w * 0.68, fly ? h * 0.45 : 6.5, 0, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1.8; }
   if (fly) { ctx.strokeStyle = 'rgba(' + rgb + ',.8)'; ctx.beginPath(); ctx.ellipse(0, 0, w * 0.55, h * 0.32, 0, 0, Math.PI * 2); ctx.stroke(); }
   else { ctx.strokeStyle = 'rgba(' + rgb + ',.9)'; ctx.shadowColor = 'rgba(' + rgb + ',1)'; ctx.shadowBlur = 6; ctx.beginPath(); ctx.ellipse(0, 1.5, w * 0.5, 4.2, 0, 0, Math.PI * 2); ctx.stroke(); }
   if (e.hp < e.max) { const f = Math.max(0, e.hp / e.max), bw = Math.max(16, w * 0.8); ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(0,0,0,.65)'; ctx.fillRect(-bw / 2, -h - 7, bw, 3); ctx.fillStyle = 'rgb(' + rgb + ')'; ctx.fillRect(-bw / 2, -h - 7, bw * f, 3); }
@@ -2836,7 +2967,7 @@ const inSetup = () => S.me >= 0 && S.mode !== 'demo' && S.phase === 'setup' && m
 const canPlan = () => inSetup() && !myP().ready;
 function uiMsg(m) { S.ui.msg = m; S.ui.msgT = 3; }
 function act(a) {
-  if (a && a.t === 'unready' ? !inSetup() : !canPlan()) return;
+  if (a && a.t === 'call' ? !(S.phase === 'combat' && S.me >= 0) : a && a.t === 'unready' ? !inSetup() : !canPlan()) return;
   if (S.mode === 'guest') {
     if (!net) return;
     net.actN = (net.actN || 0) + 1;
@@ -2862,6 +2993,14 @@ function onSlot(z, i) {
   }
   if (u) S.ui.sel = {z, i};
 }
+cv.addEventListener('pointermove', e => {
+  if (!S.ui || !S.ui.sel || S.me < 0) return;
+  const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
+  const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
+  let best = -1, bd = 40;
+  for (let i = 0; i < 10; i++) { const [x, y] = mountWorld(S.me, i), d = Math.hypot(wx - x, wy - y); if (d < bd) { bd = d; best = i; } }
+  S.ui.hov = best;
+});
 cv.addEventListener('pointerdown', e => {
   audio();
   if (!canPlan()) return;
@@ -2870,9 +3009,69 @@ cv.addEventListener('pointerdown', e => {
   const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
   let best = -1, bd = 22;
   for (let i = 0; i < 10; i++) { const [x, y] = mountWorld(S.me, i), d = Math.hypot(wx - x, wy - y); if (d < bd) { bd = d; best = i; } }
+  const P0 = myP(), u0 = best >= 0 && P0 ? P0.board[best] : null;
+  if (u0 && u0.items.length && !P0.ready) DRAG = {src: {z: 'm', i: best, k: u0.items.length - 1}, x: e.clientX, y: e.clientY, on: false};
   if (best >= 0) onSlot('m', best);
   else if (S.ui.sel) S.ui.sel = null;
 });
+/* ---------- drag cores between turrets ---------- */
+let DRAG = null, dragSup = 0;
+const dragGhost = document.createElement('div');
+dragGhost.style.cssText = 'position:fixed;z-index:60;width:15px;height:15px;transform:translate(-50%,-50%) rotate(45deg);pointer-events:none;display:none;border:2px solid #fff;box-shadow:0 0 12px #fff';
+if (document.body && document.body.appendChild) document.body.appendChild(dragGhost);
+function dragChar(P, s) { return s.z === 'i' ? P.items[s.i] : ((s.z === 'm' ? P.board : P.bench)[s.i] || {items: []}).items[s.k]; }
+function dropTarget(e) {
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  if (!el) return null;
+  if (el === cv) {
+    const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
+    const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
+    let best = -1, bd = 32;
+    for (let i = 0; i < 10; i++) { const [x, y] = mountWorld(S.me, i), d = Math.hypot(wx - x, wy - y); if (d < bd) { bd = d; best = i; } }
+    return best >= 0 ? {z: 'm', i: best, el: null} : null;
+  }
+  const chip = el.closest('[data-act^="slot:"]');
+  if (chip) { const q = chip.getAttribute('data-act').split(':'); return {z: q[1], i: q[2] | 0, el: chip}; }
+  const rack = el.closest('.zcores');
+  if (rack) return {z: 'i', i: 0, el: rack};
+  return null;
+}
+function dragClear() { dragGhost.style.display = 'none'; document.querySelectorAll('.drop').forEach(x => x.classList.remove('drop')); }
+addEventListener('pointerdown', e => {
+  if (e.button > 0 || !canPlan()) return;
+  const P = myP(); if (!P || P.ready) return;
+  const t = e.target;
+  const c = t.closest && t.closest('[data-ci]');
+  if (c) { const q = c.getAttribute('data-ci').split(':'); DRAG = {src: {z: q[0], i: q[1] | 0, k: q[2] | 0}, x: e.clientX, y: e.clientY, on: false}; return; }
+  const inv = t.closest && t.closest('[data-act^="slot:i:"]');
+  if (inv) DRAG = {src: {z: 'i', i: inv.getAttribute('data-act').split(':')[2] | 0, k: -1}, x: e.clientX, y: e.clientY, on: false};
+}, true);
+addEventListener('pointermove', e => {
+  if (!DRAG) return;
+  if (!DRAG.on) {
+    if (Math.hypot(e.clientX - DRAG.x, e.clientY - DRAG.y) < 7) return;
+    const P = myP(), ch = P && dragChar(P, DRAG.src);
+    if (!ch || !ITEMS[ch]) { DRAG = null; return; }
+    DRAG.on = true; dragGhost.style.background = ITEMS[ch].color; dragGhost.style.display = 'block'; setTip(null);
+  }
+  dragGhost.style.left = e.clientX + 'px'; dragGhost.style.top = e.clientY + 'px';
+  document.querySelectorAll('.drop').forEach(x => x.classList.remove('drop'));
+  const t = dropTarget(e); if (t && t.el) t.el.classList.add('drop');
+});
+addEventListener('pointerup', e => {
+  const D = DRAG; DRAG = null; dragClear();
+  if (!D || !D.on) return;
+  dragSup = performance.now() + 250;
+  const t = dropTarget(e), s = D.src;
+  if (t) {
+    if (s.z === 'i') { if (t.z !== 'i') act({t: 'equip', ii: s.i, to: t.z, ti: t.i}); }
+    else if (t.z === 'i') act({t: 'mvitem', f: s.z, fi: s.i, k: s.k, to: 'i', ti: 0});
+    else if (!(t.z === s.z && t.i === s.i)) act({t: 'mvitem', f: s.z, fi: s.i, k: s.k, to: t.z, ti: t.i});
+  }
+  S.ui.sel = null; dockSig = '';
+});
+addEventListener('pointercancel', () => { DRAG = null; dragClear(); });
+addEventListener('click', e => { if (performance.now() < dragSup) { e.stopPropagation(); e.preventDefault(); } }, true);
 /* ---------- tooltips: weapons, cores, traits and the HUD ---------- */
 const tipEl = document.getElementById('tip');
 const escA = v => String(v).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
@@ -2962,7 +3161,13 @@ addEventListener('keydown', e => {
     if (inMatch()) S.ui.menu = !S.ui.menu;
     return;
   }
+  if (S.phase === 'combat' && S.me >= 0 && !S.ui.menu && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
+    const ci = 'qwert'.indexOf(e.key.toLowerCase());
+    if (ci >= 0) { act({t: 'call', i: ci}); return; }
+  }
   if (!canPlan() || S.ui.menu) return;
+  const dig = e.key.length === 1 ? '1234567890'.indexOf(e.key) : -1;
+  if (dig >= 0 && !e.ctrlKey && !e.metaKey && !e.altKey) { onSlot('m', dig); return; }
   if (e.key === 'd' || e.key === 'D') act({t: 'reroll'});
   else if (e.key === 'f' || e.key === 'F') act({t: 'xp'});
   else if (e.key === 'e' || e.key === 'E') { const sel = S.ui.sel; if (sel && sel.z !== 'i') { act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; } }
@@ -3084,7 +3289,7 @@ const packUnit = u => u ? [u.r, u.star, u.items.join(''), u.td || 0, u.tk || 0, 
 function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3), td: a[3] | 0, tk: a[4] | 0, ld: a[5] | 0, lk: a[6] | 0, lp: a[7] | 0, nr: a[8] | 0} : null; }
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
-    it: P.items.join(''), rd: P.ready ? 1 : 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
+    it: P.items.join(''), lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), rd: P.ready ? 1 : 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
     a: [Math.round(P.aim.ang * 1000), Math.round(P.aim.pow * 1000), Math.round(P.reload * 100), Math.round(P.reloadMax * 100)]};
 }
 function snapshot() {
@@ -3166,6 +3371,10 @@ function applySnap(s) {
     if (Array.isArray(a.b)) P.bench = Array.from({length: BENCH}, (_, i) => unpackUnit(a.b[i]));
     if (Array.isArray(a.m)) P.board = Array.from({length: 10}, (_, i) => unpackUnit(a.m[i]));
     P.items = String(a.it || '').split('').filter(c => ITEMS[c]).slice(0, MAX_ITEMS);
+    if (typeof a.lk === 'string') P.lock = [0, 1, 2, 3, 4].map(i => +a.lk[i] ? 1 : 0);
+    if (typeof a.up === 'string') P.up = [0, 1, 2].map(i => clamp(+a.up[i] || 0, 0, 3));
+    if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4].map(i => (a.cdn[i] | 0) / 10);
+    P.rally = (a.ry | 0) / 10;
     P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
     if (Array.isArray(a.a)) { P.aim.ang = (a.a[0] | 0) / 1000; P.aim.pow = (a.a[1] | 0) / 1000; P.reload = (a.a[2] | 0) / 100; P.reloadMax = Math.max(0.01, (a.a[3] | 0) / 100); }
     if (side === S.me) {
@@ -3262,8 +3471,8 @@ function updateHUD() {
 function dockSigNow() {
   const P = myP();
   const base = [S.mode, S.phase, S.me, S.round, S.ui.msg, JSON.stringify(S.ui.sel)];
-  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome);
-  if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5));
+  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.up.join(''), P.lock.join(''));
+  if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5), P ? P.cd.map(x => Math.ceil(x)).join('.') + P.gold : '');
   return base.join('|');
 }
 const wIcon = id => '<img class="ti" alt="" src="assets/w_' + (S.me === 1 ? 'r' : 'b') + '_' + id + '.webp" onerror="this.remove()">';
@@ -3278,7 +3487,7 @@ function chipHtml(u, z, i, label, locked) {
   return '<button type="button" class="chip' + (sel ? ' sel' : '') + ((itemSel && u.items.length < 3) || unitSel ? ' target' : '') + '" data-act="slot:' + z + ':' + i + '" data-tipk="' + z + ':' + i + '" style="--t:' + TIER_C[R.tier] + '"' + (locked ? ' disabled' : '') + '>' +
     wIcon(R.id) + (label ? '<span class="ml">' + label + '</span>' : '') +
     '<span class="cn">' + R.name + ' <span class="cs" style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span></span>' +
-    (u.items.length ? '<span class="ci">' + u.items.map(it => '<i style="background:' + ITEMS[it].color + '"></i>').join('') + '</span>' : '') + '</button>';
+    (u.items.length ? '<span class="ci">' + u.items.map((it, ci) => '<i data-ci="' + z + ':' + i + ':' + ci + '" style="background:' + ITEMS[it].color + '"></i>').join('') + '</span>' : '') + '</button>';
 }
 function selInfo(P) {
   const sel = S.ui.sel;
@@ -3289,7 +3498,7 @@ function selInfo(P) {
   const R = ROSTER[u.r], s = statsFor(u, traitLevels(P.board).lv);
   const perShot = Math.round(s.dmg * (s.count || 1) * (s.kind === 'beam' ? 10 : 1));
   return '<span><b style="color:' + TIER_C[R.tier] + '">' + R.name + '</b> <span style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span> · ' + R.traits.map(t => TRAITS[t].name).join(' · ') + ' · ' + perShot + (s.kind === 'beam' ? ' dps' : ' dmg') + ' · ' + Math.round(s.range / PX_PER_M) + '&nbsp;m</span>' +
-    '<button type="button" class="btn small" data-act="sell">Sell for <b>' + sellValue(u) + '</b></button><span class="h">Tap a mount or bench slot to move it.</span>';
+    (u.items.length ? '<button type="button" class="btn small" data-act="strip" data-tip="Take every core off this turret and back into the rack. 1 gold per core.">Remove cores <b>' + u.items.length + 'g</b></button>' : '') + '<button type="button" class="btn small" data-act="sell">Sell for <b>' + sellValue(u) + '</b></button><span class="h">Tap a mount or bench slot to move it.</span>';
 }
 function renderDock() {
   const d = $('dock'), P = myP(), sound = '';
@@ -3299,7 +3508,7 @@ function renderDock() {
   }
   if (S.phase !== 'setup') {
     const res = S.phase === 'result' ? (S.rw === S.me ? 'Round won' : S.rw < 0 ? 'Round drawn' : 'Round lost · −' + P.lastDmg + ' HP') : S.phase === 'over' ? 'Match over' : 'Combat runs on its own. Watch your build work.';
-    d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span><span class="spacer"></span>' + sound + '</div>';
+    d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span><span class="spacer"></span>' + sound + '</div>' + (S.phase === 'combat' && S.me >= 0 ? '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><kbd>' + C.key + '</kbd> ' + C.name + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>' : '');
     return;
   }
   const locked = P.ready, onBoard = boardCount(P), interest = Math.min(5, Math.floor(P.gold / 10));
@@ -3314,16 +3523,16 @@ function renderDock() {
     '</div><div class="shop">';
   for (let i = 0; i < 5; i++) {
     const r = P.shop[i];
-    if (r < 0 || !ROSTER[r]) { h += '<div class="unit sold">Sold</div>'; continue; }
+    if (r < 0 || !ROSTER[r]) { h += '<div class="sc"><div class="unit sold">Sold</div></div>'; continue; }
     const R = ROSTER[r], own = ownedCopies(P, r, 1);
-    h += '<button type="button" class="unit" data-act="buy:' + i + '" data-tipk="r:' + r + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
+    h += '<div class="sc"><button type="button" class="unit" data-act="buy:' + i + '" data-tipk="r:' + r + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
       (own ? '<span class="own">' + own + '/3</span>' : '') + wIcon(R.id) +
-      '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span><span class="ud">' + R.short + '</span></button>';
+      '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span><span class="ud">' + R.short + '</span></button><span class="lockb' + (P.lock[i] ? ' on' : '') + '" data-act="lock:' + i + '" data-tip="' + (P.lock[i] ? 'Locked: this turret stays in the shop through rerolls and into the next round. Tap to unlock.' : 'Lock this turret so rerolls and the next round keep it.') + '">' + (P.lock[i] ? 'LOCKED' : 'LOCK') + '</span></div>';
   }
-  h += '</div><div class="zones">' +
-    '<div><div class="zl">Keep mounts · ' + onBoard + ' / ' + P.level + '</div><div class="g g10">' + P.board.map((u, i) => chipHtml(u, 'm', i, MOUNT_LABEL[i], locked)).join('') + '</div></div>' +
+  h += '</div><div class="upgs"><span class="zl">Army upgrades</span>' + UPG.map((U, i) => { const lv = P.up[i], nx = lv < 3 ? U.cost[lv] : 0; return '<button type="button" class="btn small upg" data-act="upg:' + i + '" data-tip="' + U.name + ' · level ' + lv + ' / 3. ' + U.fx + (lv < 3 ? ' Next level: ' + nx + ' gold.' : ' Maxed.') + ' Lasts the whole match."' + (locked || lv >= 3 || P.gold < nx ? ' disabled' : '') + '>' + U.name + ' <span class="pips">' + '●'.repeat(lv) + '○'.repeat(3 - lv) + '</span> <b>' + (lv >= 3 ? 'MAX' : nx + 'g') + '</b></button>'; }).join('') + '<span class="h">Mechs you send are tougher, faster and hit the keep harder.</span></div><div class="zones">' +
+    '<div><div class="zl">Keep mounts · ' + onBoard + ' / ' + P.level + '</div><div class="g g10">' + P.board.map((u, i) => chipHtml(u, 'm', i, MOUNT_LABEL[i] + ' <b class="kb">' + ((i + 1) % 10) + '</b>', locked)).join('') + '</div></div>' +
     '<div><div class="zl">Bench</div><div class="g g8">' + P.bench.map((u, i) => chipHtml(u, 'b', i, '', locked)).join('') + '</div></div>' +
-    '<div><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6">';
+    '<div class="zcores"><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6">';
   for (let i = 0; i < MAX_ITEMS; i++) {
     const it = P.items[i] ? ITEMS[P.items[i]] : null, sel = S.ui.sel && S.ui.sel.z === 'i' && S.ui.sel.i === i;
     h += it ? '<button type="button" class="chip' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" data-tipk="i:' + P.items[i] + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '>' + cIcon(P.items[i]) + '<span class="cn" style="color:' + it.color + '">' + it.name + '</span><span class="ml">' + it.fx + '</span></button>'
@@ -3497,6 +3706,10 @@ function onAct(a, btn) {
   else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; S.joinErr = ''; joinRoom(v); }
   else if (k0 === 'slot') onSlot(parts[1], parts[2] | 0);
   else if (k0 === 'buy') act({t: 'buy', i: parts[1] | 0});
+  else if (k0 === 'lock') act({t: 'lock', i: parts[1] | 0});
+  else if (k0 === 'strip') { const sel = S.ui.sel; if (sel && sel.z !== 'i') act({t: 'strip', f: sel.z, i: sel.i}); }
+  else if (k0 === 'upg') act({t: 'upg', i: parts[1] | 0});
+  else if (k0 === 'call') act({t: 'call', i: parts[1] | 0});
   else if (k0 === 'reroll') act({t: 'reroll'});
   else if (k0 === 'xp') act({t: 'xp'});
   else if (k0 === 'ready') { act({t: 'ready'}); S.ui.sel = null; }
@@ -3515,6 +3728,7 @@ function onAct(a, btn) {
 for (const id of ['overlay', 'dock']) {
   $(id).addEventListener('click', e => {
     const b = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
+    if (performance.now() < dragSup) return;
     if (b && !b.disabled) onAct(b.getAttribute('data-act'), b);
   });
 }
