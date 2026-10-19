@@ -824,21 +824,53 @@ function setHandle(v) {
   const me = myLb(); if (me.m) { me.handle = HANDLE; lsSet(LBKEY, me); pvpPushLb(); }
   overlaySig = '';
 }
+/* ---- ONLINE BACKEND: the only code that talks to shared storage. See ONLINE.md before changing it. ----
+   Contract (all async, plain JSON, every document carries v = SCHEMA):
+     init() -> uid string | null       who the player is; null means no ranked play here
+     getLb(uid) -> doc | null          one leaderboard record
+     listLb() -> [{id, ...doc}]        every leaderboard record
+     putLb(doc)                        write MY record (the backend decides the id)
+     listBuilds() -> [{id, handle, builds}]
+     putBuilds(handle, builds)         write MY saved builds
+     listReports() -> [{id, m}]        every player's match reports
+     putReports(m)                     write MY reports
+   Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
+const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
+const GAME_VER = 1;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
+const BK_CLAUDE = {
+  name: 'claude', db: null, uid: null,
+  async init() {
+    if (!(window.claude && window.claude.use)) return null;
+    this.db = await window.claude.use('db');
+    const u = await window.claude.use('user');
+    this.uid = u ? await u.id() : null;
+    if (!this.uid) this.db = null;
+    return this.db ? this.uid : null;
+  },
+  async getLb(uid) { const s = await this.db.doc('lb/' + uid).get(); return s.exists ? s.data() : null; },
+  async listLb() { const s = await this.db.collection('lb').limit(500).get(); return s.docs.map(d => Object.assign({id: d.id}, d.data())); },
+  async putLb(doc) { await this.db.doc('lb/' + this.uid).set(Object.assign({}, doc, {uid: this.uid, v: SCHEMA})); },
+  async listBuilds() { const s = await this.db.collection('ghosts').limit(300).get(); return s.docs.map(d => Object.assign({id: d.id}, d.data())); },
+  async putBuilds(handle, builds) { await this.db.doc('ghosts/' + this.uid).set({handle, t: Date.now(), builds, v: SCHEMA}); },
+  async listReports() { const s = await this.db.collection('reports').limit(500).get(); return s.docs.map(d => ({id: d.id, m: (d.data() || {}).m})); },
+  async putReports(m) { await this.db.doc('reports/' + this.uid).set({m, t: Date.now(), v: SCHEMA}); }
+};
+let BK = BK_CLAUDE;
 /* Identity is the platform account (PVP.uid). Everything a player owns lives in a document only that account can write.
-   A port to Steam swaps pvpInit (Steam ticket in place of the account id) and the PVP.db calls (a small server in place of the shared store). */
+   A Steam port provides BK_STEAM instead. */
 async function claimName() {
   const key = nameKey(HANDLE);
   try {
-    const ref = PVP.db.doc('lb/' + PVP.uid), me = myLb();
-    const taken = docs => docs.filter(d => d.id !== PVP.uid && nameKey((d.data() || {}).handle) === key);
+    const me = myLb();
+    const taken = docs => docs.filter(d => d.id !== PVP.uid && nameKey(d.handle) === key);
     const claimed = me.claimed && nameKey(me.handle) === key ? me.claimed : Date.now();
-    let all = await PVP.db.collection('lb').limit(500).get();
-    if (taken(all.docs).some(d => ((d.data() || {}).claimed || 0) <= claimed)) return 'The name ' + HANDLE + ' is already taken. Choose another.';
+    let all = await BK.listLb();
+    if (taken(all).some(d => (d.claimed || 0) <= claimed)) return 'The name ' + HANDLE + ' is already taken. Choose another.';
     if (me.claimed !== claimed || me.handle !== HANDLE || !me.pub) {
       me.handle = HANDLE; me.claimed = claimed; me.pub = 1; lsSet(LBKEY, me);
-      await ref.set(Object.assign({}, me, {uid: PVP.uid}));
-      all = await PVP.db.collection('lb').limit(500).get();      // two accounts claiming at once: the earlier claim (then the lower id) keeps it
-      if (taken(all.docs).some(d => { const c = (d.data() || {}).claimed || 0; return c < claimed || (c === claimed && d.id < PVP.uid); })) { me.pub = 0; me.claimed = 0; lsSet(LBKEY, me); await ref.set(Object.assign({}, me, {uid: PVP.uid, handle: ''})); return 'The name ' + HANDLE + ' was just taken. Choose another.'; }
+      await BK.putLb(me);
+      all = await BK.listLb();      // two accounts claiming at once: the earlier claim (then the lower id) keeps it
+      if (taken(all).some(d => { const c = d.claimed || 0; return c < claimed || (c === claimed && d.id < PVP.uid); })) { me.pub = 0; me.claimed = 0; lsSet(LBKEY, me); await BK.putLb(Object.assign({}, me, {handle: ''})); return 'The name ' + HANDLE + ' was just taken. Choose another.'; }
     }
     return '';
   } catch (e) { return 'Could not check your name. Try again.'; }
@@ -856,24 +888,19 @@ function myLb() { const v = lsGet(LBKEY, null); return v && typeof v === 'object
 async function pvpInit() {
   if (PVP.init) return; PVP.init = true;
   try {
-    if (!(window.claude && window.claude.use)) return;
-    PVP.db = await window.claude.use('db');
-    const u = await window.claude.use('user');
-    PVP.uid = u ? await u.id() : null;
-    if (!PVP.uid) PVP.db = null;
+    PVP.uid = await BK.init(); PVP.db = PVP.uid ? BK : null;
     if (PVP.db) {          // adopt the account's saved tally if this device has played less
-      const snap = await PVP.db.doc('lb/' + PVP.uid).get();
-      const d = snap.exists ? snap.data() : null, mine = myLb();
+      const d = await BK.getLb(PVP.uid), mine = myLb();
       if (d && (d.m | 0) > mine.m) { lsSet(LBKEY, Object.assign(newLb(), d, {handle: mine.handle !== HANDLE ? mine.handle : d.handle || HANDLE})); }
     }
   } catch (e) { PVP.db = null; }
   overlaySig = '';
 }
 let pushQ = Promise.resolve();
-function pvpPushLb() { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('lb/' + PVP.uid).set(Object.assign({}, myLb(), {uid: PVP.uid}))).catch(e => { PVP.err = 'Leaderboard upload failed'; }); }
-function pvpPushBuilds(list) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('ghosts/' + PVP.uid).set({handle: HANDLE, t: Date.now(), builds: list})).catch(e => { PVP.err = 'Build upload failed'; }); }
+function pvpPushLb() { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => BK.putLb(myLb())).catch(e => { PVP.err = 'Leaderboard upload failed'; }); }
+function pvpPushBuilds(list) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => BK.putBuilds(HANDLE, list)).catch(e => { PVP.err = 'Build upload failed'; }); }
 const RKEY = 'bk-reports-v1';
-function pvpPushReports(rep) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('reports/' + PVP.uid).set({m: rep, t: Date.now()})).catch(e => { PVP.err = 'Result upload failed'; }); }
+function pvpPushReports(rep) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => BK.putReports(rep)).catch(e => { PVP.err = 'Result upload failed'; }); }
 /* A match counts only when BOTH players filed a report for it, each naming the other as the opponent and agreeing on the winner. */
 function tally(docs) {
   const by = {};
@@ -898,7 +925,7 @@ function ghostFromLog(log, side, handle) {
   }
   if (rounds.length < 2) return null;
   const won = log.end ? (log.end.winner === side ? 1 : log.end.winner < 0 ? 0 : -1) : 0;
-  return {id: String(log.id || '').slice(0, 12), handle: cleanHandle(handle || log.handle) || 'Imported', rounds, won, n: log.rounds.length};
+  return {gv: GAME_VER, id: String(log.id || '').slice(0, 12), handle: cleanHandle(handle || log.handle) || 'Imported', rounds, won, n: log.rounds.length};
 }
 function pvpRecord() {
   if (!RANK.ok || !PVP.db || !S.log || (S.mode !== 'host' && S.mode !== 'guest') || S.me < 0) return;     // only ranked player-vs-player matches count
@@ -925,12 +952,11 @@ async function pvpPool() {
   const pool = [];
   if (PVP.db) {
     try {
-      const snap = await PVP.db.collection('ghosts').limit(300).get();
+      const snap = await BK.listBuilds();
       PVP.shared = 0;
-      for (const d of snap.docs) {
-        if (d.id === PVP.uid) continue;
-        const v = d.data() || {};
-        for (const b of (Array.isArray(v.builds) ? v.builds : [])) if (b && Array.isArray(b.rounds) && b.rounds.length >= 2) { pool.push({id: b.id, handle: cleanHandle(v.handle) || 'Player', rounds: b.rounds, src: 'shared', n: b.n || b.rounds.length}); PVP.shared++; }
+      for (const v of snap) {
+        if (v.id === PVP.uid) continue;
+        for (const b of (Array.isArray(v.builds) ? v.builds : [])) if (b && Array.isArray(b.rounds) && b.rounds.length >= 2 && (b.gv || 1) === GAME_VER) { pool.push({id: b.id, handle: cleanHandle(v.handle) || 'Player', rounds: b.rounds, src: 'shared', n: b.n || b.rounds.length}); PVP.shared++; }
       }
     } catch (e) { PVP.err = 'Could not reach the shared builds'; }
   }
@@ -983,8 +1009,8 @@ async function pvpLoadLb() {
   const rows = []; PVP.rep = [];
   try {
     if (PVP.db) {
-      const s1 = await PVP.db.collection('lb').limit(300).get(); for (const d of s1.docs) { const v = d.data(); if (v && v.m != null) rows.push(Object.assign({id: d.id}, v)); }
-      const s2 = await PVP.db.collection('reports').limit(500).get(); for (const d of s2.docs) PVP.rep.push({id: d.id, m: (d.data() || {}).m});
+      for (const v of await BK.listLb()) if (v && v.m != null) rows.push(v);
+      PVP.rep = await BK.listReports();
     }
   } catch (e) { PVP.err = 'Could not reach the shared leaderboard'; }
   PVP.lb = rows; PVP.lbLoaded = true; PVP.lbBusy = false; PVP.n++; overlaySig = '';
