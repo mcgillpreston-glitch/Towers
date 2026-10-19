@@ -66,7 +66,8 @@ header.hud::before,header.hud::after{display:none}
 .sub .gd{color:var(--gold)}
 .sub .win{color:var(--win)}
 .sub .loss{color:var(--loss)}
-.sub .st:empty,.sub .st:empty+i{display:none}
+.sub .st:empty{display:none}
+.sub:has(.st:empty) i:nth-of-type(2){display:none}
 .clock{text-align:center;padding:6px 14px;background:linear-gradient(180deg,#0b0f2a,#10132b) padding-box,var(--gild) border-box;border:1.5px solid transparent;border-radius:3px;box-shadow:0 0 0 1px rgba(5,3,11,.9),0 0 18px rgba(62,200,230,.12);position:relative;min-width:0}
 .clock::before,.clock::after{content:"";position:absolute;top:50%;width:9px;height:9px;transform:translateY(-50%) rotate(45deg);background:var(--gold);pointer-events:none}
 .clock::before{left:-6px}
@@ -3025,6 +3026,17 @@ function drawTurrets(side) {
     const up = isUp(st), ang = up ? 0 : T ? T.ang : (side ? Math.PI : 0) - (i < 4 ? 0.2 : 0) * (side ? -1 : 1);
     const kick = T ? clamp(T.flash / 0.07, 0, 1) : 0;
     // hexagonal bronze bezel with a rarity band (the painted art swaps it for a rarity glow)
+    if (AON && i >= 4) {
+      // a dark recessed bay with a thin gold rim hides the painted barrel behind the weapon, so the weapon reads as emerging from its own mount
+      const hx = side ? -36 : -19, g = ctx.createLinearGradient(0, -21, 0, 21);
+      g.addColorStop(0, '#101a3e'); g.addColorStop(1, '#04060f');
+      ctx.save(); ctx.fillStyle = g; rrect(hx, -21, 55, 42, 15); ctx.fill();
+      const gl = ctx.createRadialGradient(hx + 27.5, 0, 2, hx + 27.5, 0, 30); gl.addColorStop(0, 'rgba(' + F.rgb + ',.32)'); gl.addColorStop(1, 'rgba(' + F.rgb + ',0)');
+      ctx.fillStyle = gl; rrect(hx, -21, 55, 42, 15); ctx.fill();
+      ctx.strokeStyle = '#d9b868'; ctx.lineWidth = 1.6; rrect(hx, -21, 55, 42, 15); ctx.stroke();
+      ctx.strokeStyle = 'rgba(243,223,174,.35)'; ctx.lineWidth = 0.7; rrect(hx + 2.5, -18.5, 50, 37, 12.5); ctx.stroke();
+      ctx.restore();
+    }
     if (AON) glowDot(0, 0, 13, TIER_RGB[R.tier], 0.4);
     else {
     ctx.fillStyle = bronze(-7, 7); ctx.beginPath(); for (let n = 0; n < 6; n++) { const a = n / 6 * Math.PI * 2; n ? ctx.lineTo(Math.cos(a) * 7, Math.sin(a) * 7) : ctx.moveTo(Math.cos(a) * 7, Math.sin(a) * 7); } ctx.closePath(); ctx.fill();
@@ -3482,30 +3494,18 @@ function drawKeepBars() {
     otext('KEEP ' + Math.ceil(Math.max(0, P.keep)) + (P.shield > 0 ? ' + ' + Math.ceil(P.shield) + ' SHIELD' : '') + ' · ' + P.roundKills + ' KILLS', cx, y - 7, 5);
   }
 }
-let traitHit = [];
-function drawTraits(side) {
-  const P = S.p[side];
-  const {cnt, lv} = S.phase === 'setup' ? traitLevels(P.board) : {cnt: traitLevels(P.board).cnt, lv: P.traitLv};
-  const list = Object.keys(TRAITS).filter(t => cnt[t]).sort((a, b) => (lv[b] || 0) - (lv[a] || 0) || cnt[b] - cnt[a]);
-  if (!list.length) return;
-  // the bonus list sits on the face of its own tower, drawn before the weapons so they cover it (it becomes tower decoration later)
-  const x = side ? W - (TW.x0 + 30) : TW.x0 + 30, al = side ? 'right' : 'left';
-  let y = 0.26 * H;
+// Trait bonuses are no longer drawn on the battlefield: hovering a tower lists them in a tooltip instead.
+function towerTraitTip(side) {
+  const P = S.p[side], tl = traitLevels(P.board);
+  const lv = S.phase === 'setup' ? tl.lv : P.traitLv, cnt = tl.cnt;
+  const list = Object.keys(TRAITS).filter(t => cnt[t]).sort((x, y) => (lv[y] || 0) - (lv[x] || 0) || cnt[y] - cnt[x]);
+  let h = '<div class="tn">' + SIDES[side].name + ' · bonuses</div>';
+  if (!list.length) return [h + '<div class="tl">No trait bonuses yet. Field different turret types to unlock them.</div>', 'tw' + side + '0'];
   for (const t of list) {
     const T = TRAITS[t], l = lv[t] || 0, next = T.tiers[Math.min(l, T.tiers.length - 1)];
-    ctx.fillStyle = 'rgba(5,4,18,.62)'; ctx.fillRect(side ? x - 190 : x - 6, y - 15, 196, l ? 36 : 23);
-    traitHit.push({x0: side ? x - 215 : x - 4, x1: side ? x + 4 : x + 215, y0: y - 13, y1: y + (l ? 19 : 7), t, l, c: cnt[t]});
-    const col = l === 0 ? '#5a4f7a' : l === T.tiers.length ? '#ffd23a' : '#9ff0ff';
-    const ix = side ? x - 8 : x + 8;
-    ctx.fillStyle = l ? col : 'rgba(0,0,0,.6)'; ctx.strokeStyle = col; ctx.lineWidth = 1.5;
-    ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + Math.PI / 6; i ? ctx.lineTo(ix + Math.cos(a) * 8, y - 4 + Math.sin(a) * 8) : ctx.moveTo(ix + Math.cos(a) * 8, y - 4 + Math.sin(a) * 8); } ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.textAlign = al;
-    const tx = side ? x - 22 : x + 22;
-    ctx.font = '800 13px "Chakra Petch", sans-serif'; ctx.fillStyle = l ? '#fff6dc' : '#cfc9ee';
-    otext(T.name.toUpperCase() + '  ' + cnt[t] + ' / ' + (l === T.tiers.length ? T.tiers[T.tiers.length - 1] : next), tx, y, 4);
-    if (l) { ctx.font = '600 12px "Chakra Petch", sans-serif'; ctx.fillStyle = col; otext(T.desc[l - 1], tx, y + 15, 4); y += 36; } else y += 23;
-    if (y > 0.74 * H) break;
+    h += '<div class="tl ' + (l === T.tiers.length ? 'max' : l ? 'on' : '') + '"><b>' + T.name + ' ' + cnt[t] + ' / ' + (l === T.tiers.length ? T.tiers[T.tiers.length - 1] : next) + '</b>' + (l ? ' · ' + T.desc[l - 1] : '') + '</div>';
   }
+  return [h, 'tw' + side + list.map(t => t + (lv[t] || 0) + cnt[t]).join('')];
 }
 function drawTitles() {
   for (const t of S.titles) {
@@ -3642,8 +3642,6 @@ function render() {
   drawGround();
   drawKeeps();
   drawSlotMarkers();
-  traitHit = [];
-  if (S.mode !== 'demo' && S.phase !== 'over') { drawTraits(0); drawTraits(1); }
   for (let side = 0; side < 2; side++) drawTurrets(side);
   for (const p of S.projs) drawProj(p);
   drawStrikes();
@@ -3910,7 +3908,6 @@ function setTip(html, x, y, key) {
 function canvasTip(e) {
   const r = cv.getBoundingClientRect();
   const sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
-  for (const h of traitHit) if (sx >= h.x0 && sx <= h.x1 && sy >= h.y0 && sy <= h.y1) return [traitTipHtml(h.t, h.l, h.c), 't' + h.t + h.l + h.c];
   const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
   for (const d of S.drops) if (Math.hypot(wx - d.x, wy - d.y) < 24) return [itemTipHtml(d.kind), 'd' + d.kind];
   for (let side = 0; side < 2; side++) for (let j = 0; j < 2; j++) {
@@ -3924,6 +3921,10 @@ function canvasTip(e) {
     const u = S.p[side].board[i]; if (!u) continue;
     const [x, y] = mountWorld(side, i);
     if (Math.hypot(wx - x, wy - y) < 22) return [unitTipHtml(u, traitLevels(S.p[side].board).lv), 'u' + side + i + u.r + u.star + u.items.join('') + (u.td || 0) + ':' + (u.ld || 0)];
+  }
+  if (S.mode !== 'demo' && S.phase !== 'over' && S.p[0] && wy > 0 && wy < 0.8 * H) {
+    if (wx < 0.185 * W) return towerTraitTip(0);
+    if (wx > W - 0.185 * W) return towerTraitTip(1);
   }
   return null;
 }
