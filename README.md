@@ -25,3 +25,6 @@ The keeps, turrets, minions, cores, projectiles and arena background are painted
 
 ## Online layer
 Ranked PvP, async rivals and the leaderboard are described in [ONLINE.md](ONLINE.md), including the Steam port plan and the checklist to follow when the game changes.
+
+## Lore
+How the Master Lore Book is used in the game, and what is still to build, is in [LORE.md](LORE.md).

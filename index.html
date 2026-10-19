@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Ballista Keep</title>
+<title>Of Blood &amp; Glass</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Chakra+Petch:wght@400;500;600;700&display=swap">
 <style>
@@ -161,6 +161,11 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .lockb{text-align:center;font:700 9px var(--f-display);letter-spacing:.16em;padding:3px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
 .lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
 .mode input[type=text]{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:inherit;min-width:0}.mode .btns{flex-wrap:nowrap}.namebar{display:flex;gap:12px;flex-wrap:wrap}.namebar label{display:flex;flex-direction:column;gap:3px;font:700 10px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.namebar input{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:14px var(--f-body,inherit);letter-spacing:0;text-transform:none;width:170px}.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}table.wk tr.me th,table.wk tr.me td{color:var(--warn)}
+.witness{position:absolute;left:29%;right:29%;top:40%;display:flex;justify-content:space-between;gap:14px;pointer-events:none;z-index:6}
+.wp{max-width:49%;opacity:0;transition:opacity .9s;padding:5px 9px;background:rgba(8,6,22,.5);border-top:1px solid rgba(255,255,255,.15);font-size:13px;line-height:1.35;text-shadow:0 0 8px rgba(160,200,255,.45);animation:wshim 3.2s ease-in-out infinite}
+.wp.on{opacity:.95}.wp b{display:block;font:700 9px var(--f-display);letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px}
+.wp.l b{color:#8cc6ff}.wp.r{text-align:right;border-top-color:rgba(255,140,120,.35);text-shadow:0 0 8px rgba(255,150,130,.45)}.wp.r b{color:#ff9a84}.wp i{font-style:italic}
+@keyframes wshim{0%,100%{filter:none}48%{filter:none}50%{filter:brightness(1.25) blur(.3px)}52%{filter:none}}
 .card.wikic{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:hidden;z-index:70}
 .wtabs{display:flex;gap:6px;flex-wrap:wrap}
 .wiki{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
@@ -241,13 +246,13 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 <div class="app">
   <header class="hud panel">
     <div class="team l">
-      <div class="tname"><b>HEX</b><span id="tag0">CPU</span></div>
+      <div class="tname"><b>AZURECOURT</b><span id="tag0">CPU</span></div>
       <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span></div>
       <div class="sub" id="sub0" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
     </div>
     <div class="clock" data-tip="Phase clock. Planning lasts 60 s (rounds 1-3), 75 s (rounds 4-6) or 90 s (round 7+), then 30 s of automatic combat."><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Ballista Keep</div></div>
     <div class="team r">
-      <div class="tname"><b>VOLT</b><span id="tag1">CPU</span></div>
+      <div class="tname"><b>VERMILION</b><span id="tag1">CPU</span></div>
       <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp1"></i></div><span class="hpnum" id="hpt1">100</span></div>
       <div class="sub" id="sub1" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
     </div>
@@ -256,6 +261,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="Arena between two keeps. During planning, tap a mount on your keep to select or place a turret."></canvas>
     <div class="overlay" id="overlay"></div>
+    <div class="witness" id="witness"><div class="wp l"><b>Romeo Montavere</b><i></i></div><div class="wp r"><b>Juliette Capravell</b><i></i></div></div>
     <div id="cdown" aria-hidden="true"></div>
     <div class="sound panel" id="sound">
       <button class="btn small quiet" id="statsBtn" type="button" data-tip="Match stats: kills, damage, spending and every round so far (Tab)." hidden>Stats · Tab</button>
@@ -284,7 +290,7 @@ const CANNON_L = {px: 90, py: 206, arm: 30};
 const CANNON = {px: CANNON_L.px * TS, py: GY + (CANNON_L.py - LG) * TS, arm: CANNON_L.arm * TS, vmax: 1000, minA: -0.25, maxA: 1.45, radius: 48, reload: 1.3};
 const MOUNTS_L = [[57, 190], [80, 190], [104, 190], [122, 190], [152, 235], [152, 269], [152, 305], [152, 341], [152, 380], [152, 420]];
 const MOUNTS = MOUNTS_L.map(([x, y]) => tw(x, y));
-const MOUNT_LABEL = ['Roof 1', 'Roof 2', 'Roof 3', 'Roof 4', 'Deck 1', 'Deck 2', 'Deck 3', 'Deck 4', 'Deck 5', 'Deck 6'];
+const MOUNT_LABEL = ['R1', 'R2', 'R3', 'R4', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'];   // four roof mounts, six on the inward-facing side
 const MOUNT_ORDER = [4, 5, 6, 7, 8, 9, 1, 2, 0, 3];
 const CORE_DOCK = tw(90, 290);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -298,9 +304,61 @@ function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let
 
 /* ---------- factions ---------- */
 const SIDES = [
-  {name: 'HEX', full: 'Hex Syndicate', c: '#4aa8ff', rgb: '74,168,255', hi: '170,214,255'},
-  {name: 'VOLT', full: 'Volt Dynasty', c: '#ff5a3c', rgb: '255,90,60', hi: '255,170,140'}
+  {name: 'Azurecourt', full: 'Azurecourt · Sapphire Keep', c: '#4aa8ff', rgb: '74,168,255', hi: '170,214,255'},
+  {name: 'Vermilion', full: 'Vermilion · Crimson Keep', c: '#ff5a3c', rgb: '255,90,60', hi: '255,170,140'}
 ];
+/* ---------- lore: the world of Of Blood & Glass (source: Master Lore Book; see LORE.md) ---------- */
+const LORE_SIDE = [
+  {keep: `Sapphire Keep`, town: `Azurecourt`, crown: `Sapphire Crown`, civic: `the Measure`},
+  {keep: `Crimson Keep`, town: `Vermilion`, crown: `Crimson Crown`, civic: `the Remembrance`}
+];
+const STATION = [0, 1, 2, 3, 0, 1, 2, 3, 4, 4];     // mount index -> paired station (R1+S1, R2+S2, R3+S3, R4+S4, S5+S6)
+const CHIEFS = [[
+  {n: `Ivo Rell`, role: `Ballistics`, age: 43, disc: `Vulcan, Needle Gun, Railgun`, inst: `It fits. Now we learn whether the plan does.`, lost: `The crest has changed. The damaged coupling has not. Pass me the gauge.`, win: `A captured workshop still has workers. Start there.`},
+  {n: `Sera Vale`, role: `Skycraft`, age: 35, disc: `Flak Nest, Swarm Pod, Hellfire Rack`, inst: `Give it a clean sky and a sensible instruction.`, lost: `Give the civilian flights their space. We can argue over the rest on the ground.`},
+  {n: `Neris Quill`, role: `Phase`, age: 41, disc: `Cryo Lance, Glacier Core, Singularity`, inst: `Stable is a condition, not a compliment.`, lost: `Write what we have lost. Then write what still needs doing.`},
+  {n: `Tomas Aster`, role: `Conduction`, age: 29, disc: `Arc Coil, Tesla Spire, Photon Lancer`, inst: `That is an impressive way to make a point. Let us choose the point carefully.`, lost: `I know the new signal. I would like a little time before you ask me to like it.`},
+  {n: `Mira Solenn`, role: `Thermal`, age: 46, disc: `Plasma Torch, Plasma Mortar, Sunlance`, inst: `Power is easy to admire. Responsibility takes longer.`, lost: `There are people behind us who still need heat. That remains an instruction.`, win: `If the lights come back only for people who praise us, we have repaired nothing.`}
+], [
+  {n: `Cassian Voss`, role: `Ballistics`, age: 44, disc: `Vulcan, Needle Gun, Railgun`, inst: `Seat it properly. Pride does not improve an alignment.`, lost: `Tell them which machines are unsafe. They will be standing beside them now.`, win: `Theirs was not an empty workshop. Learn the names before you issue orders.`},
+  {n: `Tavia Rook`, role: `Skycraft`, age: 33, disc: `Flak Nest, Swarm Pod, Hellfire Rack`, inst: `A little room, a clear instruction, and no speeches in the flight path.`, lost: `The sky has a new office. It still has weather. Let us keep someone watching it.`},
+  {n: `Edda Venn`, role: `Phase`, age: 52, disc: `Cryo Lance, Glacier Core, Singularity`, inst: `Cold preserves many things. Good judgment still needs practice.`, lost: `Leave the roots a little soil. You have already taken the name above the gate.`},
+  {n: `Lucan Ferr`, role: `Conduction`, age: 31, disc: `Arc Coil, Tesla Spire, Photon Lancer`, inst: `The line is clear. The intention is still yours.`, lost: `I can tune the bell. Do not ask me to pretend I have always known the song.`},
+  {n: `Ysra Cendre`, role: `Thermal`, age: 40, disc: `Plasma Torch, Plasma Mortar, Sunlance`, inst: `It will burn. We are here to decide where, and why.`, lost: `The bread is for whoever is hungry. My gratitude is a separate matter.`, win: `A welcome that cannot be refused needs another name.`}
+]];
+/* the Last Witness: R = Romeo (Sapphire side, left), J = Juliette (Crimson side, right); lines are given in speaking order */
+const WITNESS = [
+  {id: `last_wall`, t: `The last wall`, l: [['R', `Your tower is the last wall between my name and your door.`], ['J', `Then let a tower fall, Romeo. Not a town.`]]},
+  {id: `names`, t: `Names before banners`, l: [['R', `Juliette's name is not an error in my records.`], ['J', `And Romeo's voice is not an enemy at my table.`]]},
+  {id: `cost`, t: `The people who pay`, l: [['R', `Of learning how many people will be asked to pay for our courage.`], ['J', `Then we should learn their names.`]]},
+  {id: `still_standing`, t: `After the refusals`, l: [['R', `I wanted you to tell me I had done it well.`], ['J', `I wanted you to ask whether I was still standing.`]]},
+  {id: `evidence`, t: `What the record is for`, l: [['J', `What was it for?`], ['R', `So that the next person they ask to repeat it has somewhere else to look.`]]},
+  {id: `guilty_victory`, t: `An honest promise`, l: [['R', `I cannot promise you an innocent victory.`], ['J', `Then promise me what you will do with a guilty one.`]]},
+  {id: `not_the_price`, t: `A life worth telling`, l: [['J', `I want you. That does not make everybody else the price.`], ['R', `I want a life beside you that can survive us telling the truth about how we got it.`]]},
+  {id: `next_conversation`, t: `The inconvenient appointment`, l: [['R', `I keep arranging the day around the next time I can hear you.`], ['J', `That is inconvenient. I have been doing the same.`]]},
+  {id: `window`, t: `An address without a door`, l: [['R', `I know which window is yours. I still cannot knock.`], ['J', `Keep the address. We will need ordinary things when this is over.`]]},
+  {id: `garden`, t: `The divided garden`, l: [['R', `The cutting has grown another leaf. I thought you should be the first to know.`], ['J', `Then the garden is doing its part. I shall ask the Houses what is taking them so long.`]]},
+  {id: `hands`, t: `Light without warmth`, l: [['R', `I miss the weight of a hand I have never held.`], ['J', `Mine is waiting. It is less graceful than the projection suggests.`]]},
+  {id: `speech`, t: `The missing future`, l: [['J', `My mother has a speech for every future except mine.`], ['R', `Mine has a form for every answer he has already chosen.`]]},
+  {id: `ordinary`, t: `An ambition without a banner`, l: [['R', `I would like one morning that requires no courage.`], ['J', `A late breakfast. An argument about the window. You can be very brave about the window.`]]},
+  {id: `defend`, t: `The town and the claim`, l: [['R', `I can defend this town without believing you deserve to fear it.`], ['J', `Then remember that when defending it becomes an order to forget mine.`]]},
+  {id: `waiting`, t: `The unmeasured distance`, l: [['R', `They have measured the bridge for a hundred years. Nobody asked who was waiting at the other end.`], ['J', `We are asking. Let them hear the question before the guns.`]]},
+  {id: `return`, t: `The last private request`, l: [['R', `When the channel closes, I will still be here.`], ['J', `Then do the work of returning. I have had enough of beautiful last words.`]]}
+];
+/* epilogues: shown only after a decisive victory; the two are alternatives, never consecutive events */
+const ENDING = [
+  {head: `The Blue Ending: The City That Could Count a Loss`,
+   p: [`The Crimson Crown loses sovereign continuity. Vermilion's red light does not explode across the town. The great defensive shape goes dark in stages, and the people behind it wake the next morning inside the Measure. Aurel calls the result restoration. Juliette calls it victory when accuracy requires the word.`,
+       `Assimilation begins in the first small disputes: a clinic's accounts, a ration filed under the wrong designation, a school archive nobody has said what to do with. The Span reopens, and Romeo and Juliette meet at last.`],
+   pair: [['R', `I thought the end of the distance would feel like an ending.`], ['J', `It feels like having somewhere to begin.`]],
+   close: `The screen may call the battle a victory. The book leaves enough light on the defeated town for the word to remain a question.`},
+  {head: `The Red Ending: The Welcome That Had to Be Questioned`,
+   p: [`The Sapphire Crown falls silent and Azurecourt's blue glass darkens along its damaged ribs. Sabine declares the Reach reunited through the Remembrance and calls the result a welcome. Romeo discovers its conditions in small encounters: a verified service table no longer sufficient, a teacher handed a prescribed account of her own work.`,
+       `The western people have not ceased to exist. Their culture has lost the independent public authority through which they recognized themselves. The Span reopens, and the lovers meet at last.`],
+   pair: [['R', `Your hand is colder than I expected.`], ['J', `You waited five years to complain about the temperature.`]],
+   close: `The Crimson Keep stands. The Sapphire Keep is defeated and inhabited. The new order is real, and so is the obligation to remember that an open door can still have been opened by force.`}
+];
+
 
 /* ---------- the turret roster (the champions of this game) ---------- */
 const TIER_C = ['', '#a3a9bf', '#3ddc84', '#3d9bff', '#c06bff', '#ffb020'];
@@ -478,6 +536,14 @@ function buyShop(P, i, side) {
 const rerollCost = P => 2 + (P.rr | 0);   // +1 gold per reroll, resets every planning phase
 function reroll(P, side) { const c = rerollCost(P); if (P.gold < c) return 'Rerolling costs ' + c + ' gold.'; P.gold -= c; P.rr = (P.rr | 0) + 1; rollShop(P); if (side !== undefined && S.stats) { S.stats.p[side].spent += c; S.stats.p[side].rerolls++; } return ''; }
 function buyXp(P, side) { if (P.level >= 10) return 'Already at max level.'; if (P.gold < 4) return 'Buying XP costs 4 gold.'; P.gold -= 4; addXp(P, 4); if (side !== undefined && S.stats) { S.stats.p[side].spent += 4; S.stats.p[side].xp++; } return ''; }
+/* a station chief answers when you seat a turret on one of their mounts (at most once per chief every 25 seconds) */
+function chiefBark(P, side, mount) {
+  const st = STATION[mount], c = CHIEFS[side] && CHIEFS[side][st]; if (!c) return '';
+  const now = performance.now() / 1000; P.bk = P.bk || {};
+  if (now - (P.bk[st] || -99) < 25) return '';
+  P.bk[st] = now;
+  return c.n + ' (' + MOUNT_LABEL[mount] + '): “' + c.inst + '”';
+}
 function moveUnit(P, f, fi, t, ti) {
   const src = f === 'm' ? P.board : P.bench, dst = t === 'm' ? P.board : P.bench;
   if (!(fi >= 0 && fi < src.length && ti >= 0 && ti < dst.length)) return '';
@@ -563,7 +629,13 @@ function applyAct(side, a) {
     case 'buy': return buyShop(P, a.i | 0, side);
     case 'reroll': return reroll(P, side);
     case 'xp': return buyXp(P, side);
-    case 'move': return moveUnit(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
+    case 'move': {
+      const f = a.f === 'm' ? 'm' : 'b', t = a.to === 'm' ? 'm' : 'b', fi = a.fi | 0, ti = a.ti | 0;
+      const moved = (f === 'm' ? P.board : P.bench)[fi];
+      const m = moveUnit(P, f, fi, t, ti);
+      if (!m && t === 'm' && moved && P.board[ti] === moved && S.mode !== 'demo') return chiefBark(P, side, ti);
+      return m;
+    }
     case 'sell': return sellUnit(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'equip': return equipItem(P, a.ii | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
     case 'strip': return stripCores(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
@@ -633,6 +705,7 @@ function newMatch(mode, diff) {
     lastSeq: 0, matchId: Math.random().toString(36).slice(2, 7),
     ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0, tab: false, menu: false},
     stats: {rounds: [], p: [newStat(), newStat()]},
+    wit: mode === 'demo' ? null : WITNESS.map((_, i) => i).sort(() => Math.random() - 0.5),
     log: mode === 'demo' ? null : {id: Math.random().toString(36).slice(2, 7), mode, diff: diff || (old && old.diff) || 'hard', started: new Date().toISOString(), side: 0, handle: typeof HANDLE === 'string' ? HANDLE : '', rounds: [], end: null}
   };
   if (mode !== 'guest') {
@@ -779,7 +852,7 @@ async function logDownload(all) {
   try {
     const data = all ? logsLoad() : (S.log ? [S.log] : []);
     if (!data.length) { uiMsg('No match logs saved yet.'); return; }
-    const text = JSON.stringify({game: 'Ballista Keep', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1);
+    const text = JSON.stringify({game: 'Of Blood & Glass', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1);
     const fname = 'ballista-keep-' + (all ? 'logs' : 'match-' + S.log.id) + '.json';
     // inside claude.ai the viewer saves through the downloads capability; elsewhere a normal download link
     let dl = null; try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) {}
@@ -999,7 +1072,7 @@ function pvpImport(file) {
         for (const sd of sides) { const g = ghostFromLog(m, sd, m.handle || 'Imported'); if (g && !have.some(x => x.id === g.id && x.handle === g.handle)) { have.push(g); n++; } }
       }
       lsSet(GHKEY, have.slice(-30)); PVP.err = n ? 'Imported ' + n + ' build' + (n === 1 ? '' : 's') + '.' : 'No new builds in that file.';
-    } catch (e) { PVP.err = 'That file is not a Ballista Keep match log.'; }
+    } catch (e) { PVP.err = 'That file is not an Of Blood & Glass match log.'; }
     overlaySig = '';
   };
   r.readAsText(file);
@@ -3889,13 +3962,13 @@ function updateHUD() {
   setText('tag0', t[0]); setText('tag1', t[1]);
   $('tag0').className = t[0] === 'You' ? 'you' : ''; $('tag1').className = t[1] === 'You' ? 'you' : '';
   const timeEl = $('sTime');
-  let tm = '—', hot = false, rl = 'Ballista Keep';
+  let tm = '—', hot = false, rl = 'Of Blood & Glass';
   if (S.phase === 'setup') { tm = fmtTime(S.phaseT); hot = S.phaseT <= 10; rl = 'Round ' + S.round + ' · Planning'; }
   else if (S.phase === 'intro') { tm = fmtTime(COMBAT_LEN); rl = 'Round ' + S.round + ' · Combat'; }
   else if (S.phase === 'combat') { tm = fmtTime(S.timeLeft); hot = S.timeLeft <= 5; rl = S.chaos && CHAOS[S.chaos.i] ? CHAOS[S.chaos.i].name : 'Round ' + S.round + ' · Combat'; }
   else if (S.phase === 'result') { tm = '0:00'; rl = 'Round ' + S.round + ' · Result'; }
   else if (S.phase === 'over') rl = 'Match over';
-  if (S.mode === 'demo') rl = 'Ballista Keep';
+  if (S.mode === 'demo') rl = 'Of Blood & Glass';
   setText('sTime', tm); setText('sRound', rl);
   timeEl.classList.toggle('hot', hot);
   const sig = dockSigNow();
@@ -4033,12 +4106,66 @@ function statsHtml(final) {
   } else h += '<p class="hint">No rounds fought yet.</p>';
   return h;
 }
-const WIKI_TABS = [['basics', 'Basics'], ['turrets', 'Turrets'], ['traits', 'Traits'], ['cores', 'Cores'], ['economy', 'Economy'], ['army', 'Upgrades & calls'], ['keys', 'Controls']];
+const WIKI_TABS = [['world', 'World'], ['towns', 'The towns'], ['crews', 'The crews'], ['arsenal', 'Arsenal lore'], ['machines', 'Machines & cores'], ['voices', 'Voices'], ['basics', 'Basics'], ['turrets', 'Turrets'], ['traits', 'Traits'], ['cores', 'Cores'], ['economy', 'Economy'], ['army', 'Upgrades & calls'], ['keys', 'Controls']];
 function wikiHtml() {
-  const tab = S.ui.wiki || 'basics';
+  const tab = S.ui.wiki || 'world';
   let b = '';
-  if (tab === 'basics') {
-    b = '<p>Two keeps face each other. Each has ten turret mounts: four on the roof and six on the deck. Every round has two parts.</p>' +
+  if (tab === 'world') {
+    b = `<p>The Vela Reach was a rocky harbor before the seas rose. By 2489 it is an inhabited structure of reef foundations, suspended quays and glass that carries more than light, and its two halves are called towns because calling them fortresses would admit how much life has been arranged around a threat.</p>
+      <p><b>Azurecourt</b> lies west of the battlefield, behind the <b>Sapphire Keep</b>. <b>Vermilion</b> lies east, behind the <b>Crimson Keep</b>. Between them runs the <b>Concord Span</b>, a broad level bridge with a star-shaped inlay at its centre, the Midmark. The Keeps share one architecture: ivory ceramic-alloy, gold contacts, and colored witnessglass that is the badge of whichever civic root governs it. Blue and red are political inheritances, not biological categories.</p>
+      <p><b>The Glass Night, 2357.</b> During a storm, Ansel Montavere ordered a brake sequence and Viola Capravell ordered a protective seal. Each order was defensible. Together, in an interlock nobody had tested, they trapped a thermal load inside the Prime Conduit. Eighty-six people died. In the second week, the two administrations began editing the logs.</p>
+      <p><b>The Last Accord, 2489.</b> Romeo Montavere (27, a civic witness of Azurecourt) and Juliette Capravell (26, a ceremonial engineer of Vermilion) have loved each other for five years. They appear to each other only as witnessglass projections. The <b>Concordance Lock</b> ties every resident to one of two civic roots and bars ordinary crossing. Neither House will provide the reciprocal acts that would reopen it.</p>
+      <p>When a Keep's Crown loses sovereign continuity, one root remains and one administration is responsible for both lovers. That is the only door, and it opens through somebody else's defeat. The tower is an obstacle in front of a town, not the town. The defeated town still has to wake up somewhere the next morning.</p>
+      <p class="hint">Either side can win, and either victory can bring the lovers together. Neither victory proves one population deserved to lose its name, customs or authority.</p>`;
+  } else if (tab === 'towns') {
+    b = `<table class="stats wk"><thead><tr><th></th><th style="color:${SIDES[0].c}">Azurecourt</th><th style="color:${SIDES[1].c}">Vermilion</th></tr></thead><tbody>
+      <tr><th>Keep</th><td class="l">Sapphire Keep, west</td><td class="l">Crimson Keep, east</td></tr>
+      <tr><th>Ideal</th><td class="l">The Measure: obligations made visible, testable and answerable to someone besides the person claiming to have met them.</td><td class="l">The Remembrance: a promise joined to an identifiable witness, so a fact cannot quietly disappear.</td></tr>
+      <tr><th>At its best</th><td class="l">A bridge marked with its safe load is a promise to the stranger who never met its builder.</td><td class="l">An official cannot deny an obligation that six neighbors heard him accept.</td></tr>
+      <tr><th>Its failure</th><td class="l">Treating a measure as a complete description of what it measures. A person becomes a record.</td><td class="l">Making a person answerable to everyone's record of who they ought to be. Gratitude becomes owed.</td></tr>
+      <tr><th>Ruling House</th><td class="l">Lord Aurel Montavere, a systems adjudicator who exempts his own House from the method he admires. His son Oren is a frontier captain.</td><td class="l">Lady Sabine Capravell, who turns affection into obligation. She tells Juliette which lives her wishes would wound.</td></tr>
+      <tr><th>A blue victory</th><td class="l" colspan="2">The Measure becomes the compulsory public framework of both towns. Vermilion's records are recataloged and its schools teach the western civic format.</td></tr>
+      <tr><th>A red victory</th><td class="l" colspan="2">The Remembrance becomes compulsory. Azurecourt's records must be witnessed through eastern offices, and its institutions keep their work but lose the authority to define citizenship.</td></tr></tbody></table>
+      <p class="hint">Either way this is assimilation, even when the new rulers supply working water and splendid meals. A custom that survives in private does not restore public equality.</p>`;
+  } else if (tab === 'crews') {
+    b = `<p>Each Keep has ten mounts and five named chiefs. Each chief answers for a paired station of two mounts: <b>R1+S1</b>, <b>R2+S2</b>, <b>R3+S3</b>, <b>R4+S4</b> and <b>S5+S6</b>. A specialty is what the chief knows best, not a restriction: any turret fits any mount. Seat a turret and its chief answers.</p>
+      <table class="stats wk"><thead><tr><th>Station</th><th style="color:${SIDES[0].c}">Sapphire Keep</th><th style="color:${SIDES[1].c}">Crimson Keep</th><th>Closest disciplines</th></tr></thead><tbody>` +
+      [0, 1, 2, 3, 4].map(i => '<tr><th>' + ['R1 · S1', 'R2 · S2', 'R3 · S3', 'R4 · S4', 'S5 · S6'][i] + '</th><td class="l"><b>' + CHIEFS[0][i].n + '</b>, ' + CHIEFS[0][i].role + ', ' + CHIEFS[0][i].age + '</td><td class="l"><b>' + CHIEFS[1][i].n + '</b>, ' + CHIEFS[1][i].role + ', ' + CHIEFS[1][i].age + '</td><td class="l">' + CHIEFS[0][i].disc + '</td></tr>').join('') + `</tbody></table>
+      <p>Ivo Rell and Cassian Voss trade abrasive technical corrections across the Span, and neither calls it friendship. Both notice when the other takes too long to answer. All ten survive either ending; the same practical voice persists under a changed authority.</p>`;
+  } else if (tab === 'arsenal') {
+    const L = {vulcan: `A rotary cannon that divides force into many repeated acts. Ivo says its temptation is to let repetition replace attention. Cassian says its virtue is that a sequence can be audited.`,
+      flak: `Born among the instruments that kept fragile harbor structures clear of debris. Now it denies the other town room above the Span.`,
+      cryo: `A faceted ice spear. Its civilian ancestors held a failure still long enough for a repair crew to arrive. Neris finds the conversion hard to discuss ceremonially.`,
+      torch: `A furnace made directional. Mira remembers a craft hall in its nozzle; Ysra remembers a public oven. Neither memory makes its use innocent.`,
+      arc: `Forked electrodes from the old promise that a failed line could be bridged long enough to restore a service. Tomas likes the promise. Lucan asks who decides which line is worth restoring.`,
+      swarm: `A honeycomb of folded craft that once carried inspection lights, seed samples and repair compounds. Small does not mean inconsequential.`,
+      needle: `The lightest barrel in the heavy arsenal. Ivo warns that precision cannot make a mistaken identification correct.`,
+      mortar: `A short elevated tube that casts plasma beyond the operator's sight. Mira dislikes commands that grow less specific as they grow more distant.`,
+      rail: `Two open rails and one clear line, from civilian mass-transfer work. That clarity can flatter a commander whose judgment is not as precise.`,
+      tesla: `A vertical stack of coils from harbor charge structures once associated with shelter. Children in both towns still draw storm equipment that looks like it.`,
+      hellfire: `A box of decisions waiting to leave separately. The name is frontier exaggeration; Sera and Tavia use its proper designation.`,
+      lancer: `Surveying and relay optics turned from a means of seeing into a means of striking. It asks one distant place a very exact question.`,
+      glacier: `Broad where the Cryo Lance is slender, descended from emergency preservation. Time bought for a commander may be time denied to someone waiting elsewhere.`,
+      singularity: `A near-black field centre in sculptural containment. Related techniques helped recover inaccessible material. It never granted time travel or revived the dead.`,
+      sunlance: `The most ceremonial instrument, a white-gold solar heart in a large focus. Heat becomes care only when someone accepts responsibility for where it goes.`};
+    b = '<p>The fifteen instruments are equipment, not a requirement to install all of them. Each began as civilian harbor engineering before the frontier absorbed it.</p><table class="stats wk"><tbody>' +
+      ROSTER.map(R => '<tr><th style="color:' + TIER_C[R.tier] + '">' + R.name + '</th><td class="l">' + (L[R.id] || '') + '</td></tr>').join('') + '</tbody></table>';
+  } else if (tab === 'machines') {
+    b = `<p>The towns have outsourced much of their frontier violence to autonomous bodies. This reduces one kind of immediate exposure. It does not make the conflict bloodless: workers repair, couriers cross unstable decks, and civilian food and heat budgets pay for replacements. Blue units advance east from Azurecourt, red units west from Vermilion.</p>
+      <table class="stats wk"><tbody>
+      <tr><th>Exo Trooper</th><td class="l">The most human-shaped proxy, useful in spaces built for human workers and useful to propaganda that wants obedient machines to look like ideal citizenship.</td></tr>
+      <tr><th>Razor Bike</th><td class="l">Speed given a low mechanical body. It descends from urgent inspections and deliveries along exposed structures.</td></tr>
+      <tr><th>Bulwark</th><td class="l">A wall on short tracks. Enduring an attack is not proof that the place it was told to stand is just.</td></tr>
+      <tr><th>Wasp Drone</th><td class="l">An independently deployed flyer, distinct from the Swarm Pod's small craft. It has no inherited hatred; people supplied the procedure that treats certain colors and routes as reason enough to act.</td></tr>
+      <tr><th>Titan Walker</th><td class="l">A large autonomous siege machine on four articulated legs. It is not a walking Keep and carries no Crown. Its scale makes the system's cost harder to ignore.</td></tr></tbody></table>
+      <p><b>The five cores</b> are recognizable objects of skilled craft. Neutron Core: a contained reactor component, a well-seated one is work that resisted being admired before it was understood. Overclock Chip: the luminous processor of faster fire, not a device for accelerating time. Tri-Barrel: a targeting modification for a second target (area weapons gain damage instead). Nova Charge: a wider effect that should prompt a more careful conversation about where it is sent. Nano Lens: a precision optic, not a promise of unlimited sight.</p>
+      <p class="hint">One quiet document in the Witness Journal records a replacement Nano Lens ground in Vermilion for a failed instrument on a shared structure. The western form calls it a licensed exchange, the eastern form a fulfilled repair obligation. Both are correct and incomplete. The lens does not end the war.</p>`;
+  } else if (tab === 'voices') {
+    b = '<p>The <b>Last Witness</b> is the public interval before each decisive confrontation. Romeo and Juliette use the custom to speak to one another while both towns listen. Light is permitted where bodies are refused. In a match you see one of these exchanges at the start of planning in rounds 1, 4, 7 and so on.</p>' +
+      WITNESS.map(w => '<table class="stats wk"><thead><tr><th colspan="2">' + w.t + '</th></tr></thead><tbody>' + w.l.map(ln => '<tr><th style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</th><td class="l">“' + ln[1] + '”</td></tr>').join('') + '</tbody></table>').join('') +
+      '<p class="hint">Two more exchanges belong to the endings and appear only after a victory.</p>';
+  } else if (tab === 'basics') {
+    b = '<p>Two keeps face each other. Each has ten turret mounts: four on the roof (R1 to R4) and six on the inward-facing side (S1 to S6). Every round has two parts.</p>' +
       '<p><b>Planning (60 s, 75 s from round 4, 90 s from round 7).</b> Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. Press Ready to lock in; when both sides are ready, combat starts early.</p>' +
       '<p><b>Combat (30 s).</b> Mechs march automatically from both keeps. Your turrets shoot the enemy mechs, and any mech that reaches your keep damages it. You can spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 20 s, overtime Titans march until one side breaks.</p>' +
       '<p><b>Winning.</b> Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. Round 5 onward the mech waves get tougher every round.</p>' +
@@ -4120,10 +4247,34 @@ function postHtml() {
     '<div class="pcols">' + col(0) + col(1) + '</div>' +
     ((S.mode === 'cpu' || S.mode === 'host') ? '<div class="btns"><button class="btn prime" data-act="skipres" type="button">Next round ▸</button></div>' : '<p class="hint">Next round starts shortly.</p>');
 }
+let witKey = '';
+function updateWitness() {
+  const el = $('witness'); if (!el) return;
+  let a = '', b = '', ia = 0, ib = 0, key = '';
+  if (S && S.wit && S.mode !== 'demo' && S.phase === 'setup' && (S.round - 1) % 3 === 0 && !S.ui.menu && !S.ui.tab) {
+    const t = setupLen(S.round) - S.phaseT, pair = WITNESS[S.wit[Math.floor((S.round - 1) / 3) % S.wit.length]];
+    const show = [t > 1.5 && t < 11.5, t > 5.2 && t < 11.5];
+    pair.l.forEach((ln, i) => { if (!show[i]) return; if (ln[0] === 'R') { a = ln[1]; ia = 1; } else { b = ln[1]; ib = 1; } });
+  }
+  key = ia + a + '|' + ib + b;
+  if (key === witKey) return; witKey = key;
+  const [L, R] = el.children;
+  if (a) L.lastChild.textContent = a; if (b) R.lastChild.textContent = b;
+  L.classList.toggle('on', !!ia); R.classList.toggle('on', !!ib);
+}
+function endingHtml(w) {
+  if (w < 0) return '<div class="pwhy"><p class="hint">Neither Crown holds. The Span stays closed, and the Last Accord is not yet kept.</p></div>';
+  const E = ENDING[w], loser = w ^ 1, L = CHIEFS[loser], W = CHIEFS[w];
+  const line = ln => '<p><b style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</b> “' + ln[1] + '”</p>';
+  const winLines = W.filter(c => c.win).map(c => '<p><b>' + c.n + '</b> “' + c.win + '”</p>').join('');
+  const col = 'display:flex;flex-direction:column;gap:8px';
+  return '<h2>' + E.head + '</h2><div class="pwhy" style="' + col + '">' + E.p.map(t => '<p>' + t + '</p>').join('') + E.pair.map(line).join('') + '<p class="hint">' + E.close + '</p></div>' +
+    '<h2>The crews answer</h2><div class="pwhy" style="' + col + '">' + L.map((c, i) => '<p><b style="color:' + SIDES[loser].c + '">' + c.n + '</b> <span class="hint">' + c.role + ' · ' + (i === 4 ? 'S5/S6' : 'R' + (i + 1) + '/S' + (i + 1)) + '</span> “' + c.lost + '”</p>').join('') + winLines + '</div>';
+}
 function showOverlay() {
   $('overlay').innerHTML = '';
   const ph = S.phase, mode = S.mode;
-  if (S.ui.wiki && S.ui.menu && inMatch()) { card(wikiHtml()).classList.add('wikic'); return; }
+  if (S.ui.wiki && ((S.ui.menu && inMatch()) || mode === 'demo')) { card(wikiHtml()).classList.add('wikic'); return; }
   if (S.ui.menu && inMatch()) {
     card(menuHtml(), true);
     if ($('mAuto')) $('mAuto').addEventListener('change', e => { LOGPREF.auto = !!e.target.checked; saveLogPref(); });
@@ -4144,9 +4295,9 @@ function showOverlay() {
   if (mode === 'demo') {
     const online = roomChecked && roomNS;
     card(
-      '<div class="kicker">2187 · The powder age never ended</div>' +
-      '<h1>Ballista Keep</h1>' +
-      '<p>Two keeps, ten turret mounts each, and armies that march on their own. You plan for 60 to 90 seconds, then 30 seconds of combat plays out without you. Draft well, and your build holds while theirs breaks.</p>' +
+      '<div class="kicker">2489 · The Last Accord</div>' +
+      '<h1>Of Blood &amp; Glass</h1>' +
+      '<p>Azurecourt and Vermilion face off across the Concord Span, each behind a glass-armored Keep with ten turret mounts. Two lovers meet only if one Keep falls. Plan for 60 to 90 seconds, then 30 seconds of combat plays out on its own.</p>' +
       '<ul class="rules">' +
         '<li>Buy turrets from a shop of five. Reroll starts at 2 gold and rises by 1 each time, resetting every round</li>' +
         '<li>Three copies merge into 2 stars, three 2-stars into 3</li>' +
@@ -4157,10 +4308,10 @@ function showOverlay() {
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
-      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label></div>' +
-      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Online matches are ranked automatically when you are signed in: the result counts once your rival reports the same one, and your build becomes an async rival.</p>') +
+      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button></div>' +
+      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Signed-in online matches are ranked, and your build becomes an async rival.</p>') +
       '<div class="modes">' +
-        '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU runs VOLT on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
+        '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU holds the Crimson Keep for Vermilion on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
         '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
         '<div class="mode"><h2>Against a friend</h2>' +
           (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
@@ -4176,7 +4327,7 @@ function showOverlay() {
   if (ph === 'lobby') {
     card('<div class="kicker">Room open</div><h1>Send the code</h1>' +
       (net ? '<div class="code" id="codeShow">' + net.code + '</div><div class="btns"><button class="btn" data-act="copy" type="button">Copy code</button></div>' +
-        '<p>Your rival opens this same page, chooses Join under Against a friend, and types the code. You run HEX on the left. Planning starts as soon as they arrive.</p>' +
+        '<p>Your rival opens this same page, chooses Join under Against a friend, and types the code. You hold the Sapphire Keep for Azurecourt on the left. Planning starts as soon as they arrive.</p>' +
         '<p class="hint">' + (peerMode() ? 'Send them this page’s link too. Keep this screen open until they join.' : 'They need access to this page (share it from the Share menu) and must be signed in.') + '</p>'
         : '<p>' + (S.netMsg || 'Opening the arena…') + '</p>') +
       '<div class="btns"><button class="btn quiet" data-act="menu" type="button">Cancel</button></div>', true);
@@ -4196,7 +4347,7 @@ function showOverlay() {
     card('<div class="kicker">Match over · ' + S.round + ' rounds</div><h1>' + title + '</h1>' +
       (P ? '<p>You finished on ' + Math.max(0, Math.ceil(P.hp)) + ' HP at level ' + P.level + ', with ' + P.kills + ' kills across the match.</p>' : '') +
       '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button></div>' +
-      '<h2>Match summary</h2>' + statsHtml(true));
+      endingHtml(w) + '<h2>Match summary</h2>' + statsHtml(true));
   } else if (ph === 'gone') {
     card('<h1>Rival left</h1><p>The other keep is empty. Head back to choose another match.</p><div class="btns"><button class="btn" data-act="menu" type="button">Main menu</button></div>', true);
   } else if (ph === 'neterr') {
@@ -4284,6 +4435,7 @@ function frame(now) {
   updateHUD();
   const sig = sigNow();
   if (sig !== overlaySig) { overlaySig = sig; showOverlay(); }
+  updateWitness();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
