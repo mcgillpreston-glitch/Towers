@@ -97,7 +97,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .rules{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:14px}
 .rules li{padding-left:14px;position:relative;line-height:1.4}
 .rules li::before{content:"";position:absolute;left:0;top:.5em;width:6px;height:6px;transform:rotate(45deg);background:var(--gild);box-shadow:0 0 6px rgba(62,200,230,.6)}
-.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .mode{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(0,0,0,.35);border:1px solid rgba(232,201,138,.35);min-width:0}
 .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{font:700 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--ether);background:linear-gradient(180deg,#1b1533,#0c0918) padding-box,var(--gild) border-box;border:1.5px solid transparent;padding:10px 14px;cursor:pointer;clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%);white-space:nowrap}
@@ -160,6 +160,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .sc{position:relative;display:flex;flex-direction:column;gap:3px}.sc>.unit{flex:1;min-width:0}
 .lockb{text-align:center;font:700 9px var(--f-display);letter-spacing:.16em;padding:3px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
 .lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
+.mode input[type=text]{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:inherit;min-width:0}.mode .btns{flex-wrap:nowrap}.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}table.wk tr.me th,table.wk tr.me td{color:var(--warn)}
 .card.wikic{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:hidden;z-index:70}
 .wtabs{display:flex;gap:6px;flex-wrap:wrap}
 .wiki{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
@@ -632,7 +633,7 @@ function newMatch(mode, diff) {
     lastSeq: 0, matchId: Math.random().toString(36).slice(2, 7),
     ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0, tab: false, menu: false},
     stats: {rounds: [], p: [newStat(), newStat()]},
-    log: mode === 'demo' ? null : {id: Math.random().toString(36).slice(2, 7), mode, diff: diff || (old && old.diff) || 'hard', started: new Date().toISOString(), rounds: [], end: null}
+    log: mode === 'demo' ? null : {id: Math.random().toString(36).slice(2, 7), mode, diff: diff || (old && old.diff) || 'hard', started: new Date().toISOString(), side: 0, handle: typeof HANDLE === 'string' ? HANDLE : '', rounds: [], end: null}
   };
   if (mode !== 'guest') {
     for (const P of S.p) { P.board[4] = unitOf(randomOfTier(1)); rollShop(P); }
@@ -792,7 +793,148 @@ function logEnd() {
   if (!S.log || S.mode === 'demo') return;
   S.log.end = {winner: S.winner, rounds: S.round, hp: S.p.map(P => P.hp), stats: S.stats.p};
   logPersist();
+  pvpRecord();
   if (LOGPREF.auto) logDownload(false);
+}
+/* ---------- async PvP: ghost builds from other players + wins leaderboard ---------- */
+const GHKEY = 'bk-ghosts-v1', LBKEY = 'bk-lb-v1', HKEY = 'bk-handle', MYKEY = 'bk-mybuilds-v1';
+const PVP = {db: null, uid: null, init: false, busy: false, lb: [], lbLoaded: false, lbBusy: false, err: '', n: 0, shared: 0};
+const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+let HANDLE = String(lsGet(HKEY, '') || '').slice(0, 14) || 'Tactician' + (100 + Math.floor(Math.random() * 900));
+const cleanHandle = v => String(v || '').replace(/[<>&"'`]/g, '').trim().slice(0, 14);
+function setHandle(v) { const h = cleanHandle(v); if (!h) return; HANDLE = h; lsSet(HKEY, h); const me = myLb(); me.handle = h; lsSet(LBKEY, me); pvpPushLb(); }
+function newLb() { return {handle: HANDLE, m: 0, w: 0, l: 0, d: 0, aw: 0, al: 0, ad: 0, rounds: 0, dmg: 0, kills: 0, units: {}, cores: {}, best: 0, t: 0}; }
+function myLb() { const v = lsGet(LBKEY, null); return v && typeof v === 'object' ? Object.assign(newLb(), v, {handle: v.handle || HANDLE}) : newLb(); }
+async function pvpInit() {
+  if (PVP.init) return; PVP.init = true;
+  try {
+    if (!(window.claude && window.claude.use)) return;
+    PVP.db = await window.claude.use('db');
+    const u = await window.claude.use('user');
+    PVP.uid = u ? await u.id() : null;
+    if (!PVP.uid) PVP.db = null;
+    if (PVP.db) {          // adopt the account's saved tally if this device has played less
+      const snap = await PVP.db.doc('lb/' + PVP.uid).get();
+      const d = snap.exists ? snap.data() : null, mine = myLb();
+      if (d && (d.m | 0) > mine.m) { lsSet(LBKEY, Object.assign(newLb(), d, {handle: mine.handle !== HANDLE ? mine.handle : d.handle || HANDLE})); }
+    }
+  } catch (e) { PVP.db = null; }
+  overlaySig = '';
+}
+let pushQ = Promise.resolve();
+function pvpPushLb() { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('lb/' + PVP.uid).set(Object.assign({}, myLb(), {uid: PVP.uid}))).catch(e => { PVP.err = 'Leaderboard upload failed'; }); }
+function pvpPushBuilds(list) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('ghosts/' + PVP.uid).set({handle: HANDLE, t: Date.now(), builds: list})).catch(e => { PVP.err = 'Build upload failed'; }); }
+const packG = a => a ? [a[0], a[1], a[2] || ''] : 0;
+function ghostFromLog(log, side, handle) {
+  if (!log || !Array.isArray(log.rounds)) return null;
+  const rounds = [];
+  for (const R of log.rounds) {
+    const p = R && R.p && R.p[side]; if (!p || !Array.isArray(p.board)) continue;
+    rounds.push({r: R.r | 0, lv: p.level | 0, up: String(p.up || '000'), board: p.board.slice(0, 10).map(packG), bench: (p.bench || []).slice(0, 8).map(packG)});
+  }
+  if (rounds.length < 2) return null;
+  const won = log.end ? (log.end.winner === side ? 1 : log.end.winner < 0 ? 0 : -1) : 0;
+  return {id: String(log.id || '').slice(0, 12), handle: cleanHandle(handle || log.handle) || 'Imported', rounds, won, n: log.rounds.length};
+}
+function pvpRecord() {
+  if (!S.log || S.mode === 'guest' || S.mode === 'demo') return;
+  const side = 0, st = S.stats.p[side], w = S.winner, async_ = !!S.ghost;
+  const me = myLb(); me.handle = HANDLE;
+  me.m++; me.rounds += S.round; me.dmg += st.dealt | 0; me.kills += st.kills | 0; me.t = Date.now();
+  const res = w === side ? 'w' : w < 0 ? 'd' : 'l';
+  me[res]++; if (async_) me['a' + res]++;
+  if (res === 'w') me.best = Math.max(me.best, S.round);
+  for (const R of S.log.rounds) { const p = R.p[side]; for (const a of p.board) if (a) { me.units[a[0]] = (me.units[a[0]] || 0) + 1; for (const c of String(a[2] || '')) me.cores[c] = (me.cores[c] || 0) + 1; } }
+  lsSet(LBKEY, me);
+  if (S.mode === 'cpu' && S.diff === 'easy') { pvpPushLb(); return; }     // easy-CPU builds are not worth fighting
+  const g = ghostFromLog(S.log, side, HANDLE);
+  if (g) { const mine = lsGet(MYKEY, []).filter(x => x.id !== g.id); mine.push(g); const keep = mine.slice(-4); lsSet(MYKEY, keep); pvpPushBuilds(keep); }
+  pvpPushLb();
+}
+async function pvpPool() {
+  const pool = [];
+  if (PVP.db) {
+    try {
+      const snap = await PVP.db.collection('ghosts').limit(300).get();
+      PVP.shared = 0;
+      for (const d of snap.docs) {
+        if (d.id === PVP.uid) continue;
+        const v = d.data() || {};
+        for (const b of (Array.isArray(v.builds) ? v.builds : [])) if (b && Array.isArray(b.rounds) && b.rounds.length >= 2) { pool.push({id: b.id, handle: cleanHandle(v.handle) || 'Player', rounds: b.rounds, src: 'shared', n: b.n || b.rounds.length}); PVP.shared++; }
+      }
+    } catch (e) { PVP.err = 'Could not reach the shared builds'; }
+  }
+  for (const g of lsGet(GHKEY, [])) if (g && Array.isArray(g.rounds)) pool.push(Object.assign({src: 'file'}, g));
+  if (!pool.length) for (const g of lsGet(MYKEY, [])) if (g && Array.isArray(g.rounds)) pool.push(Object.assign({}, g, {handle: 'Your past self', src: 'self'}));
+  return pool;
+}
+async function startGhost() {
+  if (PVP.busy) return; PVP.busy = true; overlaySig = '';
+  let pool = []; try { pool = await pvpPool(); } catch (e) {}
+  PVP.busy = false;
+  leaveRoom(); newMatch('cpu', 'hard');
+  if (pool.length) {
+    S.ghost = pool[Math.floor(Math.random() * pool.length)];
+    if (S.log) { S.log.mode = 'ghost'; S.log.ghost = {id: S.ghost.id, handle: S.ghost.handle, src: S.ghost.src}; }
+    ghostSetup(1); buildTurrets(S.p[1]);
+    S.ui.msg = 'Rival found: ' + S.ghost.handle; S.ui.msgT = 4;
+  } else { S.ui.msg = 'No saved builds yet, so this one is against the Hard CPU. Play a match and yours becomes a rival for others.'; S.ui.msgT = 6; }
+  overlaySig = ''; dockSig = '';
+}
+function ghostSetup(side) {
+  const g = S.ghost, P = S.p[side]; if (!g) return false;
+  const rec = g.rounds.find(x => x.r === S.round); if (!rec) return false;
+  const mk = a => (Array.isArray(a) && ROSTER[a[0]]) ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3)} : null;
+  P.board = Array.from({length: 10}, (_, i) => mk(rec.board[i]));
+  P.bench = Array.from({length: BENCH}, (_, i) => mk(rec.bench[i]));
+  P.level = clamp(rec.lv | 0 || P.level, 1, 10); P.xp = 0;
+  P.up = [0, 1, 2].map(i => clamp(+String(rec.up)[i] || 0, 0, 3));
+  P.items = []; P.shop = [-1, -1, -1, -1, -1]; P.bet = 0;
+  return true;
+}
+function pvpImport(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const j = JSON.parse(String(r.result)), list = Array.isArray(j.matches) ? j.matches : Array.isArray(j) ? j : [j], have = lsGet(GHKEY, []);
+      let n = 0;
+      for (const m of list) {
+        const sides = m && m.mode === 'host' ? [0] : [m && m.side | 0];
+        for (const sd of sides) { const g = ghostFromLog(m, sd, m.handle || 'Imported'); if (g && !have.some(x => x.id === g.id && x.handle === g.handle)) { have.push(g); n++; } }
+      }
+      lsSet(GHKEY, have.slice(-30)); PVP.err = n ? 'Imported ' + n + ' build' + (n === 1 ? '' : 's') + '.' : 'No new builds in that file.';
+    } catch (e) { PVP.err = 'That file is not a Ballista Keep match log.'; }
+    overlaySig = '';
+  };
+  r.readAsText(file);
+}
+async function pvpLoadLb() {
+  if (PVP.lbBusy) return; PVP.lbBusy = true; overlaySig = '';
+  const rows = [];
+  try { if (PVP.db) { const s = await PVP.db.collection('lb').limit(300).get(); for (const d of s.docs) { const v = d.data(); if (v && v.m != null) rows.push(Object.assign({id: d.id}, v)); } } } catch (e) { PVP.err = 'Could not reach the shared leaderboard'; }
+  PVP.lb = rows; PVP.lbLoaded = true; PVP.lbBusy = false; PVP.n++; overlaySig = '';
+}
+function lbHtml() {
+  const mine = myLb(), rows = PVP.lb.filter(r => r.id !== PVP.uid);
+  if (mine.m) rows.push(Object.assign({id: PVP.uid || 'me', me: 1}, mine));
+  const wr = r => (r.aw + r.al) ? r.aw / (r.aw + r.al) : -1;
+  rows.sort((a, b) => (b.aw | 0) - (a.aw | 0) || wr(b) - wr(a) || (b.w | 0) - (a.w | 0));
+  const top = o => { const e = Object.entries(o || {}).sort((a, b) => b[1] - a[1])[0]; return e ? e[0] : null; };
+  const tn = r => { const k = top(r.units); return k != null && ROSTER[k] ? ROSTER[k].name : '–'; };
+  const cn = r => { const k = top(r.cores); return k && ITEMS[k] ? ITEMS[k].name : '–'; };
+  const pct = r => (r.aw + r.al) ? Math.round(100 * r.aw / (r.aw + r.al)) + '%' : '–';
+  const agg = {u: {}, c: {}};
+  for (const r of rows) { for (const k in (r.units || {})) agg.u[k] = (agg.u[k] || 0) + r.units[k]; for (const k in (r.cores || {})) agg.c[k] = (agg.c[k] || 0) + r.cores[k]; }
+  const best = (o, f) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => f(e[0])).filter(Boolean).join(', ') || '–';
+  const body = rows.length ? rows.map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(cleanHandle(r.handle) || 'Player') + (r.me ? ' (you)' : '') + '</td><td>' + (r.aw | 0) + ' – ' + (r.al | 0) + '</td><td>' + pct(r) + '</td><td>' + (r.m | 0) + '</td><td>' + (r.rounds ? Math.round(r.dmg / r.rounds) : 0) + '</td><td>' + (r.best | 0) + '</td><td class="l">' + tn(r) + '</td><td class="l">' + cn(r) + '</td></tr>').join('')
+    : '<tr><td colspan="9" class="l">No results yet. Finish a match and you appear here.</td></tr>';
+  return '<div class="kicker">Async PvP</div><h1>Leaderboard</h1>' +
+    '<div class="wiki"><p class="hint">' + (PVP.db ? 'Shared with everyone who can open this page. Ranked by async PvP wins.' : 'Shared ranking needs this page opened in Claude. Showing this device only.') + (PVP.err ? ' ' + escA(PVP.err) : '') + '</p>' +
+    '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>Async W–L</th><th>Win %</th><th>Matches</th><th>Dmg / rd</th><th>Best win (rds)</th><th>Fav turret</th><th>Fav core</th></tr></thead><tbody>' + body + '</tbody></table>' +
+    '<p><b>Most fielded turrets:</b> ' + best(agg.u, k => ROSTER[k] ? ROSTER[k].name : '') + '</p><p><b>Most fitted cores:</b> ' + best(agg.c, k => ITEMS[k] ? ITEMS[k].name : '') + '</p>' +
+    '<p class="hint">Your account: ' + mine.w + ' wins, ' + mine.l + ' losses, ' + mine.d + ' draws over ' + mine.m + ' matches, ' + mine.kills + ' kills.</p></div>' +
+    '<div class="btns"><button class="btn quiet" data-act="lbx" type="button">Back</button><label class="btn filebtn">Import builds from a match file<input id="ghIn" type="file" accept=".json,application/json"></label></div>';
 }
 function afterResult() {
   if (S.p[0].hp <= 0 || S.p[1].hp <= 0) {
@@ -830,6 +972,7 @@ function cpuArrange(P, smart) {
   }
 }
 function cpuSetup(side, diff) {
+  if (S.ghost && ghostSetup(side)) return;
   const P = S.p[side], hard = diff === 'hard';
   if (!hard) {
     // a casual tactician: a couple of buys, no rerolls, rare levels, a mount left empty
@@ -1717,7 +1860,7 @@ function simulate(dt) {
   // battle pay: 1 gold every 2.5 s of combat, so call-ins are affordable even after a full shop
   for (const P of S.p) { P.pay = (P.pay || 0) + dt; if (P.pay >= 2.5) { P.pay -= 2.5; P.gold += 1; } }
   for (const P of S.p) { P.rally = Math.max(0, P.rally - dt); for (let j = 0; j < 5; j++) P.cd[j] = Math.max(0, P.cd[j] - dt); }
-  if (S.mode === 'cpu' && S.diff === 'hard') cpuCalls(1, dt);
+  if (S.mode === 'cpu' && S.diff === 'hard' && !S.ghost) cpuCalls(1, dt);
   // overtime: if both keeps are still untouched after 20 s, titans keep marching until somebody leaks
   if (COMBAT_LEN - S.timeLeft >= 20 && S.p[0].keep >= KEEP_HP - 0.5 && S.p[1].keep >= KEEP_HP - 0.5) {
     if (!S.ot) { S.ot = 1; S.otT = 0; ev(['n', 2, 0]); }
@@ -3610,7 +3753,7 @@ const streakTxt = st => st > 1 ? 'W' + st : st < -1 ? 'L' + (-st) : '';
 function tags() {
   const d = DIFF[S.diff] ? DIFF[S.diff].label : '';
   if (S.mode === 'demo') return ['CPU', 'CPU'];
-  if (S.mode === 'cpu') return ['You', 'CPU · ' + d];
+  if (S.mode === 'cpu') return S.ghost ? ['You', S.ghost.handle + ' · ghost'] : ['You', 'CPU · ' + d];
   if (S.mode === 'host') return ['You', net && net.guestPeer ? 'Rival' : 'Waiting'];
   if (S.mode === 'guest') return S.me === 1 ? ['Rival', 'You'] : ['Player 1', 'Player 2'];
   return ['', ''];
@@ -3740,7 +3883,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -3881,6 +4024,7 @@ function showOverlay() {
     return;
   }
   if (postOn() && inMatch() && !S.ui.menu && !S.ui.tab) { card(postHtml()).classList.add('post'); return; }
+  if (mode === 'demo' && S.ui.lb) { card(lbHtml()).classList.add('wikic'); return; }
   if (mode === 'demo') {
     const online = roomChecked && roomNS;
     card(
@@ -3899,6 +4043,7 @@ function showOverlay() {
       '</ul>' +
       '<div class="modes">' +
         '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU runs VOLT on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
+        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by another player. Your builds become rivals for them.</p><input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" aria-label="Your name" autocomplete="off" spellcheck="false"><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div>' + (PVP.err ? '<p class="hint">' + escA(PVP.err) + '</p>' : '') + '</div>' +
         '<div class="mode"><h2>Against a friend</h2>' +
           (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
             '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
@@ -3953,6 +4098,9 @@ function onAct(a, btn) {
   else if (k0 === 'stats') { S.ui.menu = false; S.ui.tab = !S.ui.tab; }
   else if (k0 === 'leave') { leaveRoom(); newMatch('demo'); }
   else if (k0 === 'cpu') startCpu(parts[1]);
+  else if (k0 === 'ghost') { PVP.err = ''; startGhost(); }
+  else if (k0 === 'lb') { S.ui.lb = true; pvpLoadLb(); }
+  else if (k0 === 'lbx') S.ui.lb = false;
   else if (k0 === 'host') { S.joinErr = ''; hostRoom(); }
   else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; S.joinErr = ''; joinRoom(v); }
   else if (k0 === 'slot') onSlot(parts[1], parts[2] | 0);
@@ -3970,7 +4118,7 @@ function onAct(a, btn) {
   else if (k0 === 'mute') setMute(!muted);
   else if (k0 === 'copy') { try { navigator.clipboard.writeText(net.code).then(() => { if (btn) btn.textContent = 'Copied'; }, selectCode); } catch (e) { selectCode(); } }
   else if (k0 === 'again') {
-    if (S.mode === 'cpu') startCpu(S.diff);
+    if (S.mode === 'cpu') { if (S.ghost) startGhost(); else startCpu(S.diff); }
     else if (S.mode === 'host' && net) net.rematch = true;
     else if (S.mode === 'guest' && net) net.in.r = 1;
   } else if (k0 === 'menu') { leaveRoom(); newMatch('demo'); }
@@ -3984,6 +4132,7 @@ for (const id of ['overlay', 'dock']) {
     if (b && !b.disabled) onAct(b.getAttribute('data-act'), b);
   });
 }
+$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
 $('overlay').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'codeIn') onAct('join'); });
 
 $('volMusic').value = String(Math.round(VOL.music * 100));
@@ -3999,6 +4148,7 @@ addEventListener('keydown', () => audio(), {once: true});
 
 /* ---------- loop ---------- */
 newMatch('demo');
+pvpInit();
 let last = performance.now(), acc = 0;
 function frame(now) {
   const rdt = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now;
