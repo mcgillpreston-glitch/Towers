@@ -3078,6 +3078,29 @@ addEventListener('pointerup', e => {
   S.ui.sel = null; dockSig = '';
 });
 addEventListener('pointercancel', () => { DRAG = null; dragClear(); });
+// right-click: send a turret between mount and bench, or pull a core off a turret
+addEventListener('contextmenu', e => {
+  const t = e.target;
+  if (!t || !t.closest || !canPlan() || S.ui.menu) return;
+  const onCv = t === cv, inDock = !!t.closest('#dock');
+  if (!onCv && !inDock) return;
+  e.preventDefault();
+  const P = myP(); if (!P) return;
+  let z = null, i = -1;
+  const ci = t.closest('[data-ci]');
+  if (ci) { const q = ci.getAttribute('data-ci').split(':'); act({t: 'mvitem', f: q[0], fi: q[1] | 0, k: q[2] | 0, to: 'i', ti: 0}); S.ui.sel = null; return; }
+  const chip = t.closest('[data-act^="slot:"]');
+  if (chip) { const q = chip.getAttribute('data-act').split(':'); z = q[1]; i = q[2] | 0; }
+  else if (onCv) {
+    const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
+    const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
+    let bd = 26;
+    for (let k = 0; k < 10; k++) { const [x, y] = mountWorld(S.me, k), d = Math.hypot(wx - x, wy - y); if (d < bd) { bd = d; z = 'm'; i = k; } }
+  }
+  if (z === 'm' && P.board[i]) { const b = P.bench.indexOf(null); if (b < 0) uiMsg('The bench is full.'); else act({t: 'move', f: 'm', fi: i, to: 'b', ti: b}); S.ui.sel = null; }
+  else if (z === 'b' && P.bench[i]) { const m = P.board.indexOf(null); if (m < 0 || boardCount(P) >= P.level) uiMsg(m < 0 ? 'No free mount.' : 'All ' + P.level + ' slots are in use. Level up or swap a turret out.'); else act({t: 'move', f: 'b', fi: i, to: 'm', ti: MOUNT_ORDER.find(k => !P.board[k])}); S.ui.sel = null; }
+  dockSig = '';
+});
 addEventListener('click', e => { if (performance.now() < dragSup) { e.stopPropagation(); e.preventDefault(); } }, true);
 /* ---------- tooltips: weapons, cores, traits and the HUD ---------- */
 const tipEl = document.getElementById('tip');
