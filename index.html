@@ -752,11 +752,16 @@ function logRound(w, fallen, dmg, post) {
       up: P.up.join(''), wager: P.betRes, cores: P.items.join(''), traits: P.traitLv, board: P.board.map(packUnit), bench: P.bench.map(packUnit)}))});
   logPersist();
 }
-function logDownload(all) {
+async function logDownload(all) {
   try {
     const data = all ? logsLoad() : (S.log ? [S.log] : []);
     if (!data.length) { uiMsg('No match logs saved yet.'); return; }
-    const blob = new Blob([JSON.stringify({game: 'Ballista Keep', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1)], {type: 'application/json'});
+    const text = JSON.stringify({game: 'Ballista Keep', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1);
+    const fname = 'ballista-keep-' + (all ? 'logs' : 'match-' + S.log.id) + '.json';
+    // inside claude.ai the viewer saves through the downloads capability; elsewhere a normal download link
+    let dl = null; try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) {}
+    if (dl) { await dl.save({filename: fname, data: text}); return; }
+    const blob = new Blob([text], {type: 'application/json'});
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ballista-keep-' + (all ? 'logs' : 'match-' + S.log.id) + '.json';
     document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
   } catch (e) {}
