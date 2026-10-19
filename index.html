@@ -2514,7 +2514,7 @@ function drawScene() {
   }
 
   // the stage halo with its equaliser (the pressure orb), hung over the water between the two cities
-  const hx = W / 2, hy = 0.235 * H, R0 = 52 * (1 + 0.04 * kk);
+  const hx = W / 2, hy = 0.15 * H, R0 = 52 * (1 + 0.04 * kk);
   if (bgOn) { const dg = ctx.createRadialGradient(hx, hy, R0 * 0.5, hx, hy, R0 * 2.3); dg.addColorStop(0, 'rgba(2,2,14,.62)'); dg.addColorStop(1, 'rgba(2,2,14,0)'); ctx.fillStyle = dg; ctx.fillRect(hx - R0 * 2.3, hy - R0 * 2.3, R0 * 4.6, R0 * 4.6); }
   ctx.globalCompositeOperation = 'lighter';
   const hg = ctx.createRadialGradient(hx, hy, 7, hx, hy, 130);
@@ -3473,7 +3473,7 @@ function drawRingsFields() {
 function drawKeepBars() {
   if (S.phase !== 'combat' && S.phase !== 'result' && S.phase !== 'intro') return;
   for (let s = 0; s < 2; s++) {
-    const P = S.p[s], y = 30, w = 200, edge = (W / 2) / S.cam.z;
+    const P = S.p[s], y = 27, w = 200, edge = (W / 2) / S.cam.z;
     const cx = s ? Math.min(W - 430, S.cam.x + edge - w / 2 - 12) : Math.max(430, S.cam.x - edge + w / 2 + 12);
     ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(cx - w / 2 - 2, y - 2, w + 4, 18);
     ctx.fillStyle = S.keepFlash[s] > 0.05 ? '#ff5a5a' : 'rgb(' + SIDES[s].rgb + ')'; ctx.fillRect(cx - w / 2, y, w * clamp(P.keep / KEEP_HP, 0, 1), 14);
@@ -3488,10 +3488,12 @@ function drawTraits(side) {
   const {cnt, lv} = S.phase === 'setup' ? traitLevels(P.board) : {cnt: traitLevels(P.board).cnt, lv: P.traitLv};
   const list = Object.keys(TRAITS).filter(t => cnt[t]).sort((a, b) => (lv[b] || 0) - (lv[a] || 0) || cnt[b] - cnt[a]);
   if (!list.length) return;
-  const x = side ? W - (TW.x1 + 40) : TW.x1 + 40, al = side ? 'right' : 'left';
-  let y = 84;
+  // the bonus list sits on the face of its own tower, drawn before the weapons so they cover it (it becomes tower decoration later)
+  const x = side ? W - (TW.x0 + 30) : TW.x0 + 30, al = side ? 'right' : 'left';
+  let y = 0.26 * H;
   for (const t of list) {
     const T = TRAITS[t], l = lv[t] || 0, next = T.tiers[Math.min(l, T.tiers.length - 1)];
+    ctx.fillStyle = 'rgba(5,4,18,.62)'; ctx.fillRect(side ? x - 190 : x - 6, y - 15, 196, l ? 36 : 23);
     traitHit.push({x0: side ? x - 215 : x - 4, x1: side ? x + 4 : x + 215, y0: y - 13, y1: y + (l ? 19 : 7), t, l, c: cnt[t]});
     const col = l === 0 ? '#5a4f7a' : l === T.tiers.length ? '#ffd23a' : '#9ff0ff';
     const ix = side ? x - 8 : x + 8;
@@ -3502,7 +3504,7 @@ function drawTraits(side) {
     ctx.font = '800 13px "Chakra Petch", sans-serif'; ctx.fillStyle = l ? '#fff6dc' : '#cfc9ee';
     otext(T.name.toUpperCase() + '  ' + cnt[t] + ' / ' + (l === T.tiers.length ? T.tiers[T.tiers.length - 1] : next), tx, y, 4);
     if (l) { ctx.font = '600 12px "Chakra Petch", sans-serif'; ctx.fillStyle = col; otext(T.desc[l - 1], tx, y + 15, 4); y += 36; } else y += 23;
-    if (y > 0.4 * H) break;
+    if (y > 0.74 * H) break;
   }
 }
 function drawTitles() {
@@ -3640,6 +3642,8 @@ function render() {
   drawGround();
   drawKeeps();
   drawSlotMarkers();
+  traitHit = [];
+  if (S.mode !== 'demo' && S.phase !== 'over') { drawTraits(0); drawTraits(1); }
   for (let side = 0; side < 2; side++) drawTurrets(side);
   for (const p of S.projs) drawProj(p);
   drawStrikes();
@@ -3664,8 +3668,6 @@ function render() {
   ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
   if (S.flash > 0) { ctx.fillStyle = 'rgba(' + S.flashC + ',' + S.flash * 0.5 + ')'; ctx.fillRect(0, 0, W, H); }
   if (S.energy > 0.9 && !reduced) { ctx.fillStyle = 'rgba(255,255,255,' + 0.035 * S.kick + ')'; ctx.fillRect(0, 0, W, H); }
-  traitHit = [];
-  if (S.mode !== 'demo' && S.phase !== 'over') { drawTraits(0); drawTraits(1); }
   if (S.letter > 0.5) {
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, S.letter); ctx.fillRect(0, H - S.letter, W, S.letter);
     const lg = ctx.createLinearGradient(0, 0, W, 0);
