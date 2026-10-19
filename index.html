@@ -814,7 +814,7 @@ function nameErr(v) {
   if (RESERVED.includes(nameKey(h))) return 'That name is reserved.';
   return '';
 }
-let HANDLE = cleanHandle(lsGet(HKEY, '')), PIN = String(lsGet('bk-pin', '') || '').replace(/\D/g, '').slice(0, 4);
+let HANDLE = cleanHandle(lsGet(HKEY, ''));
 if (!HANDLE || nameErr(HANDLE)) HANDLE = 'Tactician' + (100 + Math.floor(Math.random() * 900));
 const RANK = {ok: false};
 function setHandle(v) {
@@ -824,27 +824,34 @@ function setHandle(v) {
   const me = myLb(); if (me.m) { me.handle = HANDLE; lsSet(LBKEY, me); pvpPushLb(); }
   overlaySig = '';
 }
-function setPin(v) { PIN = String(v || '').replace(/\D/g, '').slice(0, 4); lsSet('bk-pin', PIN); }
-async function hashPin(key, pin) {
-  const txt = 'bk1:' + key + ':' + pin;
-  try { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)); return Array.from(new Uint8Array(d)).map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 32); }
-  catch (e) { let h = 2166136261; for (let i = 0; i < txt.length; i++) { h ^= txt.charCodeAt(i); h = Math.imul(h, 16777619); } return 'f' + (h >>> 0).toString(16); }
+/* Identity is the platform account (PVP.uid). Everything a player owns lives in a document only that account can write.
+   A port to Steam swaps pvpInit (Steam ticket in place of the account id) and the PVP.db calls (a small server in place of the shared store). */
+async function claimName() {
+  const key = nameKey(HANDLE);
+  try {
+    const ref = PVP.db.doc('lb/' + PVP.uid), me = myLb();
+    const taken = docs => docs.filter(d => d.id !== PVP.uid && nameKey((d.data() || {}).handle) === key);
+    const claimed = me.claimed && nameKey(me.handle) === key ? me.claimed : Date.now();
+    let all = await PVP.db.collection('lb').limit(500).get();
+    if (taken(all.docs).some(d => ((d.data() || {}).claimed || 0) <= claimed)) return 'The name ' + HANDLE + ' is already taken. Choose another.';
+    if (me.claimed !== claimed || me.handle !== HANDLE || !me.pub) {
+      me.handle = HANDLE; me.claimed = claimed; me.pub = 1; lsSet(LBKEY, me);
+      await ref.set(Object.assign({}, me, {uid: PVP.uid}));
+      all = await PVP.db.collection('lb').limit(500).get();      // two accounts claiming at once: the earlier claim (then the lower id) keeps it
+      if (taken(all.docs).some(d => { const c = (d.data() || {}).claimed || 0; return c < claimed || (c === claimed && d.id < PVP.uid); })) { me.pub = 0; me.claimed = 0; lsSet(LBKEY, me); await ref.set(Object.assign({}, me, {uid: PVP.uid, handle: ''})); return 'The name ' + HANDLE + ' was just taken. Choose another.'; }
+    }
+    return '';
+  } catch (e) { return 'Could not check your name. Try again.'; }
 }
-/* online play: a 4 digit PIN claims your name and puts the match on the leaderboard; no PIN means an unranked friendly */
+/* online play is ranked automatically when this account can use the shared store; elsewhere it is a friendly */
 async function rankedGate() {
   RANK.ok = false; S.joinErr = '';
   const e = nameErr(HANDLE); if (e) { S.joinErr = e; return false; }
-  if (!PIN) return true;
-  if (!/^\d{4}$/.test(PIN)) { S.joinErr = 'The PIN is 4 digits. Leave it blank to play unranked.'; return false; }
-  if (!PVP.db) return true;
-  try {
-    const key = nameKey(HANDLE), h = await hashPin(key, PIN), ref = PVP.db.doc('names/' + key), snap = await ref.get(), d = snap.exists ? snap.data() : null;
-    if (d && d.h !== h) { S.joinErr = 'The name ' + HANDLE + ' belongs to another player. Enter its PIN or choose another name.'; return false; }
-    if (!d) await ref.set({h, uid: PVP.uid, handle: HANDLE, t: Date.now()});
-    RANK.ok = true; return true;
-  } catch (er) { S.joinErr = 'Could not check your name. Try again, or clear the PIN to play unranked.'; return false; }
+  if (!PVP.db || !PVP.uid) return true;
+  const r = await claimName(); if (r) { S.joinErr = r; return false; }
+  RANK.ok = true; return true;
 }
-function newLb() { return {handle: HANDLE, m: 0, w: 0, l: 0, d: 0, aw: 0, al: 0, ad: 0, rounds: 0, dmg: 0, kills: 0, units: {}, cores: {}, best: 0, t: 0}; }
+function newLb() { return {handle: HANDLE, m: 0, w: 0, l: 0, d: 0, aw: 0, al: 0, ad: 0, rounds: 0, dmg: 0, kills: 0, units: {}, cores: {}, best: 0, t: 0, claimed: 0, pub: 0}; }
 function myLb() { const v = lsGet(LBKEY, null); return v && typeof v === 'object' ? Object.assign(newLb(), v, {handle: v.handle || HANDLE}) : newLb(); }
 async function pvpInit() {
   if (PVP.init) return; PVP.init = true;
@@ -865,6 +872,22 @@ async function pvpInit() {
 let pushQ = Promise.resolve();
 function pvpPushLb() { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('lb/' + PVP.uid).set(Object.assign({}, myLb(), {uid: PVP.uid}))).catch(e => { PVP.err = 'Leaderboard upload failed'; }); }
 function pvpPushBuilds(list) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('ghosts/' + PVP.uid).set({handle: HANDLE, t: Date.now(), builds: list})).catch(e => { PVP.err = 'Build upload failed'; }); }
+const RKEY = 'bk-reports-v1';
+function pvpPushReports(rep) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => PVP.db.doc('reports/' + PVP.uid).set({m: rep, t: Date.now()})).catch(e => { PVP.err = 'Result upload failed'; }); }
+/* A match counts only when BOTH players filed a report for it, each naming the other as the opponent and agreeing on the winner. */
+function tally(docs) {
+  const by = {};
+  for (const d of docs) { const m = d.m || {}; for (const k in m) { const e = m[k]; if (e && typeof e === 'object') (by[k] = by[k] || []).push(Object.assign({u: d.id}, e)); } }
+  const out = {}, pairN = {}, add = (u, k) => { const o = out[u] = out[u] || {w: 0, l: 0, d: 0}; o[k]++; };
+  for (const k in by) {
+    const r = by[k]; if (r.length !== 2) continue;
+    const [a, b] = r;
+    if (a.u === b.u || a.o !== b.u || b.o !== a.u || a.w !== b.w || (a.r | 0) < 3 || (b.r | 0) < 3) continue;
+    const pk = [a.u, b.u].sort().join('|'); pairN[pk] = (pairN[pk] || 0) + 1; if (pairN[pk] > 10) continue;     // farming one rival counts ten matches at most
+    if (a.w === 'd') { add(a.u, 'd'); add(b.u, 'd'); } else if (a.w === a.u) { add(a.u, 'w'); add(b.u, 'l'); } else if (a.w === b.u) { add(b.u, 'w'); add(a.u, 'l'); }
+  }
+  return out;
+}
 const packG = a => a ? [a[0], a[1], a[2] || ''] : 0;
 function ghostFromLog(log, side, handle) {
   if (!log || !Array.isArray(log.rounds)) return null;
@@ -887,6 +910,13 @@ function pvpRecord() {
   if (res === 'w') me.best = Math.max(me.best, S.round);
   for (const R of S.log.rounds) { const p = R.p[side]; if (!p) continue; for (const a of p.board) if (a) { me.units[a[0]] = (me.units[a[0]] || 0) + 1; for (const c of String(a[2] || '')) me.cores[c] = (me.cores[c] || 0) + 1; } }
   lsSet(LBKEY, me);
+  const host = S.mode === 'host' ? PVP.uid : S.hostUid, opp = S.mode === 'host' ? (net && net.gu) : S.hostUid;
+  if (host && opp && PVP.uid && opp !== PVP.uid) {
+    const rep = lsGet(RKEY, {});
+    rep[S.matchId + '-' + host] = {o: opp, w: w < 0 ? 'd' : w === side ? PVP.uid : opp, r: S.round, t: Date.now()};
+    const keep = {}; Object.keys(rep).sort((x, y) => rep[y].t - rep[x].t).slice(0, 40).forEach(k => { keep[k] = rep[k]; });
+    lsSet(RKEY, keep); pvpPushReports(keep);
+  }
   const g = ghostFromLog(S.log, side, HANDLE);
   if (g) { const mine = lsGet(MYKEY, []).filter(x => x.id !== g.id); mine.push(g); const keep = mine.slice(-4); lsSet(MYKEY, keep); pvpPushBuilds(keep); }
   pvpPushLb();
@@ -918,7 +948,7 @@ async function startGhost() {
     if (S.log) { S.log.mode = 'ghost'; S.log.ghost = {id: S.ghost.id, handle: S.ghost.handle, src: S.ghost.src}; }
     ghostSetup(1); buildTurrets(S.p[1]);
     S.ui.msg = 'Rival found: ' + S.ghost.handle; S.ui.msgT = 4;
-  } else { S.ui.msg = 'No ranked builds are saved yet, so this one is against the Hard CPU. Ranked online matches (with a PIN) become async rivals.'; S.ui.msgT = 6; }
+  } else { S.ui.msg = 'No ranked builds are saved yet, so this one is against the Hard CPU. Ranked online matches become async rivals.'; S.ui.msgT = 6; }
   overlaySig = ''; dockSig = '';
 }
 function ghostSetup(side) {
@@ -950,13 +980,22 @@ function pvpImport(file) {
 }
 async function pvpLoadLb() {
   if (PVP.lbBusy) return; PVP.lbBusy = true; overlaySig = '';
-  const rows = [];
-  try { if (PVP.db) { const s = await PVP.db.collection('lb').limit(300).get(); for (const d of s.docs) { const v = d.data(); if (v && v.m != null) rows.push(Object.assign({id: d.id}, v)); } } } catch (e) { PVP.err = 'Could not reach the shared leaderboard'; }
+  const rows = []; PVP.rep = [];
+  try {
+    if (PVP.db) {
+      const s1 = await PVP.db.collection('lb').limit(300).get(); for (const d of s1.docs) { const v = d.data(); if (v && v.m != null) rows.push(Object.assign({id: d.id}, v)); }
+      const s2 = await PVP.db.collection('reports').limit(500).get(); for (const d of s2.docs) PVP.rep.push({id: d.id, m: (d.data() || {}).m});
+    }
+  } catch (e) { PVP.err = 'Could not reach the shared leaderboard'; }
   PVP.lb = rows; PVP.lbLoaded = true; PVP.lbBusy = false; PVP.n++; overlaySig = '';
 }
 function lbHtml() {
-  const mine = myLb(), rows = PVP.lb.filter(r => r.id !== PVP.uid);
-  if (mine.m) rows.push(Object.assign({id: PVP.uid || 'me', me: 1}, mine));
+  const mine = myLb(), rows = PVP.lb.filter(r => r.id !== PVP.uid && r.pub);
+  const repDocs = (PVP.rep || []).filter(d => d.id !== PVP.uid); if (PVP.uid) repDocs.push({id: PVP.uid, m: lsGet(RKEY, {})});
+  const T = tally(repDocs);
+  if (PVP.uid && mine.pub) rows.push(Object.assign({}, mine, {id: PVP.uid, me: 1}));
+  for (const r of rows) { const t = T[r.id] || {w: 0, l: 0, d: 0}; r.w = t.w; r.l = t.l; r.d = t.d; r.m = t.w + t.l + t.d; }
+  for (let i = rows.length - 1; i >= 0; i--) if (!rows[i].m) rows.splice(i, 1);
   const wr = r => (r.w + r.l) ? r.w / (r.w + r.l) : -1;
   rows.sort((a, b) => (b.w | 0) - (a.w | 0) || wr(b) - wr(a));
   const top = o => { const e = Object.entries(o || {}).sort((a, b) => b[1] - a[1])[0]; return e ? e[0] : null; };
@@ -967,12 +1006,12 @@ function lbHtml() {
   for (const r of rows) { for (const k in (r.units || {})) agg.u[k] = (agg.u[k] || 0) + r.units[k]; for (const k in (r.cores || {})) agg.c[k] = (agg.c[k] || 0) + r.cores[k]; }
   const best = (o, f) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => f(e[0])).filter(Boolean).join(', ') || '–';
   const body = rows.length ? rows.map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(cleanHandle(r.handle) || 'Player') + (r.me ? ' (you)' : '') + '</td><td>' + (r.w | 0) + ' – ' + (r.l | 0) + '</td><td>' + pct(r) + '</td><td>' + (r.m | 0) + '</td><td>' + (r.rounds ? Math.round(r.dmg / r.rounds) : 0) + '</td><td>' + (r.best | 0) + '</td><td class="l">' + tn(r) + '</td><td class="l">' + cn(r) + '</td></tr>').join('')
-    : '<tr><td colspan="9" class="l">No results yet. Win an online match with a PIN set and you appear here.</td></tr>';
+    : '<tr><td colspan="9" class="l">No verified matches yet. Finish an online match and you appear here once your rival reports the same result.</td></tr>';
   return '<div class="kicker">Ranked player vs player</div><h1>Leaderboard</h1>' +
-    '<div class="wiki"><p class="hint">' + (PVP.db ? 'Ranked by wins in online matches played with a PIN. Async and CPU matches are not counted.' : 'Shared ranking needs this page opened in Claude. Showing this device only.') + (PVP.err ? ' ' + escA(PVP.err) : '') + '</p>' +
+    '<div class="wiki"><p class="hint">' + (PVP.db ? 'Ranked by wins in online matches. A match counts once both players have reported the same result. Async and CPU matches are not counted.' : 'Rankings need a signed-in account with access to the shared store, which this page does not have.') + (PVP.err ? ' ' + escA(PVP.err) : '') + '</p>' +
     '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>PvP W–L</th><th>Win %</th><th>Matches</th><th>Dmg / rd</th><th>Best win (rds)</th><th>Fav turret</th><th>Fav core</th></tr></thead><tbody>' + body + '</tbody></table>' +
     '<p><b>Most fielded turrets:</b> ' + best(agg.u, k => ROSTER[k] ? ROSTER[k].name : '') + '</p><p><b>Most fitted cores:</b> ' + best(agg.c, k => ITEMS[k] ? ITEMS[k].name : '') + '</p>' +
-    '<p class="hint">Your ranked record: ' + mine.w + ' wins, ' + mine.l + ' losses, ' + mine.d + ' draws over ' + mine.m + ' matches, ' + mine.kills + ' kills.</p></div>' +
+    '<p class="hint">Your verified record: ' + ((T[PVP.uid] || {}).w | 0) + ' wins, ' + ((T[PVP.uid] || {}).l | 0) + ' losses, ' + ((T[PVP.uid] || {}).d | 0) + ' draws.</p></div>' +
     '<div class="btns"><button class="btn quiet" data-act="lbx" type="button">Back</button><label class="btn filebtn">Import builds from a match file<input id="ghIn" type="file" accept=".json,application/json"></label></div>';
 }
 function afterResult() {
@@ -3625,6 +3664,7 @@ function onHostPeers(ch) {
 }
 function hostGuestName() {
   const g = guestPresence();
+  if (net) net.gu = String(g && g.ui || '').slice(0, 80);
   let n = cleanHandle(g && g.nm);
   if (!n || nameErr(n)) n = 'Rival';
   if (nameKey(n) === nameKey(HANDLE)) n = (n.slice(0, 12) + ' 2');
@@ -3658,7 +3698,7 @@ function snapshot() {
   const r1 = Math.round;
   const s = {
     ph: S.phase, m: S.matchId, rd: S.round, tl: r1(S.timeLeft * 10), pt: r1(S.phaseT * 10), rw: S.rw, ls: S.loser, win: S.winner,
-    nm: [HANDLE, hostGuestName()], ch: S.chaos ? [S.chaos.i, r1(S.chaos.t * 10)] : 0, ts: r1(S.timeScale * 100), gp: net.guestPeer, hr: net.rematch ? 1 : 0,
+    nm: [HANDLE, hostGuestName()], hu: PVP.uid || '', ch: S.chaos ? [S.chaos.i, r1(S.chaos.t * 10)] : 0, ts: r1(S.timeScale * 100), gp: net.guestPeer, hr: net.rematch ? 1 : 0,
     P: [packP(S.p[0]), packP(S.p[1])],
     u: S.units.slice(0, 100).map(u => [u.id, u.side * 10 + TYPE_KEYS.indexOf(u.type), r1(u.x), r1(u.y), Math.max(0, r1(u.hp / u.max * 100)), (u.atk ? 1 : 0) | (u.slow > 0 ? 2 : 0) | (u.burn && u.burn.t > 0 ? 4 : 0) | (u.warp > 0 ? 8 : 0)]),
     pr: S.projs.filter(p => p.kind === 'shell').slice(0, 12).map(p => [p.id, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.side]),
@@ -3686,7 +3726,7 @@ async function joinRoom(code) {
   newMatch('guest'); S.phase = 'connecting'; S.connectAt = performance.now(); S.code = code;
   try {
     const r = await roomNS.join('bk-' + code, 'guest');
-    net = {room: r, role: 'guest', code, hostPeer: null, myPeer: null, lastSend: 0, lastIn: '', actN: 0, in: {m: '', acts: [], r: 0, nm: HANDLE}, unsub: []};
+    net = {room: r, role: 'guest', code, hostPeer: null, myPeer: null, lastSend: 0, lastIn: '', actN: 0, in: {m: '', acts: [], r: 0, nm: HANDLE, ui: PVP.uid || ''}, unsub: []};
     r.presence({role: 'guest', in: net.in}).catch(() => {});
     net.unsub.push(r.onPeers(onGuestPeers, netLost));
   } catch (e) { S.phase = 'neterr'; S.netMsg = netErrText(e && e.code || 'error', code); }
@@ -3723,6 +3763,7 @@ function applySnap(s) {
   S.timeLeft = (s.tl | 0) / 10; S.phaseT = (s.pt | 0) / 10;
   S.rw = Number.isInteger(s.rw) ? s.rw : -1; S.loser = Number.isInteger(s.ls) ? s.ls : -1; S.winner = Number.isInteger(s.win) ? s.win : -1;
   S.hostRematch = !!s.hr;
+  S.hostUid = String(s.hu || '').slice(0, 80);
   if (Array.isArray(s.nm)) S.names = s.nm.slice(0, 2).map(x => cleanHandle(x) || 'Player');
   if (Array.isArray(s.sr)) S.stats.rounds = s.sr.filter(Array.isArray).map(a => ({r: a[0] | 0, w: a[1] | 0, keep: [a[2] | 0, a[3] | 0], kills: [a[4] | 0, a[5] | 0], dmg: a[6] | 0, lv: [a[7] | 0, a[8] | 0]}));
   if (Array.isArray(s.sp)) S.stats.p = [0, 1].map(i => { const a = Array.isArray(s.sp[i]) ? s.sp[i] : []; return {kills: a[0] | 0, breach: a[1] | 0, spent: a[2] | 0, rerolls: a[3] | 0, xp: a[4] | 0, stars: a[5] | 0, dealt: a[6] | 0, wins: a[7] | 0}; });
@@ -4090,11 +4131,11 @@ function showOverlay() {
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
-      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><label>PIN for ranked online play<input id="pinIn" type="password" inputmode="numeric" maxlength="4" placeholder="4 digits" value="' + escA(PIN) + '" autocomplete="off"></label></div>' +
-      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Online with a PIN counts on the leaderboard and shares your build as an async rival. Leave the PIN blank for an unranked game.</p>') +
+      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label></div>' +
+      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Online matches are ranked automatically when you are signed in: the result counts once your rival reports the same one, and your build becomes an async rival.</p>') +
       '<div class="modes">' +
         '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU runs VOLT on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
-        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked, no PIN needed.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
+        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
         '<div class="mode"><h2>Against a friend</h2>' +
           (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
             '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
@@ -4183,8 +4224,7 @@ for (const id of ['overlay', 'dock']) {
     if (b && !b.disabled) onAct(b.getAttribute('data-act'), b);
   });
 }
-$('overlay').addEventListener('input', e => { if (e.target && e.target.id === 'pinIn') setPin(e.target.value); });
-$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'pinIn') setPin(t.value); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
+$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
 $('overlay').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'codeIn') onAct('join'); });
 
 $('volMusic').value = String(Math.round(VOL.music * 100));
