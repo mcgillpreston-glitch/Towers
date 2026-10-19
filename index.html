@@ -160,6 +160,12 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .sc{position:relative;display:flex;flex-direction:column;gap:3px}.sc>.unit{flex:1;min-width:0}
 .lockb{text-align:center;font:700 9px var(--f-display);letter-spacing:.16em;padding:3px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
 .lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
+.card.wikic{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:hidden;z-index:70}
+.wtabs{display:flex;gap:6px;flex-wrap:wrap}
+.wiki{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
+.wiki p{margin:0}
+table.wk td.l{text-align:left}
+table.wk th{white-space:nowrap}
 .bet.on{color:var(--warn);box-shadow:0 0 10px rgba(255,200,80,.45)}
 #cdown{position:absolute;top:6px;left:50%;transform:translateX(-50%);font:900 92px/1 var(--f-display);color:#fff;text-shadow:0 0 28px rgba(255,190,70,.95),0 3px 0 #000;pointer-events:none;z-index:25;opacity:0}
 #cdown.pop{animation:cdpop .9s ease-out}
@@ -231,7 +237,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
       <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span></div>
       <div class="sub" id="sub0" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
     </div>
-    <div class="clock" data-tip="Phase clock. 60 s of planning, then 30 s of automatic combat."><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Ballista Keep</div></div>
+    <div class="clock" data-tip="Phase clock. Planning lasts 60 s (rounds 1-3), 75 s (rounds 4-6) or 90 s (round 7+), then 30 s of automatic combat."><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Ballista Keep</div></div>
     <div class="team r">
       <div class="tname"><b>VOLT</b><span id="tag1">CPU</span></div>
       <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp1"></i></div><span class="hpnum" id="hpt1">100</span></div>
@@ -258,6 +264,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 <script>
 (() => {
 const W = 1400, H = 620, GY = 530, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
+const setupLen = r => r >= 7 ? 90 : r >= 4 ? 75 : 60;   // planning grows as the board fills up
 const BATTLE_ZOOM = 1.12, SETUP_LEN = 60, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
 const TS = 1.4, US = 1.15, LG = 480;
@@ -604,7 +611,8 @@ function newMatch(mode, diff) {
     cam: {x: W / 2, y: H / 2, z: 1}, letter: 0, keepFlash: [0, 0], timeScale: 1, slowT: 0,
     lastSeq: 0, matchId: Math.random().toString(36).slice(2, 7),
     ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0, tab: false, menu: false},
-    stats: {rounds: [], p: [newStat(), newStat()]}
+    stats: {rounds: [], p: [newStat(), newStat()]},
+    log: mode === 'demo' ? null : {id: Math.random().toString(36).slice(2, 7), mode, diff: diff || (old && old.diff) || 'hard', started: new Date().toISOString(), rounds: [], end: null}
   };
   if (mode !== 'guest') {
     for (const P of S.p) { P.board[4] = unitOf(randomOfTier(1)); rollShop(P); }
@@ -629,7 +637,7 @@ function startSetup() {
     if (S.round % 3 === 0 && P.items.length < MAX_ITEMS) P.items.push(randItem());
   }
   if (S.round % 3 === 0) ev(['u']);
-  setPhase('setup', S.mode === 'demo' ? 1.5 : SETUP_LEN);
+  setPhase('setup', S.mode === 'demo' ? 1.5 : setupLen(S.round));
   if (S.mode === 'demo') { cpuSetup(0, 'hard'); cpuSetup(1, 'hard'); }
   if (S.mode === 'cpu') cpuSetup(1, S.diff);
   for (const P of S.p) buildTurrets(P);
@@ -661,8 +669,11 @@ function endCombat(fallen) {
   let w;
   if (fallen >= 0 && !(P0.keep <= 0 && P1.keep <= 0)) w = fallen ^ 1;
   else if (Math.ceil(Math.max(0, P0.keep)) !== Math.ceil(Math.max(0, P1.keep))) w = P0.keep > P1.keep ? 0 : 1;
-  else if (P0.roundKills !== P1.roundKills) w = P0.roundKills > P1.roundKills ? 0 : 1;
-  else w = -1;
+  else {
+    // level on keep HP: the bigger damage dealer wins, unless the gap is within 3% (a true draw)
+    const rd = i => S.rs ? S.rs.sl[i].reduce((a, c) => a + (c ? c.d : 0), 0) + S.rs.storm[i] : 0, d0 = rd(0), d1 = rd(1), mx = Math.max(d0, d1);
+    w = mx > 0 && Math.abs(d0 - d1) / mx > 0.03 ? (d0 > d1 ? 0 : 1) : -1;
+  }
   let dmg = 1;
   if (w >= 0) {
     const Wn = S.p[w], L = S.p[w ^ 1];
@@ -710,11 +721,11 @@ function buildPost(w, fallen) {
   const L = fallen >= 0 ? fallen : w >= 0 ? w ^ 1 : -1;
   const sug = {bike: 'fast bikes: Cryo, Needle or Arc stop them', drone: 'drones: Flak, Swarm or Skyguard stack', titan: 'Titans: Rail, Lancer or Mortar', bulwark: 'armoured Bulwarks: heavy single shots (Rail, Mortar)', trooper: 'trooper waves: splash (Mortar, Flak) or Arc chains'};
   let head;
-  if (L < 0) { head = 'Dead even'; ln.push('Both keeps finished level on HP and kills.'); }
+  if (L < 0) { head = 'Dead even'; ln.push('Both keeps finished level on HP, and damage dealt was within 3%.'); }
   else {
     const S_L = sides[L], last = R.br[L][R.br[L].length - 1];
     if (fallen >= 0) { head = nm(L) + ' keep fell'; ln.push(nm(L) + ' keep was destroyed at ' + tm(last ? last[2] : el) + '.' + (last ? ' Final blow: ' + TYPES[last[0]].name + ' breach (−' + last[1] + ').' : '')); }
-    else { head = 'Time expired'; ln.push('Time ran out with ' + nm(L) + ' behind: ' + S_L.kp + ' keep HP against ' + sides[L ^ 1].kp + (S_L.kp === sides[L ^ 1].kp ? ', settled on kills (' + sides[L].k + ' to ' + sides[L ^ 1].k + ')' : '') + '.'); }
+    else { head = 'Time expired'; ln.push('Time ran out with ' + nm(L) + ' behind: ' + S_L.kp + ' keep HP against ' + sides[L ^ 1].kp + (S_L.kp === sides[L ^ 1].kp ? ', settled on damage dealt (' + sides[L].d + ' to ' + sides[L ^ 1].d + ')' : '') + '.'); }
     if (S_L.nl) { ln.push(S_L.nl + ' enem' + (S_L.nl === 1 ? 'y' : 'ies') + ' reached the ' + nm(L) + ' keep: ' + S_L.lk.map(x => x[1] + '× ' + TYPES[x[0]].name + ' (−' + x[2] + ')').join(', ') + '.'); const top = S_L.lk[0]; if (top) ln.push('Biggest leak: ' + sug[top[0]] + '.'); }
     else ln.push('Nothing reached the ' + nm(L) + ' keep. The loss came from output, not defence.');
     const idle = S_L.sl.map((x, k) => { const T = S.p[L].turrets[k]; return x && x[2] === 0 ? MOUNT_LABEL[k] + ' ' + ROSTER[x[0]].name + (k < 4 && T && T.s.range < 400 ? ' (too short-range for a roof mount)' : '') : null; }).filter(Boolean);
@@ -724,11 +735,43 @@ function buildPost(w, fallen) {
   }
   return {r: S.round, w, head, ln, t: Math.round(el * 10) / 10, s: sides};
 }
+/* ---------- automatic match logs, kept on this device for tuning ---------- */
+const LOGKEY = 'bk-logs-v1', LOGPREF = {auto: true};
+try { const v = JSON.parse(localStorage.getItem('bk-logpref') || 'null'); if (v && typeof v === 'object') LOGPREF.auto = v.auto !== false; } catch (e) {}
+function saveLogPref() { try { localStorage.setItem('bk-logpref', JSON.stringify(LOGPREF)); } catch (e) {} }
+function logsLoad() { try { const a = JSON.parse(localStorage.getItem(LOGKEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function logPersist() {
+  if (!S.log) return;
+  let all = logsLoad().filter(m => m.id !== S.log.id); all.push(S.log); all = all.slice(-12);
+  for (let k = 0; k < 6; k++) { try { localStorage.setItem(LOGKEY, JSON.stringify(all)); return; } catch (e) { all = all.slice(1); if (!all.length) return; } }
+}
+function logRound(w, fallen, dmg, post) {
+  if (!S.log || S.mode === 'demo') return;
+  S.log.rounds.push({r: S.round, w, fallen, dmg, secs: post ? post.t : null, post: post || null,
+    p: S.p.map(P => ({hp: P.hp, keep: Math.ceil(Math.max(0, P.keep)), gold: P.gold, level: P.level, xp: P.xp, streak: P.streak, income: P.lastIncome, kills: P.roundKills,
+      up: P.up.join(''), wager: P.betRes, cores: P.items.join(''), traits: P.traitLv, board: P.board.map(packUnit), bench: P.bench.map(packUnit)}))});
+  logPersist();
+}
+function logDownload(all) {
+  try {
+    const data = all ? logsLoad() : (S.log ? [S.log] : []);
+    if (!data.length) { uiMsg('No match logs saved yet.'); return; }
+    const blob = new Blob([JSON.stringify({game: 'Ballista Keep', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1)], {type: 'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ballista-keep-' + (all ? 'logs' : 'match-' + S.log.id) + '.json';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  } catch (e) {}
+}
+function logEnd() {
+  if (!S.log || S.mode === 'demo') return;
+  S.log.end = {winner: S.winner, rounds: S.round, hp: S.p.map(P => P.hp), stats: S.stats.p};
+  logPersist();
+  if (LOGPREF.auto) logDownload(false);
+}
 function afterResult() {
   if (S.p[0].hp <= 0 || S.p[1].hp <= 0) {
     S.winner = S.p[0].hp === S.p[1].hp ? -1 : S.p[0].hp > S.p[1].hp ? 0 : 1;
     if (S.mode === 'demo') { newMatch('demo'); return; }
-    setPhase('over');
+    setPhase('over'); logEnd();
     return;
   }
   startSetup();
@@ -1281,6 +1324,7 @@ function applyEvent(d) {
   } else if (type === 'r') {
     const [, w, fallen, dmg, post] = d;
     S.post = post || null;
+    logRound(w, fallen, dmg, post);
     if (fallen >= 0 && SIDES[fallen]) {
       const tx = fallen ? W - TCX : TCX;
       for (let i = 0; i < 7; i++) fxBlast(tx + rnd(-70, 70), rnd(TW.top, GY - 20), rnd(60, 130), SIDES[fallen].rgb, 0.7, i * 0.25);
@@ -1317,7 +1361,7 @@ function spawn(type, side) {
   const d = TYPES[type], I = heat(), dir = side ? -1 : 1;
   const u = {id: S.nextId++, type, side, ...d, hp: d.hp * 0.75 * (1 + 0.6 * I + 0.3 * I * I), t: Math.random() * 6, flash: 0, atk: false, slow: 0, burn: null, byShot: false, lastBy: -1};
   const up = S.p[side].up;
-  u.hp *= (1 + 0.15 * up[0]) * (1 + 0.06 * Math.max(0, S.round - 4)); u.max = u.hp;
+  u.hp *= (1 + 0.15 * up[0]) * (1 + 0.08 * Math.max(0, S.round - 4)); u.max = u.hp;
   u.spd = d.spd * (1 + 0.2 * I) * rnd(0.8, 1.25) * (1 + 0.06 * up[2]);
   u.x = (side ? W - TW.x1 : TW.x1) + dir * (d.w / 2 + 16);
   u.y = d.fly ? rnd(170, 330) : GY + ((u.id % 5) - 2) * 3.5;
@@ -3252,6 +3296,7 @@ addEventListener('keydown', e => {
   if (e.key === 'Tab' && inMatch() && !S.ui.menu) { e.preventDefault(); if (!e.repeat) S.ui.tab = !S.ui.tab; return; }
   if (e.key === 'Escape') {
     e.preventDefault();
+    if (S.ui.wiki) { S.ui.wiki = null; return; }
     if (S.ui.tab) { S.ui.tab = false; return; }
     if (S.ui.sel && !S.ui.menu) { S.ui.sel = null; return; }
     if (inMatch()) S.ui.menu = !S.ui.menu;
@@ -3644,7 +3689,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -3678,9 +3723,58 @@ function statsHtml(final) {
   } else h += '<p class="hint">No rounds fought yet.</p>';
   return h;
 }
+const WIKI_TABS = [['basics', 'Basics'], ['turrets', 'Turrets'], ['traits', 'Traits'], ['cores', 'Cores'], ['economy', 'Economy'], ['army', 'Upgrades & calls'], ['keys', 'Controls']];
+function wikiHtml() {
+  const tab = S.ui.wiki || 'basics';
+  let b = '';
+  if (tab === 'basics') {
+    b = '<p>Two keeps face each other. Each has ten turret mounts: four on the roof and six on the deck. Every round has two parts.</p>' +
+      '<p><b>Planning (60 s, 75 s from round 4, 90 s from round 7).</b> Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. Press Ready to lock in; when both sides are ready, combat starts early.</p>' +
+      '<p><b>Combat (30 s).</b> Mechs march automatically from both keeps. Your turrets shoot the enemy mechs, and any mech that reaches your keep damages it. You can spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 20 s, overtime Titans march until one side breaks.</p>' +
+      '<p><b>Winning.</b> Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. Round 5 onward the mech waves get tougher every round.</p>' +
+      '<p><b>Tip.</b> Roof mounts reach farther but short-range turrets there may never fire. Check the after-action report to spot idle turrets.</p>';
+  } else if (tab === 'turrets') {
+    b = '<table class="stats wk"><thead><tr><th>Turret</th><th>Cost</th><th>Range</th><th>Dmg</th><th>Rate/s</th><th>Hits</th><th>Traits · notes</th></tr></thead><tbody>' +
+      ROSTER.map(R => '<tr><th style="color:' + TIER_C[R.tier] + '">' + R.name + '</th><td>' + R.tier + 'g</td><td>' + Math.round(R.range / PX_PER_M) + ' m</td><td>' + (+R.dmg.toFixed(1)) + (R.count ? '×' + R.count : '') + '</td><td>' + (+R.rate.toFixed(1)) + '</td><td>' + (R.air && R.ground ? 'Air + ground' : R.air ? 'Air only' : 'Ground only') + '</td><td class="l">' + R.traits.map(t => TRAITS[t].name).join(' · ') + ' — ' + R.short + (R.splash ? ' (splash)' : '') + (R.chain ? ' (chains ' + R.chain + ')' : '') + '</td></tr>').join('') +
+      '</tbody></table><p class="hint">Damage shown is one-star, before traits, cores and star level. Stars multiply damage ×1, ×2.1 and ×3.8.</p>';
+  } else if (tab === 'traits') {
+    b = '<p>Each turret type counts once toward a trait, so field different turrets that share it. Traits switch on at the listed counts.</p><table class="stats wk"><thead><tr><th>Trait</th><th>Needs</th><th>Effect</th></tr></thead><tbody>' +
+      Object.values(TRAITS).map(T => '<tr><th>' + T.name + '</th><td>' + T.tiers.join(' / ') + '</td><td class="l">' + T.desc.join('<br>') + '</td></tr>').join('') + '</tbody></table>';
+  } else if (tab === 'cores') {
+    b = '<p>A turret holds up to 3 cores. Duplicates stack: damage, fire rate, range and splash multiply per core; Tri-Barrel adds an extra target per copy. Cores drop from fallen mechs and arrive every 3rd round. Removing a core costs 1 gold (drag it to the rack or right-click it).</p><table class="stats wk"><tbody>' +
+      Object.values(ITEMS).map(I => '<tr><th style="color:' + I.color + '">' + I.name + '</th><td class="l">' + I.fx + '</td></tr>').join('') + '</tbody></table>';
+  } else if (tab === 'economy') {
+    b = '<table class="stats wk"><tbody>' +
+      '<tr><th>Round income</th><td class="l">' + BASE_INCOME + ' gold + interest + streak bonus + 1 for winning the last round</td></tr>' +
+      '<tr><th>Interest</th><td class="l">Starts at 4 gold held: +1 per 4 gold up to +5 at 20 gold, then +1 per 10 more up to +8 at 50 gold. Gold you have wagered earns none.</td></tr>' +
+      '<tr><th>Streaks</th><td class="l">2+ wins or losses in a row pays +1, 4 pays +2, 5 pays +3</td></tr>' +
+      '<tr><th>Shop</th><td class="l">Turrets cost their tier. Reroll 2 gold. Lock keeps a shop slot through rerolls and rounds.</td></tr>' +
+      '<tr><th>Levels</th><td class="l">Level = turrets you can field (3 to 10). +' + PASSIVE_XP + ' XP free per round; buy 4 XP for 4 gold. XP needed: ' + Object.keys(XPNEED).map(k => 'L' + k + '→' + XPNEED[k]).join(', ') + '.</td></tr>' +
+      '<tr><th>Selling</th><td class="l">Returns the turret\'s cost (×3 per extra star) and any cores it carried.</td></tr>' +
+      '<tr><th>Wager</th><td class="l">Stake 5, 10 or 20 gold before the round. Win: stake returned ×2. Flawless win (your keep untouched, theirs damaged): ×3. Draw: refunded. Loss: stake gone.</td></tr>' +
+      '<tr><th>Battle pay</th><td class="l">+1 gold every 2.5 s of combat, for call-ins.</td></tr></tbody></table>';
+  } else if (tab === 'army') {
+    b = '<p>Army upgrades are bought in planning and last the whole match. Call-ins are used in combat.</p><table class="stats wk"><thead><tr><th>Upgrade</th><th>Cost per level</th><th>Effect</th></tr></thead><tbody>' +
+      UPG.map(U => '<tr><th>' + U.name + '</th><td>' + U.cost.join(' / ') + 'g</td><td class="l">' + U.fx + '</td></tr>').join('') + '</tbody></table>' +
+      '<table class="stats wk"><thead><tr><th>Call-in</th><th>Key</th><th>Cost</th><th>Recharge</th><th>Effect</th></tr></thead><tbody>' +
+      CALLS.map(C => '<tr><th>' + C.name + '</th><td>' + C.key + '</td><td>' + C.cost + 'g</td><td>' + C.cd + ' s</td><td class="l">' + C.fx + '</td></tr>').join('') + '</tbody></table>';
+  } else {
+    b = '<table class="stats wk"><tbody>' +
+      '<tr><th>1 – 0</th><td class="l">Mount 1 to 10. With a turret or core selected, sends it there. With nothing selected, picks up that mount\'s turret.</td></tr>' +
+      '<tr><th>D / F / B</th><td class="l">Reroll / buy XP / cycle your wager</td></tr>' +
+      '<tr><th>E</th><td class="l">Sell the selected turret</td></tr>' +
+      '<tr><th>Right-click</th><td class="l">Send a turret between mount and bench; pull a core off a turret (1 gold)</td></tr>' +
+      '<tr><th>Drag</th><td class="l">Drag a core diamond between turrets or back to the rack</td></tr>' +
+      '<tr><th>Q W E R T</th><td class="l">Combat call-ins</td></tr>' +
+      '<tr><th>Tab</th><td class="l">Match stats</td></tr>' +
+      '<tr><th>Esc</th><td class="l">Menu, wiki, audio and video</td></tr></tbody></table>';
+  }
+  return '<div class="kicker">Reference</div><h1>Wiki</h1><div class="wtabs">' + WIKI_TABS.map(([k, n]) => '<button type="button" class="btn small' + (k === tab ? ' prime' : '') + '" data-act="wiki:' + k + '">' + n + '</button>').join('') + '</div><div class="wiki">' + b + '</div>' +
+    '<div class="btns"><button class="btn quiet" data-act="wikix" type="button">Back · Esc</button></div>';
+}
 function menuHtml() {
   return '<div class="kicker">Paused for you only · the match keeps running</div><h1>Menu</h1>' +
-    '<div class="btns"><button class="btn prime" data-act="resume" type="button">Resume</button><button class="btn" data-act="stats" type="button">Match stats</button></div>' +
+    '<div class="btns"><button class="btn prime" data-act="resume" type="button">Resume</button><button class="btn" data-act="stats" type="button">Match stats</button><button class="btn" data-act="wiki:basics" type="button">Wiki</button><button class="btn" data-act="logdl" type="button">Download logs</button></div>' +
     '<h2>Audio</h2><div class="setrow">' +
       '<label>Music <input type="range" id="mVolMusic" min="0" max="100" value="' + Math.round(VOL.music * 100) + '" aria-label="Music volume"></label>' +
       '<label>Effects <input type="range" id="mVolFx" min="0" max="100" value="' + Math.round(VOL.fx * 100) + '" aria-label="Effects volume"></label>' +
@@ -3688,6 +3782,7 @@ function menuHtml() {
     '<h2>Video</h2><div class="setrow">' +
       '<label><input type="checkbox" id="mShake"' + (VIDEO.shake ? ' checked' : '') + '> Screen shake</label>' +
       '<label><input type="checkbox" id="mLow"' + (VIDEO.low ? ' checked' : '') + '> Reduced effects (fewer particles, no smoke)</label></div>' +
+    '<h2>Match logs</h2><div class="setrow"><label><input type="checkbox" id="mAuto"' + (LOGPREF.auto ? ' checked' : '') + '> Auto-download the match file when a match ends</label></div><p class="hint">Every round is saved on this device automatically (last 12 matches) for tuning.</p>' +
     '<h2>Leave</h2><p class="hint">' + (S.mode === 'cpu' ? 'Leaving ends this match against the CPU.' : 'Leaving forfeits the match for your rival.') + '</p>' +
     '<div class="btns"><button class="btn" data-act="leave" type="button">Leave game</button><button class="btn quiet" data-act="menu" type="button">Main menu</button></div>';
 }
@@ -3718,8 +3813,10 @@ function postHtml() {
 function showOverlay() {
   $('overlay').innerHTML = '';
   const ph = S.phase, mode = S.mode;
+  if (S.ui.wiki && S.ui.menu && inMatch()) { card(wikiHtml()).classList.add('wikic'); return; }
   if (S.ui.menu && inMatch()) {
     card(menuHtml(), true);
+    if ($('mAuto')) $('mAuto').addEventListener('change', e => { LOGPREF.auto = !!e.target.checked; saveLogPref(); });
     const mm = $('mVolMusic'), mf = $('mVolFx');
     if (mm) mm.addEventListener('input', e => { VOL.music = clamp((+e.target.value || 0) / 100, 0, 1); $('volMusic').value = e.target.value; applyVolumes(); });
     if (mf) mf.addEventListener('input', e => { VOL.fx = clamp((+e.target.value || 0) / 100, 0, 1); $('volFx').value = e.target.value; applyVolumes(); });
@@ -3738,7 +3835,7 @@ function showOverlay() {
     card(
       '<div class="kicker">2187 · The powder age never ended</div>' +
       '<h1>Ballista Keep</h1>' +
-      '<p>Two keeps, ten turret mounts each, and armies that march on their own. You plan for 60 seconds, then 30 seconds of combat plays out without you. Draft well, and your build holds while theirs breaks.</p>' +
+      '<p>Two keeps, ten turret mounts each, and armies that march on their own. You plan for 60 to 90 seconds, then 30 seconds of combat plays out without you. Draft well, and your build holds while theirs breaks.</p>' +
       '<ul class="rules">' +
         '<li>Buy turrets from a shop of five. Reroll for 2 gold</li>' +
         '<li>Three copies merge into 2 stars, three 2-stars into 3</li>' +
@@ -3799,6 +3896,9 @@ function onAct(a, btn) {
   const parts = String(a).split(':'), k0 = parts[0];
   if (k0 === 'resume') S.ui.menu = false;
   else if (k0 === 'skipres') { if (S.phase === 'result' && (S.mode === 'cpu' || S.mode === 'host')) S.phaseT = Math.min(S.phaseT, 0.1); }
+  else if (k0 === 'wiki') S.ui.wiki = parts[1] || 'basics';
+  else if (k0 === 'wikix') S.ui.wiki = null;
+  else if (k0 === 'logdl') logDownload(true);
   else if (k0 === 'stats') { S.ui.menu = false; S.ui.tab = !S.ui.tab; }
   else if (k0 === 'leave') { leaveRoom(); newMatch('demo'); }
   else if (k0 === 'cpu') startCpu(parts[1]);
@@ -3823,7 +3923,7 @@ function onAct(a, btn) {
     else if (S.mode === 'host' && net) net.rematch = true;
     else if (S.mode === 'guest' && net) net.in.r = 1;
   } else if (k0 === 'menu') { leaveRoom(); newMatch('demo'); }
-  if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute') S.ui.menu = false; if (k0 !== 'stats') S.ui.tab = false; }
+  if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute' && k0 !== 'wiki' && k0 !== 'wikix' && k0 !== 'logdl') S.ui.menu = false; if (k0 === 'resume') S.ui.wiki = null; if (k0 !== 'stats') S.ui.tab = false; }
   dockSig = ''; overlaySig = '';
 }
 for (const id of ['overlay', 'dock']) {
