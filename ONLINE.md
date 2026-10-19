@@ -36,6 +36,7 @@ Read this before changing anything that touches saved builds, match logs, names 
 
 ## Checklist when the game is updated
 - **Turrets or cores added**: append to `ROSTER` and `ITEMS`. Never reorder or delete, because saved builds store the index. If you must, bump `GAME_VER`: old builds are then ignored.
+- **Routes or terrain changed (GAME_VER 2)**: see BATTLEFIELD.md.
 - **Stats or balance changed a lot**: bump `GAME_VER` so old builds stop being used as rivals. (Leaderboard history stays.)
 - **Match log format changed** (`logRound`, `packUnit`): update `ghostFromLog` and `pvpRecord` together, and bump `SCHEMA`.
 - **New stored field**: add it to the matching `BK` method, to the server, and to the `SCHEMA` note. Old documents lack it, so read it with a default.
