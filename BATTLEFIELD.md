@@ -25,3 +25,6 @@ GAME_VER is 2 (old async builds are ignored).
 
 ## Performance notes
 Profiling a heavy combat (both boards full, ~45 units) showed game logic under 2% of frame time; the cost is canvas fill rate, which grows with the 4K default. Changes: the background and its tint are baked once into a cached layer, the vignette is a small baked picture, glows are drawn from cached sprites, the canvas is opaque, and an adaptive-resolution governor steps 4K > 1440p > 1080p > 720p when combat stays under about 30 fps for 2.5 s (never climbs back by itself; Settings has a switch). Per frame at 1080p: filled pixels 6.9M -> 0.26M, radial gradients 259 -> 109.
+
+## Graphics test
+Settings > Performance > "Run graphics test" plays a scripted heavy battle (both boards full, about 44 units, drones, titans) for 5 s at each of 4K, 1440p, 1080p and 720p on the player's own device, then shows average fps, 1% low and the share of slow frames per resolution, recommends the sharpest one with avg >= 55 fps and 1% low >= 40 (falling back to avg >= 40 / 1% low >= 28, else 720p), and offers a button to apply it. The result is stored in localStorage (`bk-bench`) and a copyable summary line includes GPU, screen and core count.
