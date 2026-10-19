@@ -16,6 +16,7 @@
   --ink:#ece8ff;
   --muted:#aaa3cf;
   --hex:#4aa8ff;
+  --azure:#42D8FF;--verm:#FF7969;--gold:#E8C76A;--muted2:#B8BBDD;--win:#5BF0AD;--loss:#FF6D69;
   --volt:#ff5a3c;
   --warn:#ffc46b;
   --ok:#7dffb0;
@@ -39,32 +40,41 @@ body{background:var(--void);color:var(--ink);font-family:var(--f-ui);font-size:1
 .panel::before,.panel::after{content:"";position:absolute;top:50%;width:9px;height:9px;transform:translateY(-50%) rotate(45deg);background:var(--gild);box-shadow:0 0 8px rgba(62,200,230,.6);pointer-events:none;z-index:2}
 .panel::before{left:-5px}
 .panel::after{right:-5px}
-header.hud{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;padding:8px 16px}
-.team{display:flex;flex-direction:column;gap:4px;min-width:0}
+header.hud{display:grid;grid-template-columns:minmax(0,1fr) clamp(156px,15vw,224px) minmax(0,1fr);gap:clamp(10px,1.4vw,22px);align-items:center;padding:10px clamp(12px,1.5vw,20px);background:linear-gradient(180deg,#090D22,#11132C) padding-box,var(--gild) border-box}
+header.hud::before,header.hud::after{display:none}
+.team{display:flex;flex-direction:column;gap:7px;min-width:0}
 .team.r{align-items:flex-end}
-.tname{display:flex;gap:10px;align-items:baseline;min-width:0}
+.tname{display:flex;gap:12px;align-items:baseline;min-width:0;max-width:100%}
 .team.r .tname{flex-direction:row-reverse}
-.tname b{font:900 17px var(--f-display);letter-spacing:.16em}
-.team.l .tname b{color:var(--hex);text-shadow:0 0 14px rgba(74,168,255,.65)}
-.team.r .tname b{color:var(--volt);text-shadow:0 0 14px rgba(255,90,60,.65)}
-.tname span{font:600 11px var(--f-ui);letter-spacing:.2em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.tname b{font:700 clamp(18px,1.7vw,24px)/1 var(--f-display);letter-spacing:.1em;flex:none}
+.team.l .tname b{color:var(--azure);text-shadow:0 0 12px rgba(66,216,255,.45)}
+.team.r .tname b{color:var(--verm);text-shadow:0 0 12px rgba(255,121,105,.5)}
+.tname span{font:600 12px var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tname span.you{color:var(--ink)}
-.hprow{display:flex;gap:8px;align-items:center;width:100%;max-width:360px}
-.team.r .hprow{flex-direction:row-reverse}
-.hpbar{flex:1;height:12px;background:#0a0716 padding-box,var(--gild) border-box;border:1.5px solid transparent;overflow:hidden;display:flex;position:relative;clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,4px 100%,0 50%)}
-.hpbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.14) 0 6px,rgba(255,255,255,0) 6px 14px);pointer-events:none}
-.team.r .hpbar{justify-content:flex-end}
-.hpbar i{display:block;height:100%;width:100%;transition:width .4s}
-.team.l .hpbar i{background:linear-gradient(180deg,#ffb3f0 0%,var(--hex) 45%,#6a0c5c 100%);box-shadow:0 0 12px var(--hex)}
-.team.r .hpbar i{background:linear-gradient(180deg,#b8f6ff 0%,var(--volt) 45%,#0a5466 100%);box-shadow:0 0 12px var(--volt)}
-.hpnum{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:50%;font:900 12px var(--f-display);font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 1px 2px #000;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85) 0,rgba(255,255,255,0) 28%),radial-gradient(circle at 50% 50%,var(--g) 0,#0a0716 92%) padding-box,var(--gild) border-box;border:2px solid transparent;box-shadow:0 0 14px var(--g),inset 0 -6px 10px rgba(0,0,0,.6)}
-.team.l .hpnum{--g:var(--hex)}
-.team.r .hpnum{--g:var(--volt)}
-.sub{font:700 10px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--bz-hi);white-space:nowrap;font-variant-numeric:tabular-nums}
-.clock{text-align:center;min-width:150px;padding:6px 18px;background:rgba(5,3,11,.6) padding-box,var(--gild) border-box;border:1.5px solid transparent;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
-.time{font:900 28px var(--f-display);letter-spacing:.06em;font-variant-numeric:tabular-nums;line-height:1;color:var(--ether);text-shadow:0 0 14px rgba(62,200,230,.6)}
-.time.hot{color:var(--warn);text-shadow:0 0 18px rgba(255,196,107,.8)}
-.rnd{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--bz-hi);margin-top:5px;white-space:nowrap}
+.hprow{display:flex;gap:10px;align-items:center;width:100%}
+.hpbar{flex:1;min-width:0;height:14px;border-radius:8px;background:#080D1D;border:1px solid rgba(232,199,106,.55);overflow:hidden;display:flex;position:relative;justify-content:flex-start;box-shadow:inset 0 0 6px rgba(0,0,0,.8)}
+.hpbar::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgba(255,255,255,.16) 0 6px,rgba(255,255,255,0) 6px 14px);pointer-events:none}
+.hpbar i{display:block;height:100%;width:100%;transition:width .4s;border-radius:8px 0 0 8px}
+.team.l .hpbar i{background:linear-gradient(180deg,#9aeaff 0%,var(--azure) 45%,#0a8fc4 100%);box-shadow:0 0 10px rgba(66,216,255,.6)}
+.team.r .hpbar i{background:linear-gradient(180deg,#ffb1a6 0%,var(--verm) 45%,#c63d33 100%);box-shadow:0 0 10px rgba(255,121,105,.55)}
+.hpnum{min-width:clamp(40px,3.4vw,50px);height:clamp(40px,3.4vw,50px);padding:0 4px;box-sizing:border-box;flex:none;display:grid;place-items:center;border-radius:50%;font:700 clamp(18px,1.7vw,26px)/1 var(--f-ui);font-variant-numeric:tabular-nums;color:var(--ink);text-shadow:0 1px 3px #000;border:1.5px solid var(--gold)}
+.team.l .hpnum{background:radial-gradient(circle at 35% 30%,#2a7fd0,#0a2a66 70%);box-shadow:0 0 12px rgba(66,216,255,.35)}
+.team.r .hpnum{background:radial-gradient(circle at 35% 30%,#c0392f,#5a0f14 70%);box-shadow:0 0 12px rgba(255,121,105,.35)}
+.hplab{font:600 13px var(--f-ui);letter-spacing:.14em;color:var(--muted2);flex:none}
+.sub{display:flex;align-items:center;gap:12px;font:700 clamp(12px,1.05vw,14px) var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--muted2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sub i{width:1px;height:12px;background:rgba(184,187,221,.45)}
+.sub .gd{color:var(--gold)}
+.sub .win{color:var(--win)}
+.sub .loss{color:var(--loss)}
+.sub .st:empty,.sub .st:empty+i{display:none}
+.clock{text-align:center;padding:6px 14px;background:linear-gradient(180deg,#0b0f2a,#10132b) padding-box,var(--gild) border-box;border:1.5px solid transparent;border-radius:3px;box-shadow:0 0 0 1px rgba(5,3,11,.9),0 0 18px rgba(62,200,230,.12);position:relative;min-width:0}
+.clock::before,.clock::after{content:"";position:absolute;top:50%;width:9px;height:9px;transform:translateY(-50%) rotate(45deg);background:var(--gold);pointer-events:none}
+.clock::before{left:-6px}
+.clock::after{right:-6px}
+.phase{font:700 clamp(12px,1.05vw,15px)/1 var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);white-space:nowrap}
+.time{font:700 clamp(32px,3vw,44px)/1 var(--f-ui);letter-spacing:.03em;font-variant-numeric:tabular-nums;color:var(--ink);margin:4px 0 3px;text-shadow:0 0 10px rgba(243,244,252,.25)}
+.time.hot{color:var(--warn);text-shadow:0 0 16px rgba(255,196,107,.8)}
+.rnd{font:700 clamp(11px,1vw,14px)/1 var(--f-display);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stage{flex:1;min-height:180px;position:relative;display:flex;align-items:center;justify-content:center}
 canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid var(--line);box-shadow:0 0 0 1px #000,0 0 50px rgba(74,168,255,.12),0 0 70px rgba(255,90,60,.08)}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
@@ -232,13 +242,15 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
   .shop{grid-template-columns:repeat(3,1fr)}
   .zones{grid-template-columns:1fr}
   .modes,.rules{grid-template-columns:1fr}
-  .time{font-size:22px}
-  .clock{min-width:96px}
+  .time{font-size:24px}
   .tname b{font-size:13px}
-  .tname span,.sub{display:none}
+  .tname span,.hplab{display:none}
+  .sub{gap:6px;font-size:10px}
+  header.hud{grid-template-columns:minmax(0,1fr) 110px minmax(0,1fr);gap:8px;padding:6px 8px}
+  .tname b{letter-spacing:.04em}
   .card h1{font-size:23px}
   .code{font-size:30px}
-  .hpnum{display:none}
+  .hpnum{min-width:30px;height:30px;font-size:14px}
   .dock{max-height:56vh}
   .sound{gap:8px;padding-right:8px}
   .sound input[type=range]{width:64px}
@@ -258,17 +270,9 @@ select option{color:#111}
 <body><div id="tip" role="tooltip" hidden></div>
 <div class="app">
   <header class="hud panel">
-    <div class="team l">
-      <div class="tname"><b>AZURECOURT</b><span id="tag0">CPU</span></div>
-      <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span></div>
-      <div class="sub" id="sub0" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
-    </div>
-    <div class="clock" data-tip="Phase clock. Planning lasts 90 s (rounds 1-3), 105 s (rounds 4-6) or 120 s (round 7+), with 30 s of it for building terrain, then 30 s of automatic combat."><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Ballista Keep</div></div>
-    <div class="team r">
-      <div class="tname"><b>VERMILION</b><span id="tag1">CPU</span></div>
-      <div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp1"></i></div><span class="hpnum" id="hpt1">100</span></div>
-      <div class="sub" id="sub1" data-tip="Level = how many turrets you can field at once. Gold buys turrets, rerolls and XP.">Lv 3</div>
-    </div>
+    <div class="team l"><div class="tname"><b>AZURECOURT</b><span id="tag0">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span><span class="hplab">HP</span></div><div class="sub"><span id="lv0" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd0" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st0" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
+    <div class="clock" data-tip="Phase clock. Planning lasts 90 s (rounds 1-3), 105 s (rounds 4-6) or 120 s (round 7+), with 30 s of it for building terrain, then 30 s of automatic combat."><div class="phase" id="sPhase">Planning</div><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Round 1</div></div>
+    <div class="team r"><div class="tname"><b>VERMILION</b><span id="tag1">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><span class="hpnum" id="hpt1">100</span><span class="hplab">HP</span><div class="hpbar"><i id="hp1"></i></div></div><div class="sub"><span id="lv1" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd1" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st1" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
   </header>
 
   <div class="stage" id="stage">
@@ -311,7 +315,8 @@ const CANNON = {px: TCX, py: 0.3 * H, arm: 40, vmax: 1000, minA: -0.25, maxA: 1.
 // The ten gameplay mounts (four roof, six side) as fractions of the background. The painted keep shows only three roof and five side
 // sockets, so these are paired anchors; see LORE.md / the route notes for the missing socket art.
 const MOUNTS_L = [[57, 190], [80, 190], [104, 190], [122, 190], [152, 235], [152, 269], [152, 305], [152, 341], [152, 380], [152, 420]];   // vector fallback tower only
-const MOUNTS_N = [[0.0667, 0.075], [0.091, 0.075], [0.1153, 0.075], [0.1396, 0.075], [0.181, 0.165], [0.181, 0.231], [0.181, 0.297], [0.181, 0.363], [0.181, 0.429], [0.181, 0.495]];
+// measured from the painted tower: three roof barrels and five side barrels; R4 sits on the corner pinnacle and S6 on the pillar base below the last barrel
+const MOUNTS_N = [[0.0672, 0.064], [0.1037, 0.064], [0.1393, 0.064], [0.1745, 0.079], [0.165, 0.172], [0.165, 0.252], [0.165, 0.331], [0.165, 0.409], [0.165, 0.488], [0.170, 0.566]];
 const MOUNTS = MOUNTS_N.map(([u, v]) => [u * W, v * H]);
 const MOUNT_LABEL = ['R1', 'R2', 'R3', 'R4', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'];   // four roof mounts, six on the inward-facing side
 const MOUNT_ORDER = [4, 5, 6, 7, 8, 9, 1, 2, 0, 3];
@@ -1849,6 +1854,7 @@ function spawn(type, side) {
   u.spd = d.spd * (1 + 0.2 * I) * rnd(0.8, 1.25) * (1 + 0.06 * up[2]);
   // leave the keep's main doorway and follow that side's own route; formation offsets stay inside the deck and mirror between sides
   u.route = side; u.d = 0; u.lat = type === 'titan' ? 0 : ((u.id % 5) - 2) * 3; u.fh = d.fly ? rnd(46, 92) : 0; u.bob = 0;
+  if (d.fly) launchDrone(u);
   placeUnit(u);
   S.units.push(u);
   if (type === 'titan' && S.phase === 'combat') { u.warp = 1.2; ev(['w', Math.round(u.x), Math.round(u.y), side]); if (!S.quiet) ev(['n', 0, side]); }
@@ -1891,7 +1897,7 @@ function findTarget(side, mx, my, s, exclude) {
     if (u === exclude || u.side === side || u.gone || u.hp <= 0 || u.warp > 0 || !canHit(s, u)) continue;
     const [cx, cy] = ucenter(u), d = Math.hypot(cx - mx, cy - my);
     if (d > s.range || (s.min && d < s.min)) continue;
-    const threat = (ROUTES[u.route].len - u.d) - (s.kind === 'rail' && u.type === 'titan' ? 300 : 0) - (s.kind === 'rail' && u.type === 'bulwark' ? 120 : 0) - (s.kind === 'flak' && u.fly ? 200 : 0);
+    const threat = ((u.fly ? u.len : ROUTES[u.route].len) - u.d) - (s.kind === 'rail' && u.type === 'titan' ? 300 : 0) - (s.kind === 'rail' && u.type === 'bulwark' ? 120 : 0) - (s.kind === 'flak' && u.fly ? 200 : 0);
     if (threat < bd) { bd = threat; best = u; }
   }
   return best;
@@ -1934,7 +1940,7 @@ function drawTraces() {
 }
 function fireTurret(side, T, u, mx, my, real, extra) {
   const s = T.s, [cx, cy] = ucenter(u), ang = extra ? Math.atan2(cy - my, cx - mx) : T.ang;
-  const tl = isUp(s) ? 0 : tipLen(s), mzx = mx + Math.cos(ang) * tl * TS, mzy = my + Math.sin(ang) * tl * TS - (isUp(s) ? (artOn() ? 52 : s.kind === 'arc' ? (s.id === 'tesla' ? 40 : 29) : 0) : 0), loud = side === S.me ? 1 : 0.45;
+  const tl = isUp(s) ? 0 : tipLen(s, my < 0.12 * H), mzx = mx + Math.cos(ang) * tl * TS, mzy = my + Math.sin(ang) * tl * TS - (isUp(s) ? (artOn() ? 52 : s.kind === 'arc' ? (s.id === 'tesla' ? 40 : 29) : 0) : 0), loud = side === S.me ? 1 : 0.45;
   if ((s.kind === 'hitscan' || s.kind === 'flak') && Math.random() < 0.6) S.parts.push({x: mx, y: my, vx: (side ? 1 : -1) * rnd(40, 100), vy: -rnd(90, 160), c: '#d4a84e', life: 0.7, r: 1.6});
   if ((s.kind === 'mortar' || s.kind === 'rail' || s.kind === 'flak') && Math.random() < 0.5) smoke(mzx, mzy, 1, 5);
   T.flash = 0.07;
@@ -2229,7 +2235,23 @@ function breach(u) {
   ev(['b', u.side ^ 1, Math.round(x), Math.round(y), Math.round(dmg), u.type === 'titan' ? 1 : 0]);
 }
 /* ---------- movement along a route ---------- */
+// Drones do not use the ground route: they lift off from their own keep's roof (over the roof mounts) and arc across to a point on the
+// upper three quarters of the opposing tower, where they breach. Spawn spread and target height are random per drone.
+function launchDrone(u) {
+  const s = u.side, mir = x => s ? W - x : x;
+  u.dx0 = mir(0.103 * W + rnd(-0.034, 0.034) * W); u.dy0 = 0.05 * H + rnd(-0.012, 0.012) * H;
+  u.dx1 = s ? 0.172 * W : W - 0.172 * W; u.dy1 = H * (0.06 + 0.52 * Math.random());
+  u.dlen = Math.hypot(u.dx1 - u.dx0, u.dy1 - u.dy0); u.len = u.dlen; u.arc = rnd(50, 90); u.lat = 0; u.fh = 0;
+}
+function placeDrone(u) {
+  const t = clamp(Math.max(u.d, 0) / u.dlen, 0, 1), dx = u.dx1 - u.dx0, dy = u.dy1 - u.dy0;
+  u.x = u.dx0 + dx * t; u.gy = u.dy0 + dy * t;
+  u.y = u.gy - Math.sin(Math.PI * t) * u.arc + (u.bob || 0);
+  const l = Math.hypot(dx, dy) || 1;
+  u.tx = dx / l; u.ty = dy / l;
+}
 function placeUnit(u) {
+  if (u.fly && u.dlen) return placeDrone(u);
   const q = routeAt(ROUTES[u.route], u.d), lat = u.lat || 0;
   u.tx = q.tx; u.ty = q.ty;
   u.x = q.x - q.ty * lat; u.gy = q.y + q.tx * lat;
@@ -2277,8 +2299,8 @@ function worldStep(dt, live) {
     if (u.fly) {
       // drones follow their own route a little above the deck and ignore the terrain
       u.bob = Math.sin(u.t * 3) * 8; u.atk = false;
-      if (u.d < R.len) u.d = Math.min(R.len, u.d + sp * dt);
-      if (u.d >= R.len) { u.atk = true; u.fh += (16 - u.fh) * Math.min(1, dt * 1.5); u.bob = Math.sin(u.t * 8) * 3; if (live) breach(u); }
+      if (u.d < u.len) u.d = Math.min(u.len, u.d + sp * dt);
+      if (u.d >= u.len) { u.atk = true; u.bob = Math.sin(u.t * 8) * 3; if (live) breach(u); }
       placeUnit(u);
       continue;
     }
@@ -2451,6 +2473,9 @@ const SPR = {
   rail: {w: 44, fx: .24, fy: .44}, tesla: {w: 26, up: 1, tip: 44}, hellfire: {w: 40, fx: .30, fy: .45}, lancer: {w: 52, fx: .22, fy: .46},
   glacier: {w: 40, fx: .28, fy: .42}, singularity: {w: 38, fx: .28, fy: .42}, sunlance: {w: 52, fx: .26, fy: .46}
 };
+// the painted barrels are big: the 4K weapon art is drawn 30% larger so each weapon covers its painted barrel
+const ROOFK = 1 / 1.3;   // the roof barrels are close together, so roof weapons keep their original size
+for (const k in SPR) { SPR[k].w = Math.round(SPR[k].w * 1.3); if (SPR[k].tip) SPR[k].tip = Math.round(SPR[k].tip * 1.3); }
 const TIER_RGB = ['', '163,169,191', '61,220,132', '61,155,255', '192,107,255', '255,176,32'];
 const USZ = {trooper: 54, bike: 44, bulwark: 54, drone: 34, titan: 110};
 const stars = Array.from({length: 70}, (_, i) => [((i * 197) % W), ((i * 89) % 180) + 6, (i % 3) * 0.4 + 0.5]);
@@ -2817,7 +2842,7 @@ function shard(x, y, len, w, rgb, lit) {
 }
 const UPRIGHT = {arc: 1, frost: 1, void: 1};
 const isUp = s => artOn() ? s.id === 'tesla' : !!UPRIGHT[s.kind];
-function tipLen(s) { const P = artOn() && SPR[s.id]; if (P) return P.tip || P.w * (1 - P.fx); return {hitscan: s.id === 'needle' ? 30 : 23, rail: s.id === 'lancer' ? 33 : 27, flak: 23, mortar: 19, swarm: 12, torch: 17, cryo: 16, beam: 20}[s.kind] || 12; }
+function tipLen(s, roof) { const P = artOn() && SPR[s.id]; if (P) return (P.tip || P.w * (1 - P.fx)) * (roof ? ROOFK : 1); return {hitscan: s.id === 'needle' ? 30 : 23, rail: s.id === 'lancer' ? 33 : 27, flak: 23, mortar: 19, swarm: 12, torch: 17, cryo: 16, beam: 20}[s.kind] || 12; }
 function drawTurretHead(s, charge, kick) {
   const id = s.id, rgb = s.rgb, t = S.t;
   ctx.translate(-kick * 2.5, 0);
@@ -2929,10 +2954,10 @@ function drawTurretHead(s, charge, kick) {
   }
 }
 // a painted turret on its swivel; blue art faces right, red art faces left
-function drawWeapon(st, side, up, ang, charge, kick) {
+function drawWeapon(st, side, up, ang, charge, kick, roof) {
   const P = SPR[st.id], im = ART[(side ? 'wr' : 'wb') + st.id];
   if (!P || !artOk(im)) return false;
-  const w = P.w, h = w * im.height / im.width;
+  const w = P.w * (roof ? ROOFK : 1), h = w * im.height / im.width;
   ctx.save();
   if (up) {
     ctx.translate(0, 4);
@@ -3028,7 +3053,7 @@ function drawTurrets(side) {
       ctx.globalCompositeOperation = 'source-over';
       for (let n = 0; n < 3; n++) { const a = -S.t * 0.9 + n * Math.PI * 2 / 3, sx = Math.cos(a) * 19, sy = ry + Math.sin(a) * 6 + Math.sin(S.t * 2 + n) * 1.5; ctx.save(); ctx.translate(sx, sy); ctx.rotate(-Math.PI / 2); shard(0, 0, 5, 1.4, F.rgb, 0.8); ctx.restore(); }
     }
-    if (!(AON && drawWeapon(st, side, up, ang, charge, kick))) {
+    if (!(AON && drawWeapon(st, side, up, ang, charge, kick, i < 4))) {
       ctx.save(); ctx.rotate(ang);
       if (!up && Math.cos(ang) < 0) ctx.scale(1, -1);
       drawTurretHead(st, charge, up ? 0 : kick);
@@ -3040,7 +3065,7 @@ function drawTurrets(side) {
     }
     u.items.forEach((it, k2) => drawItemGem(it, (k2 - (u.items.length - 1) / 2) * 6, 13.5, 0.26));
     if (T && T.flash > 0 && !up) {
-      const tl = tipLen(st), mx = Math.cos(ang) * tl, my = Math.sin(ang) * tl, sz = st.kind === 'rail' || st.kind === 'mortar' ? 14 : 9;
+      const tl = tipLen(st, i < 4), mx = Math.cos(ang) * tl, my = Math.sin(ang) * tl, sz = st.kind === 'rail' || st.kind === 'mortar' ? 14 : 9;
       ctx.globalCompositeOperation = 'lighter';
       const g = ctx.createRadialGradient(mx, my, 0, mx, my, sz);
       g.addColorStop(0, 'rgba(255,255,240,1)'); g.addColorStop(0.35, 'rgba(255,200,110,.8)'); g.addColorStop(1, 'rgba(' + st.rgb + ',0)');
@@ -3579,10 +3604,6 @@ function drawGround() {
   if (hidden.length) { ctx.globalAlpha = 0.34; for (const e of hidden) drawUnit(e.u); ctx.globalAlpha = 1; }
   B.sort(byY).forEach(paint);
   flyers.sort((a, b) => a.y - b.y);
-  for (const u of flyers) {
-    const gy = u.gy !== undefined ? u.gy : u.y + 70;
-    ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(u.x, gy + 2, u.w * 0.45, 5, 0, 0, Math.PI * 2); ctx.fill();
-  }
   for (const u of flyers) drawUnit(u);
 }
 function drawKeeps() {
@@ -4231,7 +4252,9 @@ function updateHUD() {
     const P = S.p[s];
     setWidth('hp' + s, P.hp);
     setText('hpt' + s, String(Math.max(0, Math.ceil(P.hp))));
-    setText('sub' + s, 'Lv ' + P.level + ' · ' + P.gold + ' gold' + (streakTxt(P.streak) ? ' · ' + streakTxt(P.streak) : ''));
+    setText('lv' + s, 'LV ' + P.level); setText('gd' + s, P.gold + ' G');
+    const stx = streakTxt(P.streak); setText('st' + s, stx);
+    const se = $('st' + s); if (se) { se.className = 'st' + (P.streak > 1 ? ' win' : P.streak < -1 ? ' loss' : ''); }
   }
   const t = tags();
   const battle = S.mode !== 'demo' && (S.phase === 'intro' || S.phase === 'combat' || S.phase === 'result');
@@ -4241,14 +4264,14 @@ function updateHUD() {
   setText('tag0', t[0]); setText('tag1', t[1]);
   $('tag0').className = t[0] === 'You' ? 'you' : ''; $('tag1').className = t[1] === 'You' ? 'you' : '';
   const timeEl = $('sTime');
-  let tm = '—', hot = false, rl = 'Of Blood & Glass';
-  if (S.phase === 'setup') { tm = fmtTime(S.phaseT); hot = S.phaseT <= 10; rl = 'Round ' + S.round + ' · Planning'; }
-  else if (S.phase === 'intro') { tm = fmtTime(COMBAT_LEN); rl = 'Round ' + S.round + ' · Combat'; }
-  else if (S.phase === 'combat') { tm = fmtTime(S.timeLeft); hot = S.timeLeft <= 5; rl = S.chaos && CHAOS[S.chaos.i] ? CHAOS[S.chaos.i].name : 'Round ' + S.round + ' · Combat'; }
-  else if (S.phase === 'result') { tm = '0:00'; rl = 'Round ' + S.round + ' · Result'; }
-  else if (S.phase === 'over') rl = 'Match over';
-  if (S.mode === 'demo') rl = 'Of Blood & Glass';
-  setText('sTime', tm); setText('sRound', rl);
+  let tm = '—', hot = false, rl = 'Of Blood & Glass', pl = 'Battle';
+  if (S.phase === 'setup') { tm = fmtTime(S.phaseT); hot = S.phaseT <= 10; rl = 'Round ' + S.round; pl = 'Planning'; }
+  else if (S.phase === 'intro') { tm = fmtTime(COMBAT_LEN); rl = 'Round ' + S.round; pl = 'Combat'; }
+  else if (S.phase === 'combat') { tm = fmtTime(S.timeLeft); hot = S.timeLeft <= 5; rl = S.chaos && CHAOS[S.chaos.i] ? CHAOS[S.chaos.i].name : 'Round ' + S.round; pl = 'Combat'; }
+  else if (S.phase === 'result') { tm = '0:00'; rl = 'Round ' + S.round; pl = 'Result'; }
+  else if (S.phase === 'over') { rl = 'Match over'; pl = 'Final'; }
+  if (S.mode === 'demo') { rl = 'Of Blood & Glass'; pl = 'Demo'; }
+  setText('sTime', tm); setText('sRound', rl); setText('sPhase', pl);
   timeEl.classList.toggle('hot', hot);
   const sig = dockSigNow();
   if (sig !== dockSig) { dockSig = sig; renderDock(); }
