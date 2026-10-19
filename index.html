@@ -339,6 +339,9 @@ const ODDS = {3: [75, 25, 0, 0, 0], 4: [55, 30, 15, 0, 0], 5: [45, 33, 20, 2, 0]
 const XPNEED = {3: 4, 4: 5, 5: 8, 6: 12, 7: 17, 8: 22, 9: 28};
 const BASE_INCOME = 9, PASSIVE_XP = 5;
 // interest starts at 4 gold: +1, then +1 more per 6 gold, capped at +5 from 28 gold
+// anti-snowball: interest only counts gold up to the rival's pile + 10, and the poorer side gets comeback pay (+1 per 10 gold behind, max +3)
+const interestFor = side => { const P = S.p[side], O = S.p[side ^ 1]; return interestOf(Math.min(P.gold, O.gold + 10)); };
+const comebackFor = side => { const gap = S.p[side ^ 1].gold - S.p[side].gold; return gap >= 10 ? Math.min(3, Math.floor(gap / 10)) : 0; };
 const interestOf = g => g < 4 ? 0 : Math.min(5, 1 + Math.floor((g - 4) / 6));
 const BETS = [0, 5, 10, 20];
 // wager odds: the favourite (HP lead, win streak) is paid less, the underdog more
@@ -636,9 +639,10 @@ function setPhase(ph, t) { S.phase = ph; S.phaseT = t || 0; phaseFx(ph); }
 function startSetup() {
   S.round++;
   clearField();
+  const ib = [interestFor(0) + comebackFor(0), interestFor(1) + comebackFor(1)];   // both read before anyone is paid
   for (let s = 0; s < 2; s++) {
     const P = S.p[s];
-    const inc = BASE_INCOME + interestOf(P.gold) + streakBonus(P.streak) + (S.rw === s ? 1 : 0);
+    const inc = BASE_INCOME + ib[s] + streakBonus(P.streak) + (S.rw === s ? 1 : 0);
     P.gold += inc; P.lastIncome = inc;
     addXp(P, PASSIVE_XP);
     rollShop(P);
@@ -3670,10 +3674,10 @@ function renderDock() {
     d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span><span class="spacer"></span>' + sound + '</div>' + (S.phase === 'combat' && S.me >= 0 ? '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><kbd>' + C.key + '</kbd> ' + C.name + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>' : '');
     return;
   }
-  const locked = P.ready, onBoard = boardCount(P), interest = interestOf(P.gold);
+  const locked = P.ready, onBoard = boardCount(P), interest = S.me >= 0 ? interestFor(S.me) : interestOf(P.gold), comeback = S.me >= 0 ? comebackFor(S.me) : 0;
   const need = XPNEED[P.level];
   let h = '<div class="eco">' +
-    '<div class="stat" data-tip="Gold. Each round pays 9 + interest (+1 at 4 gold, then +1 per 6 more, max +5 at 28 gold) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
+    '<div class="stat" data-tip="Gold. Each round pays 9 + interest (+1 at 4 gold, then +1 per 6 more, max +5 at 28 gold; it only counts gold up to 10 above the rival pile, and the poorer side gets comeback pay: +1 per 10 gold behind, max +3) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (comeback ? ' · +' + comeback + ' comeback' : '') + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
     '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small bet' + (P.bet ? ' on' : '') + '" data-act="bet" data-tip="Wager gold on winning this round (key B cycles 0, 5, 10, 20). Win: stake x' + betOdds(S.me)[0] + ' back. Flawless win (your keep untouched, theirs damaged): x' + betOdds(S.me)[1] + '. Draw: refunded. Loss: stake gone. The odds shrink when you lead on HP or streak and grow when you trail. Wagered gold earns no interest."' + (locked ? ' disabled' : '') + '>Wager <b>' + (P.bet ? P.bet + 'g' : 'off') + ' <em>x' + betOdds(S.me)[0] + '</em></b></button>' +
@@ -3761,7 +3765,7 @@ function wikiHtml() {
   } else if (tab === 'economy') {
     b = '<table class="stats wk"><tbody>' +
       '<tr><th>Round income</th><td class="l">' + BASE_INCOME + ' gold + interest + streak bonus + 1 for winning the last round</td></tr>' +
-      '<tr><th>Interest</th><td class="l">Starts at 4 gold held: +1, then +1 more per 6 gold, up to +5 at 28 gold. Gold you have wagered earns none.</td></tr>' +
+      '<tr><th>Interest</th><td class="l">Starts at 4 gold held: +1, then +1 more per 6 gold, up to +5 at 28 gold. To stop snowballing, only gold up to 10 above the rival pile earns interest, and the side with less gold gets comeback pay: +1 per 10 gold behind, up to +3. Gold you have wagered earns none.</td></tr>' +
       '<tr><th>Streaks</th><td class="l">2+ wins or losses in a row pays +1, 4 pays +2, 5 pays +3</td></tr>' +
       '<tr><th>Shop</th><td class="l">Turrets cost their tier. Reroll 2 gold. Lock keeps a shop slot through rerolls and rounds.</td></tr>' +
       '<tr><th>Levels</th><td class="l">Level = turrets you can field (3 to 10). +' + PASSIVE_XP + ' XP free per round; buy 4 XP for 4 gold. XP needed: ' + Object.keys(XPNEED).map(k => 'L' + k + '→' + XPNEED[k]).join(', ') + '.</td></tr>' +
