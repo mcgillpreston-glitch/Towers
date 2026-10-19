@@ -474,7 +474,8 @@ function buyShop(P, i, side) {
   mergeAll(P, side);
   return '';
 }
-function reroll(P, side) { if (P.gold < 2) return 'Rerolling costs 2 gold.'; P.gold -= 2; rollShop(P); if (side !== undefined && S.stats) { S.stats.p[side].spent += 2; S.stats.p[side].rerolls++; } return ''; }
+const rerollCost = P => 2 + (P.rr | 0);   // +1 gold per reroll, resets every planning phase
+function reroll(P, side) { const c = rerollCost(P); if (P.gold < c) return 'Rerolling costs ' + c + ' gold.'; P.gold -= c; P.rr = (P.rr | 0) + 1; rollShop(P); if (side !== undefined && S.stats) { S.stats.p[side].spent += c; S.stats.p[side].rerolls++; } return ''; }
 function buyXp(P, side) { if (P.level >= 10) return 'Already at max level.'; if (P.gold < 4) return 'Buying XP costs 4 gold.'; P.gold -= 4; addXp(P, 4); if (side !== undefined && S.stats) { S.stats.p[side].spent += 4; S.stats.p[side].xp++; } return ''; }
 function moveUnit(P, f, fi, t, ti) {
   const src = f === 'm' ? P.board : P.bench, dst = t === 'm' ? P.board : P.bench;
@@ -653,7 +654,7 @@ function startSetup() {
     P.gold += inc; P.lastIncome = inc;
     addXp(P, PASSIVE_XP);
     rollShop(P);
-    P.ready = false; P.keep = KEEP_HP; P.shield = 0;
+    P.ready = false; P.keep = KEEP_HP; P.shield = 0; P.rr = 0;
     if (S.round % 3 === 0 && P.items.length < MAX_ITEMS) P.items.push(randItem());
   }
   if (S.round % 3 === 0) ev(['u']);
@@ -968,7 +969,7 @@ function cpuHard(P, side) {
     // 3. roll: when hunting a star-up spend down to the interest band, otherwise only spare gold
     const hunting = all.some(u => u.star < 3 && ownedCopies(P, u.r, u.star) >= 2) || all.some(u => u.star === 2 && CPU_V[ROSTER[u.r].id] >= 60);
     const keep = hunting ? Math.min(reserve, 10) : reserve;
-    if (P.gold - 2 >= keep && (hunting || P.gold - keep >= 6 || all.length < P.level)) reroll(P, side); else break;
+    if (P.gold - rerollCost(P) >= keep && (hunting || P.gold - keep >= 6 || all.length < P.level)) reroll(P, side); else break;
   }
   // 3a. a small wager when riding a streak
   if (rd >= 2 && P.streak >= 1 && P.hp > 40 && P.gold - 5 >= reserveFor() && !P.bet) { P.gold -= 5; P.bet = 5; }
@@ -3461,7 +3462,7 @@ const packUnit = u => u ? [u.r, u.star, u.items.join(''), u.td || 0, u.tk || 0, 
 function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3), td: a[3] | 0, tk: a[4] | 0, ld: a[5] | 0, lk: a[6] | 0, lp: a[7] | 0, nr: a[8] | 0} : null; }
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
-    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), rd: P.ready ? 1 : 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
+    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), rd: P.ready ? 1 : 0, rr: P.rr | 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
     a: [Math.round(P.aim.ang * 1000), Math.round(P.aim.pow * 1000), Math.round(P.reload * 100), Math.round(P.reloadMax * 100)]};
 }
 function snapshot() {
@@ -3548,7 +3549,7 @@ function applySnap(s) {
     if (typeof a.up === 'string') P.up = [0, 1, 2].map(i => clamp(+a.up[i] || 0, 0, 3));
     if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4].map(i => (a.cdn[i] | 0) / 10);
     P.rally = (a.ry | 0) / 10;
-    P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
+    P.rr = a.rr | 0; P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
     if (Array.isArray(a.a)) { P.aim.ang = (a.a[0] | 0) / 1000; P.aim.pow = (a.a[1] | 0) / 1000; P.reload = (a.a[2] | 0) / 100; P.reloadMax = Math.max(0.01, (a.a[3] | 0) / 100); }
     if (side === S.me) {
       if (net) net.in.acts = net.in.acts.filter(x => x.n > (a.as | 0));
@@ -3644,7 +3645,7 @@ function updateHUD() {
 function dockSigNow() {
   const P = myP();
   const base = [S.mode, S.phase, S.me, S.round, S.ui.msg, JSON.stringify(S.ui.sel)];
-  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.up.join(''), P.lock.join(''), P.bet, P.betRes ? P.betRes.join('') : '');
+  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.rr, P.up.join(''), P.lock.join(''), P.bet, P.betRes ? P.betRes.join('') : '');
   if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5), P ? P.cd.map(x => Math.ceil(x)).join('.') + P.gold : '');
   return base.join('|');
 }
@@ -3710,7 +3711,7 @@ function renderDock() {
     '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small bet' + (P.bet ? ' on' : '') + '" data-act="bet" data-tip="Wager gold on winning this round (key B cycles 0, 5, 10, 20). Win: stake x' + betOdds(S.me)[0] + ' back. Flawless win (your keep untouched, theirs damaged): x' + betOdds(S.me)[1] + '. Draw: refunded. Loss: stake gone. The odds shrink when you lead on HP or streak and grow when you trail. Wagered gold earns no interest."' + (locked ? ' disabled' : '') + '>Wager <b>' + (P.bet ? P.bet + 'g' : 'off') + ' <em>x' + betOdds(S.me)[0] + '</em></b></button>' +
-    '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop for 2 gold (key D)."' + (locked || P.gold < 2 ? ' disabled' : '') + '>Reroll <b>2</b></button>' +
+    '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
     sound +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
     '</div><div class="shop">';
@@ -3798,7 +3799,7 @@ function wikiHtml() {
       '<tr><th>Round income</th><td class="l">' + BASE_INCOME + ' gold + interest + streak bonus + 1 for winning the last round</td></tr>' +
       '<tr><th>Interest</th><td class="l">Starts at 4 gold held: +1, then +1 more per 6 gold, up to +5 at 28 gold. To stop snowballing, only gold up to 10 above the rival pile earns interest, and the side with less gold gets comeback pay: +1 per 10 gold behind, up to +3. Gold you have wagered earns none.</td></tr>' +
       '<tr><th>Streaks</th><td class="l">2+ wins or losses in a row pays +1, 4 pays +2, 5 pays +3</td></tr>' +
-      '<tr><th>Shop</th><td class="l">Turrets cost their tier. Reroll 2 gold. Lock keeps a shop slot through rerolls and rounds.</td></tr>' +
+      '<tr><th>Shop</th><td class="l">Turrets cost their tier. Reroll costs 2 gold, +1 for each reroll you make in the same planning phase (it resets next round). Lock keeps a shop slot through rerolls and rounds.</td></tr>' +
       '<tr><th>Levels</th><td class="l">Level = turrets you can field (3 to 10). +' + PASSIVE_XP + ' XP free per round; buy 4 XP for 4 gold. XP needed: ' + Object.keys(XPNEED).map(k => 'L' + k + '→' + XPNEED[k]).join(', ') + '.</td></tr>' +
       '<tr><th>Selling</th><td class="l">Returns the turret\'s cost (×3 per extra star) and any cores it carried.</td></tr>' +
       '<tr><th>Wager</th><td class="l">Stake 5, 10 or 20 gold before the round. Odds move with the match: the leader (HP lead, win streak) is paid as little as ×1.2 for a win, the underdog up to ×3.2. A flawless win (your keep untouched, theirs damaged) pays 1.5× the normal multiplier. Draw: refunded. Loss: stake gone. The current odds show on the button.</td></tr>' +
@@ -3887,7 +3888,7 @@ function showOverlay() {
       '<h1>Ballista Keep</h1>' +
       '<p>Two keeps, ten turret mounts each, and armies that march on their own. You plan for 60 to 90 seconds, then 30 seconds of combat plays out without you. Draft well, and your build holds while theirs breaks.</p>' +
       '<ul class="rules">' +
-        '<li>Buy turrets from a shop of five. Reroll for 2 gold</li>' +
+        '<li>Buy turrets from a shop of five. Reroll starts at 2 gold and rises by 1 each time, resetting every round</li>' +
         '<li>Three copies merge into 2 stars, three 2-stars into 3</li>' +
         '<li>Your level is how many turrets you can field. Buy XP for 4</li>' +
         '<li>Matching traits unlock bonuses: Kinetic, Sniper, Storm and more</li>' +
