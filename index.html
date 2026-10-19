@@ -157,9 +157,13 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .chip .ci i{width:9px;height:9px;transform:rotate(45deg);box-shadow:0 0 5px currentColor;cursor:grab;touch-action:none;outline:1px solid rgba(255,255,255,.35)}
 .chip .ci i:hover{outline-color:#fff;box-shadow:0 0 9px #fff}
 .chip .kb{display:inline-block;margin-left:3px;padding:0 4px;border:1px solid var(--bz-hi);color:var(--ink);font-size:9px;letter-spacing:0}
-.sc{position:relative;display:flex}.sc>.unit{flex:1;min-width:0}
-.lockb{position:absolute;right:5px;top:5px;z-index:2;font:700 8px var(--f-display);letter-spacing:.1em;padding:2px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
+.sc{position:relative;display:flex;flex-direction:column;gap:3px}.sc>.unit{flex:1;min-width:0}
+.lockb{text-align:center;font:700 9px var(--f-display);letter-spacing:.16em;padding:3px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
 .lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
+.bet.on{color:var(--warn);box-shadow:0 0 10px rgba(255,200,80,.45)}
+#cdown{position:absolute;top:6px;left:50%;transform:translateX(-50%);font:900 92px/1 var(--f-display);color:#fff;text-shadow:0 0 28px rgba(255,190,70,.95),0 3px 0 #000;pointer-events:none;z-index:25;opacity:0}
+#cdown.pop{animation:cdpop .9s ease-out}
+@keyframes cdpop{0%{transform:translateX(-50%) scale(1.9);opacity:0}15%{opacity:1}100%{transform:translateX(-50%) scale(1);opacity:1}}
 .drop{outline:2px dashed var(--ether);outline-offset:1px;background-color:rgba(62,200,230,.12)}
 [data-act^="slot:i:"]{touch-action:none}
 .upgs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -238,6 +242,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="Arena between two keeps. During planning, tap a mount on your keep to select or place a turret."></canvas>
     <div class="overlay" id="overlay"></div>
+    <div id="cdown" aria-hidden="true"></div>
     <div class="sound panel" id="sound">
       <button class="btn small quiet" id="statsBtn" type="button" data-tip="Match stats: kills, damage, spending and every round so far (Tab)." hidden>Stats · Tab</button>
       <button class="btn small quiet" id="menuBtn" type="button" data-tip="Menu: audio and video settings, leave game, main menu (Esc)." hidden>Menu · Esc</button>
@@ -324,7 +329,10 @@ const ITEMS = {
 const ITEM_KEYS = 'NOTXL';
 const ODDS = {3: [75, 25, 0, 0, 0], 4: [55, 30, 15, 0, 0], 5: [45, 33, 20, 2, 0], 6: [30, 40, 25, 5, 0], 7: [19, 30, 35, 15, 1], 8: [15, 22, 33, 25, 5], 9: [10, 15, 30, 33, 12], 10: [5, 10, 20, 40, 25]};
 const XPNEED = {3: 4, 4: 5, 5: 8, 6: 12, 7: 17, 8: 22, 9: 28};
-const BASE_INCOME = 10, PASSIVE_XP = 5;
+const BASE_INCOME = 8, PASSIVE_XP = 5;
+// interest starts at 4 gold: +1 per 4 up to +5 at 20, then +1 per 10 more up to +8 at 50
+const interestOf = g => g < 4 ? 0 : Math.min(5, Math.floor(g / 4)) + Math.min(3, Math.max(0, Math.floor((g - 20) / 10)));
+const BETS = [0, 5, 10, 20];
 const STAR_D = [0, 1, 2.1, 3.8], STAR_R = [0, 1, 1.1, 1.2];
 const BENCH = 8, MAX_ITEMS = 6;
 
@@ -371,7 +379,7 @@ function randomOfTier(t) { const pool = ROSTER.map((R, i) => R.tier === t ? i : 
 function newStat() { return {kills: 0, breach: 0, spent: 0, rerolls: 0, xp: 0, stars: 0, dealt: 0, wins: 0}; }
 function newPlayer() {
   return {
-    lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: [0, 0, 0, 0, 0], rally: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
+    bet: 0, betRes: null, lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: [0, 0, 0, 0, 0], rally: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
     shop: [-1, -1, -1, -1, -1], bench: Array(BENCH).fill(null), board: Array(10).fill(null), items: [],
     ready: false, kills: 0, roundKills: 0, lastDmg: 0, lastIncome: 0, msg: '', msgN: 0, actSeen: 0,
     turrets: [], traitLv: {}, boardSig: '',
@@ -532,6 +540,11 @@ function applyAct(side, a) {
     case 'equip': return equipItem(P, a.ii | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
     case 'strip': return stripCores(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'lock': { const i = a.i | 0; if (i >= 0 && i < 5 && P.shop[i] >= 0) P.lock[i] = P.lock[i] ? 0 : 1; return ''; }
+    case 'bet': {
+      const v = a.v | 0; if (!BETS.includes(v)) return '';
+      const d = v - P.bet; if (d > P.gold) return 'Not enough gold for that wager.';
+      P.gold -= d; P.bet = v; return '';
+    }
     case 'upg': return buyUpg(P, side, a.i | 0);
     case 'mvitem': return mvItem(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.k | 0, a.to === 'm' ? 'm' : a.to === 'i' ? 'i' : 'b', a.ti | 0);
     case 'ready': P.ready = true; return '';
@@ -608,7 +621,7 @@ function startSetup() {
   clearField();
   for (let s = 0; s < 2; s++) {
     const P = S.p[s];
-    const inc = BASE_INCOME + Math.min(5, Math.floor(P.gold / 10)) + streakBonus(P.streak) + (S.rw === s ? 1 : 0);
+    const inc = BASE_INCOME + interestOf(P.gold) + streakBonus(P.streak) + (S.rw === s ? 1 : 0);
     P.gold += inc; P.lastIncome = inc;
     addXp(P, PASSIVE_XP);
     rollShop(P);
@@ -658,6 +671,13 @@ function endCombat(fallen) {
     Wn.streak = Wn.streak > 0 ? Wn.streak + 1 : 1; L.streak = L.streak < 0 ? L.streak - 1 : -1;
   } else for (const P of S.p) { P.hp = Math.max(0, P.hp - 1); P.lastDmg = 1; P.streak = 0; }
   for (const P of S.p) P.keep = Math.max(0, P.keep);
+  S.p.forEach((P, side) => {
+    P.betRes = null;
+    if (!P.bet) return;
+    const O = S.p[side ^ 1], clean = P.keep >= KEEP_HP - 0.5, hit = O.keep < KEEP_HP - 0.5;
+    const mult = w === side ? (clean && hit ? 3 : 2) : w < 0 ? 1 : 0, ret = P.bet * mult;
+    P.gold += ret; P.betRes = [P.bet, ret, mult]; P.bet = 0;
+  });
   S.rw = w; S.loser = fallen; S.slowT = 1.6;
   if (w >= 0) { S.stats.p[w].wins++; S.stats.p[w].dealt += dmg; }
   S.stats.rounds.push({r: S.round, w, keep: [Math.ceil(Math.max(0, P0.keep)), Math.ceil(Math.max(0, P1.keep))], kills: [P0.roundKills, P1.roundKills], dmg, lv: [P0.level, P1.level]});
@@ -881,6 +901,8 @@ function cpuHard(P, side) {
     const keep = hunting ? Math.min(reserve, 10) : reserve;
     if (P.gold - 2 >= keep && (hunting || P.gold - keep >= 6 || all.length < P.level)) reroll(P, side); else break;
   }
+  // 3a. a small wager when riding a streak
+  if (rd >= 2 && P.streak >= 1 && P.hp > 40 && P.gold - 5 >= reserveFor() && !P.bet) { P.gold -= 5; P.bet = 5; }
   // 3b. army upgrades once the keep is staffed
   if (rd >= 2 && board() >= Math.min(P.level, 10)) {
     for (let n = 0; n < 4; n++) {
@@ -1235,6 +1257,12 @@ function applyEvent(d) {
     spark(x, GY - 60, F.rgb, 14, 220);
     if (!demo && C.id !== 'titan') addTitle(C.name.toUpperCase(), F.name + ' calls it in', F.rgb, 1.1, 28);
     sfx('call', t => zap(t, 330, 990, 0.22, 'triangle', 0.06), 0.1);
+  } else if (type === 'w') {
+    const [, x, y, side] = d, F = SIDES[side] || SIDES[0];
+    fxBlast(x, GY - 10, 70, F.rgb, 0.7);
+    spark(x, GY - 20, F.rgb, 26, 260);
+    S.shake = Math.max(S.shake, 0.15);
+    sfx('warp', t => { zap(t, 120, 900, 0.5, 'sawtooth', 0.05); nz(t + 0.3, 0.3, 'lowpass', 1500, 0, 0.08, 0.3, MUS.sfx); }, 0.3);
   } else if (type === 'u') {
     if (!demo) addTitle('SUPPLY DROP', 'A free core for both keeps', '125,255,176', 1.8, 54);
   } else if (type === 'c') {
@@ -1291,7 +1319,7 @@ function spawn(type, side) {
   u.y = d.fly ? rnd(170, 330) : GY + ((u.id % 5) - 2) * 3.5;
   u.alt = u.y;
   S.units.push(u);
-  if (type === 'titan' && S.phase === 'combat' && !S.quiet) ev(['n', 0, side]);
+  if (type === 'titan' && S.phase === 'combat') { u.warp = 1.2; ev(['w', Math.round(u.x), Math.round(u.y), side]); if (!S.quiet) ev(['n', 0, side]); }
 }
 function rsCredit(side, s, eff, pure) {
   const R = S.rs; if (!R || S.phase !== 'combat') return;
@@ -1299,6 +1327,7 @@ function rsCredit(side, s, eff, pure) {
   else R.storm[side] += eff;
 }
 function hurt(u, d, side, real, s, num, pure) {
+  if (u.warp > 0) return;
   u.flash = 0.07;
   if (!real) return;
   if (S.p[u.side].rally > 0) d *= 0.75;
@@ -1312,7 +1341,7 @@ function splash(x, y, R, dmg, side, real, mode, num, cap, s) {
   let n = 0;
   for (const u of S.units) {
     if (cap && n >= cap) break;
-    if (u.side === side || u.hp <= 0 || u.gone) continue;
+    if (u.side === side || u.hp <= 0 || u.gone || u.warp > 0) continue;
     if (mode === 'air' && !u.fly) continue;
     if (mode === 'ground' && u.fly) continue;
     const [cx, cy] = ucenter(u), dist = Math.hypot(cx - x, cy - y);
@@ -1328,7 +1357,7 @@ function findTarget(side, mx, my, s, exclude) {
   const front = side ? W - TW.x1 : TW.x1;
   let best = null, bd = 1e9;
   for (const u of S.units) {
-    if (u === exclude || u.side === side || u.gone || u.hp <= 0 || !canHit(s, u)) continue;
+    if (u === exclude || u.side === side || u.gone || u.hp <= 0 || u.warp > 0 || !canHit(s, u)) continue;
     const [cx, cy] = ucenter(u), d = Math.hypot(cx - mx, cy - my);
     if (d > s.range || (s.min && d < s.min)) continue;
     const threat = Math.abs(u.x - front) - (s.kind === 'rail' && u.type === 'titan' ? 300 : 0) - (s.kind === 'rail' && u.type === 'bulwark' ? 120 : 0) - (s.kind === 'flak' && u.fly ? 200 : 0);
@@ -1667,6 +1696,7 @@ function worldStep(dt, live) {
   for (const u of S.units) {
     u.t += dt * fz; u.flash = Math.max(0, u.flash - dt); u.slow = Math.max(0, u.slow - dt);
     if (u.burn && u.burn.t > 0) { u.burn.t -= dt; rsCredit(u.burn.side, {slot: u.burn.slot}, Math.max(0, Math.min(u.burn.dps * dt, u.hp)), true); u.lastSlot = u.burn.slot == null ? -1 : u.burn.slot; u.hp -= u.burn.dps * dt; u.byShot = true; u.lastBy = u.burn.side; }
+    if (u.warp > 0) { u.warp -= dt; continue; }   // titans materialise before they march
     const dir = u.side ? -1 : 1, front = u.side ? TW.x1 : W - TW.x1, sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.35 : 1) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
     if (u.fly) {
       const stop = front - dir * (u.w / 2 + 4);
@@ -1722,7 +1752,20 @@ function worldStep(dt, live) {
 }
 
 /* ---------- cosmetic update (every screen) ---------- */
+let cdLast = -1;
+function countdownTick() {
+  const el = $('cdown'); if (!el) return;
+  let n = -1;
+  if (S.phase === 'setup' && S.mode !== 'demo' && S.me >= 0 && S.phaseT > 0 && S.phaseT <= 5) n = Math.ceil(S.phaseT);
+  if (n === cdLast) return;
+  cdLast = n;
+  if (n > 0) {
+    el.textContent = n; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); el.style.opacity = '1';
+    sfx('cd' + n, t => { zap(t, n === 1 ? 1175 : 880, n === 1 ? 1175 : 880, 0.16, 'square', 0.07); }, 0.2);
+  } else { el.classList.remove('pop'); el.style.opacity = '0'; }
+}
 function cosmetic(dt, rdt) {
+  countdownTick();
   S.t += dt;
   musicTick(rdt);
   const sec = section();
@@ -2516,6 +2559,19 @@ function drawUnitArt(e, im, rgb, fl) {
   if (e.atk && !fly && Math.sin(e.t * 18) > 0.6) glowDot(e.side ? -w * 0.5 : w * 0.5, -h * 0.55, 8, '255,220,120', 0.8);
 }
 function drawUnit(e) {
+  if (!(e.warp > 0)) return drawUnit0(e);
+  const rgb = SIDES[e.side].rgb, fl = 0.5 + 0.5 * Math.sin(S.t * 22);
+  ctx.save();
+  const gr = ctx.createLinearGradient(0, 0, 0, e.y + 8);
+  gr.addColorStop(0, 'rgba(' + rgb + ',0)'); gr.addColorStop(1, 'rgba(' + rgb + ',' + (0.35 + 0.3 * fl) + ')');
+  ctx.fillStyle = gr; ctx.fillRect(e.x - e.w * 0.45, 0, e.w * 0.9, e.y + 8);
+  ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 + 0.4 * fl) + ')'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.ellipse(e.x, GY + 6, e.w * 0.75, 9, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 0.3 + 0.35 * fl;
+  drawUnit0(e);
+  ctx.restore();
+}
+function drawUnit0(e) {
   const F = SIDES[e.side], fl = e.flash > 0, rgb = F.rgb;
   const body = fl ? (e.side ? '#ffc4b0' : '#b8dcff') : (e.side ? '#5a1a10' : '#10305a');
   const armor = fl ? '#ffffff' : (e.side ? '#c24a2a' : '#2a6ac0');
@@ -3202,6 +3258,7 @@ addEventListener('keydown', e => {
   if (dig >= 0 && !e.ctrlKey && !e.metaKey && !e.altKey) { onSlot('m', dig); return; }
   if (e.key === 'd' || e.key === 'D') act({t: 'reroll'});
   else if (e.key === 'f' || e.key === 'F') act({t: 'xp'});
+  else if (e.key === 'b' || e.key === 'B') onAct('bet');
   else if (e.key === 'e' || e.key === 'E') { const sel = S.ui.sel; if (sel && sel.z !== 'i') { act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; } }
 });
 
@@ -3321,7 +3378,7 @@ const packUnit = u => u ? [u.r, u.star, u.items.join(''), u.td || 0, u.tk || 0, 
 function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3), td: a[3] | 0, tk: a[4] | 0, ld: a[5] | 0, lk: a[6] | 0, lp: a[7] | 0, nr: a[8] | 0} : null; }
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
-    it: P.items.join(''), lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), rd: P.ready ? 1 : 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
+    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), rd: P.ready ? 1 : 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
     a: [Math.round(P.aim.ang * 1000), Math.round(P.aim.pow * 1000), Math.round(P.reload * 100), Math.round(P.reloadMax * 100)]};
 }
 function snapshot() {
@@ -3330,7 +3387,7 @@ function snapshot() {
     ph: S.phase, m: S.matchId, rd: S.round, tl: r1(S.timeLeft * 10), pt: r1(S.phaseT * 10), rw: S.rw, ls: S.loser, win: S.winner,
     ch: S.chaos ? [S.chaos.i, r1(S.chaos.t * 10)] : 0, ts: r1(S.timeScale * 100), gp: net.guestPeer, hr: net.rematch ? 1 : 0,
     P: [packP(S.p[0]), packP(S.p[1])],
-    u: S.units.slice(0, 100).map(u => [u.id, u.side * 10 + TYPE_KEYS.indexOf(u.type), r1(u.x), r1(u.y), Math.max(0, r1(u.hp / u.max * 100)), (u.atk ? 1 : 0) | (u.slow > 0 ? 2 : 0) | (u.burn && u.burn.t > 0 ? 4 : 0)]),
+    u: S.units.slice(0, 100).map(u => [u.id, u.side * 10 + TYPE_KEYS.indexOf(u.type), r1(u.x), r1(u.y), Math.max(0, r1(u.hp / u.max * 100)), (u.atk ? 1 : 0) | (u.slow > 0 ? 2 : 0) | (u.burn && u.burn.t > 0 ? 4 : 0) | (u.warp > 0 ? 8 : 0)]),
     pr: S.projs.filter(p => p.kind === 'shell').slice(0, 12).map(p => [p.id, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.side]),
     os: S.strikes.map(k2 => [r1(k2.x), r1(k2.t * 10)]),
     dr: S.drops.map(d => [ITEM_KEYS.indexOf(d.kind), r1(d.x), r1(d.y), d.side, d.st === 'fly' ? 1 : 0]),
@@ -3403,6 +3460,7 @@ function applySnap(s) {
     if (Array.isArray(a.b)) P.bench = Array.from({length: BENCH}, (_, i) => unpackUnit(a.b[i]));
     if (Array.isArray(a.m)) P.board = Array.from({length: 10}, (_, i) => unpackUnit(a.m[i]));
     P.items = String(a.it || '').split('').filter(c => ITEMS[c]).slice(0, MAX_ITEMS);
+    P.bet = a.bt | 0; P.betRes = Array.isArray(a.bs) ? [a.bs[0] | 0, a.bs[1] | 0, a.bs[2] | 0] : null;
     if (typeof a.lk === 'string') P.lock = [0, 1, 2, 3, 4].map(i => +a.lk[i] ? 1 : 0);
     if (typeof a.up === 'string') P.up = [0, 1, 2].map(i => clamp(+a.up[i] || 0, 0, 3));
     if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4].map(i => (a.cdn[i] | 0) / 10);
@@ -3423,7 +3481,7 @@ function applySnap(s) {
     let u = old.get(id);
     if (!u) u = {id, type, side, ...TYPES[type], x: +x, y: +y, t: Math.random() * 6, flash: 0, hp: 100, slow: 0};
     if (u.hp > hp) u.flash = 0.1;
-    u.sx = +x; u.sy = +y; u.hp = +hp; u.max = 100; u.atk = !!(fl & 1); u.slow = fl & 2 ? 0.3 : 0; u.burning = !!(fl & 4);
+    u.sx = +x; u.sy = +y; u.hp = +hp; u.max = 100; u.atk = !!(fl & 1); u.slow = fl & 2 ? 0.3 : 0; u.burning = !!(fl & 4); u.warp = fl & 8 ? 1 : 0;
     seen.add(id);
     return u;
   }).filter(Boolean);
@@ -3503,7 +3561,7 @@ function updateHUD() {
 function dockSigNow() {
   const P = myP();
   const base = [S.mode, S.phase, S.me, S.round, S.ui.msg, JSON.stringify(S.ui.sel)];
-  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.up.join(''), P.lock.join(''));
+  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.up.join(''), P.lock.join(''), P.bet, P.betRes ? P.betRes.join('') : '');
   if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5), P ? P.cd.map(x => Math.ceil(x)).join('.') + P.gold : '');
   return base.join('|');
 }
@@ -3539,16 +3597,18 @@ function renderDock() {
     return;
   }
   if (S.phase !== 'setup') {
-    const res = S.phase === 'result' ? (S.rw === S.me ? 'Round won' : S.rw < 0 ? 'Round drawn' : 'Round lost · −' + P.lastDmg + ' HP') : S.phase === 'over' ? 'Match over' : 'Combat runs on its own. Watch your build work.';
+    const bw = P.betRes && S.phase === 'result' ? (P.betRes[2] ? ' · Wager ' + (P.betRes[2] === 1 ? 'refunded' : 'paid +' + (P.betRes[1] - P.betRes[0]) + 'g' + (P.betRes[2] === 3 ? ' (flawless!)' : '')) : ' · Wager lost −' + P.betRes[0] + 'g') : '';
+    const res = S.phase === 'result' ? (S.rw === S.me ? 'Round won' : S.rw < 0 ? 'Round drawn' : 'Round lost · −' + P.lastDmg + ' HP') + bw : S.phase === 'over' ? 'Match over' : 'Combat runs on its own. Watch your build work.';
     d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span><span class="spacer"></span>' + sound + '</div>' + (S.phase === 'combat' && S.me >= 0 ? '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><kbd>' + C.key + '</kbd> ' + C.name + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>' : '');
     return;
   }
-  const locked = P.ready, onBoard = boardCount(P), interest = Math.min(5, Math.floor(P.gold / 10));
+  const locked = P.ready, onBoard = boardCount(P), interest = interestOf(P.gold);
   const need = XPNEED[P.level];
   let h = '<div class="eco">' +
-    '<div class="stat" data-tip="Gold. Each round pays 10 + interest (1 per 10 gold held, max 5) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
+    '<div class="stat" data-tip="Gold. Each round pays 8 + interest (1 per 4 gold held up to +5 at 20 gold, then 1 per 10 more up to +8)  + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
     '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
+    '<button type="button" class="btn small bet' + (P.bet ? ' on' : '') + '" data-act="bet" data-tip="Wager gold on winning this round (key B cycles 0, 5, 10, 20). Win: your stake comes back doubled. Flawless win (your keep untouched and theirs damaged): tripled. Draw: refunded. Loss: stake gone. Gold wagered earns no interest."' + (locked ? ' disabled' : '') + '>Wager <b>' + (P.bet ? P.bet + 'g' : 'off') + '</b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop for 2 gold (key D)."' + (locked || P.gold < 2 ? ' disabled' : '') + '>Reroll <b>2</b></button>' +
     sound +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
@@ -3677,7 +3737,7 @@ function showOverlay() {
         '<li>Your level is how many turrets you can field. Buy XP for 4</li>' +
         '<li>Matching traits unlock bonuses: Kinetic, Sniper, Storm and more</li>' +
         '<li>Cores dropped in combat fit onto turrets, up to 3 each</li>' +
-        '<li>Bank gold for interest: +1 per 10, up to 5. Streaks pay too</li>' +
+        '<li>Bank gold for interest: +1 per 4 gold up to +5, then slower to +8. Streaks pay too</li>' +
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
@@ -3738,6 +3798,7 @@ function onAct(a, btn) {
   else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; S.joinErr = ''; joinRoom(v); }
   else if (k0 === 'slot') onSlot(parts[1], parts[2] | 0);
   else if (k0 === 'buy') act({t: 'buy', i: parts[1] | 0});
+  else if (k0 === 'bet') { const P = myP(); if (P) { let n = BETS[(BETS.indexOf(P.bet) + 1) % BETS.length]; if (n - P.bet > P.gold) n = 0; act({t: 'bet', v: n}); } }
   else if (k0 === 'lock') act({t: 'lock', i: parts[1] | 0});
   else if (k0 === 'strip') { const sel = S.ui.sel; if (sel && sel.z !== 'i') act({t: 'strip', f: sel.z, i: sel.i}); }
   else if (k0 === 'upg') act({t: 'upg', i: parts[1] | 0});
