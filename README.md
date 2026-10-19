@@ -22,3 +22,6 @@ Keys during planning: **D** reroll, **F** buy XP, **E** sell. **Tab** shows the 
 
 ## Art
 The keeps, turrets, minions, cores, projectiles and arena background are painted sprites in `assets/`. If an image fails to load the game falls back to its built-in vector art.
+
+## Online layer
+Ranked PvP, async rivals and the leaderboard are described in [ONLINE.md](ONLINE.md), including the Steam port plan and the checklist to follow when the game changes.
