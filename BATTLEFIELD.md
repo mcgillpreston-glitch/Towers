@@ -50,3 +50,5 @@ Found with a fixed-board lab (same saved round, swap blue's board, replay) plus 
 ## End-of-match screen
 - The match summary card opens with a large VICTORY / DEFEAT banner (spectators see "<side> wins"); the final round's after-action report carries it too.
 - When the match ends the battlefield swaps to the winner's painting: `art/battlefield/bg_red_{4k,1440,1080,720}.webp` (red wins, blue keep wrecked) or `bg_blue_*.webp` (blue wins, red keep wrecked). These have no bridges, so mechs and terrain are not drawn on them. They are preloaded once either Tactician is at 30 HP or less. A draw keeps the normal background.
+
+- Backdrops: `bg_*` (4 roof / 6 side barrels) is used for planning and combat; `bg_menu_*` (the previous painting) stays behind the main menu; `bg_red_*` / `bg_blue_*` are the end screens.

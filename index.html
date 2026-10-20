@@ -2552,8 +2552,9 @@ function bgKey() { const r = effRes(); if (RES[r]) return r; const w = cv.width;
 // the end-of-match painting: the winner's colour is shown with the losing keep wrecked (bg_red_* when red wins, bg_blue_* when blue wins)
 const endSide = () => S && S.phase === 'over' && S.winner >= 0 ? S.winner : -1;
 function bgImage() {
-  const key = bgKey(), es = endSide(), vk = es >= 0 ? key + (es ? 'r' : 'b') : key;
-  if (!(vk in BGS)) BGS[vk] = loadImg(es >= 0 ? RES[key].bg.replace('/bg_', '/bg_' + (es ? 'red' : 'blue') + '_') : RES[key].bg);
+  const key = bgKey(), es = endSide(), menu = es < 0 && S && S.mode === 'demo', vk = es >= 0 ? key + (es ? 'r' : 'b') : menu ? key + 'm' : key;
+  // the main-menu backdrop keeps its original painting; planning and battle use the four-roof / six-side keep art
+  if (!(vk in BGS)) BGS[vk] = loadImg(es >= 0 ? RES[key].bg.replace('/bg_', '/bg_' + (es ? 'red' : 'blue') + '_') : menu ? RES[key].bg.replace('/bg_', '/bg_menu_') : RES[key].bg);
   const im = BGS[vk];
   if (artOk(im)) { BGS.last = im; return im; }
   return artOk(BGS.last) ? BGS.last : null;   // keep the previous texture on screen while a new one loads
@@ -2586,6 +2587,7 @@ function bgLayer() {   // the painted battlefield with its light tint (clipped b
   if (!BG) return false;
   if (S.p && (S.p[0].hp <= 30 || S.p[1].hp <= 30) && !BGS.pre) { BGS.pre = 1; const k0 = bgKey(); for (const s of ['blue', 'red']) loadImg(RES[k0].bg.replace('/bg_', '/bg_' + s + '_')); }
   const tint = S.phase === 'combat' ? 0.2 : (endSide() >= 0 ? 0 : 0.07);
+  if (S && S.mode === 'demo' && !BGS.mpre) { BGS.mpre = 1; const kk = bgKey(); if (!(kk in BGS)) BGS[kk] = loadImg(RES[kk].bg); }   // warm the match backdrop while the menu shows
   if (!BGC.cv) BGC.cv = document.createElement('canvas');
   if (BGC.src !== BG || BGC.w !== cv.width || BGC.h !== cv.height || BGC.tint !== tint) {
     BGC.cv.width = cv.width; BGC.cv.height = cv.height;
