@@ -1510,10 +1510,10 @@ function cpuHard(P, side) {
 let k = 1;
 // render resolution of the canvas. 4K is the default; lower settings also load a smaller background texture
 const RES = {
-  '4k': {w: 3840, h: 2160, name: '4K · 3840 × 2160', bg: 'art/battlefield/bg_4k.webp?v=2'},
-  '1440': {w: 2560, h: 1440, name: '1440p · 2560 × 1440', bg: 'art/battlefield/bg_1440.webp?v=2'},
-  '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp?v=2'},
-  '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp?v=2'}
+  '4k': {w: 3840, h: 2160, name: '4K · 3840 × 2160', bg: 'art/battlefield/bg_4k.webp?v=3'},
+  '1440': {w: 2560, h: 1440, name: '1440p · 2560 × 1440', bg: 'art/battlefield/bg_1440.webp?v=3'},
+  '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp?v=3'},
+  '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp?v=3'}
 };
 const VIDEO = {shake: true, low: false, res: '4k', adapt: true};
 try { const v = JSON.parse(localStorage.getItem('bk-video') || 'null'); if (v && typeof v === 'object') { VIDEO.shake = v.shake !== false; VIDEO.low = !!v.low; VIDEO.adapt = v.adapt !== false; if (v.res === 'auto' || RES[v.res]) VIDEO.res = v.res; } } catch (e) {}
@@ -2555,7 +2555,9 @@ function bgImage() {
   // the main-menu backdrop keeps its original painting; planning and battle use the four-roof / six-side keep art
   if (!(vk in BGS)) BGS[vk] = loadImg(es >= 0 ? RES[key].bg.replace('/bg_', '/bg_' + (es ? 'red' : 'blue') + '_') : menu ? RES[key].bg.replace('/bg_', '/bg_menu_') : RES[key].bg);
   const im = BGS[vk];
-  if (artOk(im)) { BGS.last = im; return im; }
+  // newOn: the match backdrop (with its transparent keep windows) is what is on screen, including while a new resolution loads over it
+  if (artOk(im)) { BGS.last = im; BGS.lastNew = vk === key; BGS.newOn = BGS.lastNew; return im; }
+  BGS.newOn = !!(artOk(BGS.last) && BGS.lastNew);
   return artOk(BGS.last) ? BGS.last : null;   // keep the previous texture on screen while a new one loads
 }
 const terrImg = (kind, side) => { const im = TART[kind][side]; return artOk(im) ? im : null; };
@@ -2592,7 +2594,7 @@ function bgLayer() {   // the painted battlefield with its light tint (clipped b
     BGC.cv.width = cv.width; BGC.cv.height = cv.height;
     const c = BGC.cv.getContext('2d');
     c.drawImage(BG, 0, 0, cv.width, cv.height);
-    c.fillStyle = 'rgba(3,4,22,' + tint + ')'; c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(3,4,22,' + tint + ')'; c.fillRect(0, 0, cv.width, cv.height); c.globalCompositeOperation = 'source-over';
     BGC.src = BG; BGC.w = cv.width; BGC.h = cv.height; BGC.tint = tint;
   }
   ctx.drawImage(BGC.cv, 0, 0, W, H);
@@ -2615,8 +2617,77 @@ function drawFlyoverMask() {
   bgLayer();
   ctx.restore();
 }
+
+/* ---------- keep health windows: the painted keeps have transparent pointed-arch windows; glowing glass liquid behind them is the keep's HP meter ---------- */
+const KW = {top: 399.4048884165781, bottom: 1170.6695005313497, rects: [[271, 399, 221, 772], [3348, 399, 221, 772]], art: 3840};
+const KW_COL = [
+  {deep: '#072c8a', mid: '#37b9ff', hi: '#d9f9ff', glint: '190,240,255', back: '#03071a', tint: '30,90,200'},
+  {deep: '#6e0a1a', mid: '#ff5642', hi: '#ffe0c8', glint: '255,214,190', back: '#14030a', tint: '200,40,40'}];
+function drawKeepWindows() {
+  bgImage(); if (!BGS.newOn) return;
+  const t = reduced ? 0 : S.t, k = W / KW.art;
+  for (let s = 0; s < 2; s++) {
+    const P = S.p[s], C = KW_COL[s], [rx, ry, rw, rh] = KW.rects[s];
+    const hp = P.keep, max = KEEP_HP, p = (max > 0 && isFinite(hp) && isFinite(max)) ? clamp(hp / max, 0, 1) : 0;
+    const sy = KW.bottom - p * (KW.bottom - KW.top), flash = clamp(S.keepFlash[s] || 0, 0, 0.6) / 0.6;
+    ctx.save(); ctx.scale(k, k);
+    ctx.beginPath(); ctx.rect(rx, ry, rw, rh); ctx.clip();
+    // unlit glass backing, always present
+    let g = ctx.createLinearGradient(0, ry, 0, ry + rh); g.addColorStop(0, C.back); g.addColorStop(1, '#010206');
+    ctx.fillStyle = g; ctx.fillRect(rx, ry, rw, rh);
+    ctx.fillStyle = 'rgba(' + C.tint + ',.06)'; for (let i = 0; i < 4; i++) ctx.fillRect(rx + 22 + i * 52, ry, 8, rh);
+    if (p > 0) {
+      const wv = x => reduced ? 0 : Math.sin(x * 0.07 + t * 2.1 + s) * 3.2 + Math.sin(x * 0.13 - t * 1.4) * 1.8;
+      const surf = x => sy + wv(x);
+      ctx.beginPath(); ctx.moveTo(rx, ry + rh + 2);
+      for (let x = 0; x <= rw; x += 6) ctx.lineTo(rx + x, surf(rx + x));
+      ctx.lineTo(rx + rw, ry + rh + 2); ctx.closePath();
+      g = ctx.createLinearGradient(0, sy - 6, 0, ry + rh);
+      g.addColorStop(0, C.hi); g.addColorStop(0.07, C.mid); g.addColorStop(0.55, C.mid); g.addColorStop(1, C.deep);
+      ctx.globalAlpha = 0.94 - (p < 0.25 && !reduced ? 0.12 * Math.sin(t * 7) * (1 - p * 4) : 0); ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.save(); ctx.clip();   // everything below stays inside the liquid
+      ctx.globalCompositeOperation = 'lighter';
+      // slow caustic bands drifting through the glass
+      for (let i = 0; i < 3; i++) {
+        const cx = rx + ((t * (10 + i * 4) + i * 77) % (rw + 120)) - 60;
+        const cg = ctx.createLinearGradient(cx - 26, 0, cx + 26, 0);
+        cg.addColorStop(0, 'rgba(' + C.glint + ',0)'); cg.addColorStop(0.5, 'rgba(' + C.glint + ',.13)'); cg.addColorStop(1, 'rgba(' + C.glint + ',0)');
+        ctx.fillStyle = cg; ctx.fillRect(cx - 26, sy - 8, 52, ry + rh - sy + 10);
+      }
+      // glow band under the meniscus
+      const gg = ctx.createLinearGradient(0, sy, 0, sy + 70); gg.addColorStop(0, 'rgba(' + C.glint + ',.42)'); gg.addColorStop(1, 'rgba(' + C.glint + ',0)');
+      ctx.fillStyle = gg; ctx.fillRect(rx, sy - 6, rw, 76);
+      // glistening motes and rising bubbles
+      for (let i = 0; i < 24; i++) {
+        const ph = i * 0.6180339 % 1, lx = rx + 12 + ((i * 53 + s * 17) % (rw - 24)), span = ry + rh - sy;
+        const yy = ry + rh - ((ph * span + (reduced ? 0 : t * (18 + (i % 5) * 7))) % Math.max(span, 1));
+        const tw = 0.5 + 0.5 * Math.sin(t * 3 + i * 1.9), r = 2.6 + 4.5 * tw;
+        ctx.fillStyle = 'rgba(' + C.glint + ',' + (0.35 + 0.5 * tw) + ')';
+        ctx.beginPath(); ctx.moveTo(lx, yy - r * 2); ctx.lineTo(lx + r * 0.5, yy - r * 0.5); ctx.lineTo(lx + r * 2, yy); ctx.lineTo(lx + r * 0.5, yy + r * 0.5); ctx.lineTo(lx, yy + r * 2); ctx.lineTo(lx - r * 0.5, yy + r * 0.5); ctx.lineTo(lx - r * 2, yy); ctx.lineTo(lx - r * 0.5, yy - r * 0.5); ctx.closePath(); ctx.fill();
+      }
+      // inner luminosity: the liquid glows brightest down its core
+      const lum = ctx.createLinearGradient(rx, 0, rx + rw, 0); lum.addColorStop(0, 'rgba(' + C.tint + ',0)'); lum.addColorStop(0.5, 'rgba(' + C.glint + ',' + (0.22 + 0.06 * Math.sin(t * 1.6)) + ')'); lum.addColorStop(1, 'rgba(' + C.tint + ',0)');
+      ctx.fillStyle = lum; ctx.fillRect(rx, sy - 8, rw, ry + rh - sy + 10);
+      // vertical gloss streak, the glass catching the light
+      const gl = ctx.createLinearGradient(rx + rw * 0.18, 0, rx + rw * 0.42, 0);
+      gl.addColorStop(0, 'rgba(255,255,255,0)'); gl.addColorStop(0.5, 'rgba(255,255,255,.16)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gl; ctx.fillRect(rx + rw * 0.18, sy, rw * 0.24, ry + rh - sy);
+      // shield: a frosted shimmer through the whole column
+      if (P.shield > 0) { const a = Math.min(0.42, 0.14 + 0.5 * P.shield / KEEP_HP) * (0.8 + 0.2 * Math.sin(t * 4)); ctx.fillStyle = 'rgba(235,248,255,' + a + ')'; ctx.fillRect(rx, sy - 8, rw, ry + rh - sy + 10); }
+      // a hit flashes the liquid
+      if (flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + 0.55 * flash + ')'; ctx.fillRect(rx, sy - 8, rw, ry + rh - sy + 10); }
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.restore();
+      // the meniscus line, bright where the surface is
+      ctx.beginPath(); for (let x = 0; x <= rw; x += 6) { const yy = surf(rx + x); x ? ctx.lineTo(rx + x, yy) : ctx.moveTo(rx + x, yy); }
+      ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(' + C.glint + ',.95)'; ctx.shadowColor = 'rgb(' + C.glint + ')'; ctx.shadowBlur = 14; ctx.stroke(); ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
+}
 function drawScene() {
   const kk = S.kick, E = S.energy, t = S.t;
+  drawKeepWindows();
   const bgOn = bgLayer();
   if (!bgOn) {
     const g = ctx.createLinearGradient(0, 0, 0, H);
@@ -3603,11 +3674,9 @@ function drawKeepBars() {
   for (let s = 0; s < 2; s++) {
     const P = S.p[s], y = 27, w = 200, edge = (W / 2) / S.cam.z;
     const cx = s ? Math.min(W - 430, S.cam.x + edge - w / 2 - 12) : Math.max(430, S.cam.x - edge + w / 2 + 12);
-    ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(cx - w / 2 - 2, y - 2, w + 4, 18);
-    ctx.fillStyle = S.keepFlash[s] > 0.05 ? '#ff5a5a' : 'rgb(' + SIDES[s].rgb + ')'; ctx.fillRect(cx - w / 2, y, w * clamp(P.keep / KEEP_HP, 0, 1), 14);
-    if (P.shield > 0) { ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.fillRect(cx - w / 2, y, w * clamp(P.shield / KEEP_HP, 0, 1), 4); }
+    if (!BGS.newOn) { ctx.fillStyle = 'rgba(0,0,0,.8)'; ctx.fillRect(cx - w / 2 - 2, y - 2, w + 4, 18); ctx.fillStyle = S.keepFlash[s] > 0.05 ? '#ff5a5a' : 'rgb(' + SIDES[s].rgb + ')'; ctx.fillRect(cx - w / 2, y, w * clamp(P.keep / KEEP_HP, 0, 1), 14); }   // the keep window is the meter on the new backdrop
     ctx.font = '800 14px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c9';
-    otext('KEEP ' + Math.ceil(Math.max(0, P.keep)) + (P.shield > 0 ? ' + ' + Math.ceil(P.shield) + ' SHIELD' : '') + ' · ' + P.roundKills + ' KILLS', cx, y - 7, 5);
+    otext('KEEP ' + Math.ceil(Math.max(0, P.keep)) + (P.shield > 0 ? ' + ' + Math.ceil(P.shield) + ' SHIELD' : '') + ' · ' + P.roundKills + ' KILLS', cx, BGS.newOn ? y + 6 : y - 7, 5);
   }
 }
 // Trait bonuses are no longer drawn on the battlefield: hovering a tower lists them in a tooltip instead.

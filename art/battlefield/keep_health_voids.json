@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "project": "Of Blood & Glass",
+  "asset": {
+    "file": "Battlefield_Health_Window_Marks_4K.png",
+    "width": 3840,
+    "height": 2160,
+    "mode": "RGBA",
+    "fileSha256": "ddd09cf41535c0cb28806fc1edd87eb9fe2c292f8d02348710d97fbea6e0668e",
+    "rgbaSha256": "b92338ceb5e9218df2cbd8600a889a9f95ed358cb1520ad2c7409f8262edd011"
+  },
+  "coordinates": {
+    "origin": "top-left",
+    "xDirection": "right",
+    "yDirection": "down",
+    "units": "art pixels",
+    "runtimeTransform": "same as battlefield PNG"
+  },
+  "fill": {
+    "direction": "bottom-up as health increases",
+    "topY": 399.4048884165781,
+    "bottomY": 1170.6695005313497,
+    "height": 771.2646121147716,
+    "normalizedTopY": 0.1849096705632306,
+    "normalizedBottomY": 0.5419766206163656,
+    "ratio": "clamp(currentKeepHP / maxKeepHP, 0, 1); invalid max -> unlit",
+    "surfaceY": "bottomY - healthRatio * (bottomY - topY)",
+    "levels": [
+      {
+        "healthPercent": 0,
+        "surfaceArtY": 1170.6695005313497,
+        "surfaceNormalizedY": 0.5419766206163656
+      },
+      {
+        "healthPercent": 25,
+        "surfaceArtY": 977.8533475026568,
+        "surfaceNormalizedY": 0.45270988310308186
+      },
+      {
+        "healthPercent": 50,
+        "surfaceArtY": 785.037194473964,
+        "surfaceNormalizedY": 0.3634431455897981
+      },
+      {
+        "healthPercent": 75,
+        "surfaceArtY": 592.2210414452711,
+        "surfaceNormalizedY": 0.2741764080765144
+      },
+      {
+        "healthPercent": 100,
+        "surfaceArtY": 399.40488841657816,
+        "surfaceNormalizedY": 0.18490967056323063
+      }
+    ],
+    "zeroHealth": "opaque unlit backing; no colored fill or glow",
+    "calibration": "gold frame height; do not infer from fully transparent pixel extents"
+  },
+  "windows": [
+    {
+      "artSide": "blue",
+      "role": "left_sapphire",
+      "stateBinding": "authoritative keep HP and maxHP for the object on this art side",
+      "supportMask": "keep_health_support_blue.png",
+      "supportMaskEncoding": "RGBA white; alpha 255 where source alpha < 255, else 0; binary",
+      "supportMaskOriginArtPx": {
+        "x": 271,
+        "y": 399
+      },
+      "supportMaskSizePx": {
+        "width": 221,
+        "height": 772
+      },
+      "underlayBoundsArtPx": {
+        "x": 271,
+        "y": 399,
+        "width": 221,
+        "height": 772
+      },
+      "fillTopLocalY": 0.40488841657810326,
+      "fillBottomLocalY": 771.6695005313497
+    },
+    {
+      "artSide": "red",
+      "role": "right_ruby",
+      "stateBinding": "authoritative keep HP and maxHP for the object on this art side",
+      "supportMask": "keep_health_support_red.png",
+      "supportMaskEncoding": "RGBA white; alpha 255 where source alpha < 255, else 0; binary",
+      "supportMaskOriginArtPx": {
+        "x": 3348,
+        "y": 399
+      },
+      "supportMaskSizePx": {
+        "width": 221,
+        "height": 772
+      },
+      "underlayBoundsArtPx": {
+        "x": 3348,
+        "y": 399,
+        "width": 221,
+        "height": 772
+      },
+      "fillTopLocalY": 0.40488841657810326,
+      "fillBottomLocalY": 771.6695005313497
+    }
+  ],
+  "compositing": {
+    "order": [
+      "unlit keep backing surfaces",
+      "lit health surfaces clipped below surfaceY",
+      "battlefield PNG with normal alpha",
+      "existing dynamic gameplay",
+      "existing HUD"
+    ],
+    "maskRequiredForSimpleUnderlayRectangles": false,
+    "pngSuppliesFinalSoftApertureEdges": true,
+    "avoidInverseAlphaDoubleMasking": true,
+    "maskScope": "isolated keep-health surface only",
+    "input": "decorative surfaces ignore pointer input"
+  },
+  "gameplayChanges": false,
+  "combatDurationSeconds": 30,
+  "weaponMountsPerKeep": {
+    "roof": 4,
+    "side": 6
+  },
+  "runtimeValidationStatus": "pending in actual game project"
+}
