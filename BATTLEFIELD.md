@@ -31,7 +31,7 @@ Settings > Performance > "Run graphics test" plays a scripted heavy battle (both
 
 ## Balance pass (GAME_VER 3)
 Tuned from ~600 headless Hard-vs-Hard demo matches:
-- Roof mounts (R1-R4): range x1.3 and damage x2.1 (`ROOF_RANGE`, `ROOF_DMG`).
+- Roof mounts (R1-R4): only arcing launchers get a bonus (`ROOF_FX`): Plasma Mortar and Hellfire Rack range x1.3 / damage x2.3, Swarm Pod x1.3 / x1.9, Flak Nest range x1.3. Guns, beams and lightning are identical on every mount.
 - Round 1-2 spawn easing (`EARLY_EASE`); explosive/sniper/heavy traits now tier at 2 and 3 pieces; cryo trait is +25%/+50% on slowed foes.
 - Bike breach 18 -> 11 and spawn weight lowered; drones breach 16 -> 30, 28 HP, higher spawn weight, so ignoring air defence now hurts.
 - Weapons: cryo 3.6, torch 6.4, swarm 8.8, hellfire 32, sunlance 6.4, mortar 34 damage.
