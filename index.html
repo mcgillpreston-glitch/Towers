@@ -324,7 +324,7 @@ select option{color:#111}
 // texture or canvas resolution never changes ranges, speeds or hit tests.
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
 // Terrain (barriers and slow fields). PROVISIONAL balance values: the route handoff did not specify any, so they all live here.
-const TERRAIN = {plan: 30, barrierCost: 6, slowCost: 4, refund: 0.5, barrierHp: 400, barrierRadius: 16, slowMul: 0.7, slowRadius: 62};
+const TERRAIN = {plan: 30, barrierCost: 7, slowCost: 4, refund: 0.5, barrierHp: 240, repair: 0.5, barrierRadius: 16, slowMul: 0.7, slowRadius: 62};
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
 const PACE = 1.28;
 const setupLen = r => (r >= 7 ? 90 : r >= 4 ? 75 : 60) + TERRAIN.plan;   // planning grows as the board fills up, plus the terrain-building time
@@ -875,7 +875,7 @@ function startSetup() {
     addXp(P, PASSIVE_XP);
     rollShop(P);
     P.ready = false; P.keep = KEEP_HP; P.shield = 0; P.rr = 0;
-    for (const T of P.terr) if (T.k === 1) T.hp = TERRAIN.barrierHp;   // standing barriers are repaired for free
+    for (const T of P.terr) if (T.k === 1) T.hp = Math.min(TERRAIN.barrierHp, T.hp + (TERRAIN.barrierHp - T.hp) * TERRAIN.repair);   // a standing barrier mends only half of its damage between rounds
     if (S.round % 3 === 0 && P.items.length < MAX_ITEMS) P.items.push(randItem());
   }
   if (S.round % 3 === 0) ev(['u']);
@@ -890,7 +890,6 @@ function startCombat() {
     P.ready = true;
     buildTurrets(P);
     P.keep = KEEP_HP; P.shield = [0, 150, 350][P.traitLv.heavy || 0];
-    for (const T of P.terr) if (T.k === 1) T.hp = TERRAIN.barrierHp;
     P.reload = rnd(0.6, 1.4); P.stormT = 3; P.roundKills = 0; P.crit = false;
   }
   const rec = () => Array.from({length: 10}, () => ({d: 0, h: 0, k: 0}));
@@ -3811,7 +3810,7 @@ function updateTerrMenu() {
     tmSig = sig;
     const b = (k, label, cost) => '<button class="btn small' + (T.k === k ? ' on' : '') + '" type="button" data-t="' + k + '"' + (P.gold + back < cost && T.k !== k ? ' disabled' : '') + '>' + label + '<i>' + (cost ? cost + 'g' : back ? '+' + back + 'g' : '') + '</i></button>';
     el.innerHTML = '<div class="tt">' + (j ? 'Near' : 'Far') + ' gate</div>' + b(1, 'Barrier', TERRAIN.barrierCost) + b(2, 'Slow field', TERRAIN.slowCost) + (T.k ? b(0, 'Clear', 0) : '') +
-      '<p class="th">Barrier: enemy troops stop and break it before they can pass (' + TERRAIN.barrierHp + ' HP). Slow field: enemy ground troops crawl at ' + Math.round(TERRAIN.slowMul * 100) + '% speed inside it. Drones fly over both.</p>';
+      '<p class="th">Barrier: enemy troops stop and break it before they can pass (' + TERRAIN.barrierHp + ' HP, mends half its damage between rounds). Slow field: enemy ground troops crawl at ' + Math.round(TERRAIN.slowMul * 100) + '% speed inside it. Drones fly over both.</p>';
     el.hidden = false;
   }
   const r = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
@@ -4592,7 +4591,7 @@ function wikiHtml() {
     b = '<p>Two keeps face each other. Each has ten turret mounts: four on the roof (R1 to R4) and six on the inward-facing side (S1 to S6). Every round has two parts.</p>' +
       '<p><b>Planning (90 s, 105 s from round 4, 120 s from round 7).</b> Thirty seconds of each planning phase are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. Press Ready to lock in; when both sides are ready, combat starts early.</p>' +
       '<p><b>Combat (30 s).</b> Mechs march automatically from both keeps. Your turrets shoot the enemy mechs, and any mech that reaches your keep damages it. You can spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 20 s, overtime Titans march until one side breaks.</p>' +
-      '<p><b>Routes and terrain.</b> Each army leaves its own keep door and walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you, and each can hold a <b>barrier</b> (enemy troops stop and break it before they can pass) or a <b>slow field</b> (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A standing barrier is repaired for free every round, a broken one must be rebuilt, and drones fly over everything.</p>' +
+      '<p><b>Routes and terrain.</b> Each army leaves its own keep door and walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you, and each can hold a <b>barrier</b> (enemy troops stop and break it before they can pass) or a <b>slow field</b> (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A damaged barrier mends half its damage each round for free, a broken one must be rebuilt, and drones fly over everything.</p>' +
       '<p><b>Roof mounts.</b> Launchers that lob their shots gain from the height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top.</p>' +
       '<p><b>Winning.</b> Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. Round 5 onward the mech waves get tougher every round.</p>' +
       '<p><b>Tip.</b> Roof mounts reach farther but short-range turrets there may never fire. Check the after-action report to spot idle turrets.</p>';
