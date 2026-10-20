@@ -15,7 +15,7 @@ Measured unimpeded travel (mean of 12, turrets off): trooper 11-13 s, bike ~5 s,
 ## Art dependencies
 Separate bridge foreground mask; 10-socket tower art (painted keep shows 3 roof / 5 side sockets); final terrain sprites (`art/terrain/{barrier,slow_field}_{blue,red}.webp`, sizes/pivots in `TERRAIN_DRAW`). Dev overlay: backquote key or `?dev`.
 
-GAME_VER is 2 (old async builds are ignored).
+GAME_VER is 4 (old async builds are ignored).
 
 ## Update: drones, mounts, weapon art, HUD
 - Drones launch from their own keep's roof and arc to a point on the upper three quarters of the opposing tower (`launchDrone`/`placeDrone`); they ignore the ground routes and terrain.
@@ -37,3 +37,12 @@ Tuned from ~600 headless Hard-vs-Hard demo matches:
 - Weapons: cryo 3.6, torch 6.4, swarm 8.8, hellfire 32, sunlance 6.4, mortar 34 damage.
 - CPU: per-weapon values retuned and trait-aware buying (`cpuSyn`).
 - Terrain: a barrier adds only about 3 points of round win rate; the "slow-only boards lose" skew in logs is selection (a broken barrier marks a side already under pressure).
+
+## Exploit pass (GAME_VER 4)
+Found with a fixed-board lab (same saved round, swap blue's board, replay) plus full-match economy bots:
+- Rally: 12 gold, 16 s cooldown, +10% speed, -10% damage taken (was 10 g, +35% / -25%, which lifted round win rate from 56% to 88%).
+- Cores: Nano Lens stacks to +30% range; Tri-Barrel adds one extra target at 60% damage (+15% per further copy); core and trait splash/pull radius capped at x2.
+- Heavy trait shield 150 / 350 (was 250 / 600). Torch range 260, dmg 4.6; Glacier range 310.
+- Armor: damage floor 50% of the hit (was 30%); Titan armor 4.
+- Slow field speed multiplier 0.70. Drone breach scaling capped at x2 and at most 12 drones in the air per side in rounds 1-3. Titan drops capped at 2 per drop before round 10.
+- CPU values Glacier higher (64). Economy tests found no exploit: hoarding, tanking, XP rush, upgrade rush and max wagers all stayed within noise or lost.
