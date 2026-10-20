@@ -2557,8 +2557,11 @@ function bgImage() {
   const im = BGS[vk];
   // newOn: the match backdrop (with its transparent keep windows) is what is on screen, including while a new resolution loads over it
   if (artOk(im)) { BGS.last = im; BGS.lastNew = vk === key; BGS.newOn = BGS.lastNew; return im; }
+  // the exact resolution is still loading: use any other loaded size of the same art before falling back to the previous texture,
+  // so the menu painting never flashes up when a match begins
+  if (es < 0 && !menu) for (const k in RES) { const alt = BGS[k]; if (k !== key && artOk(alt)) { BGS.last = alt; BGS.lastNew = true; BGS.newOn = true; return alt; } }
   BGS.newOn = !!(artOk(BGS.last) && BGS.lastNew);
-  return artOk(BGS.last) ? BGS.last : null;   // keep the previous texture on screen while a new one loads
+  return artOk(BGS.last) && (es >= 0 || menu || BGS.lastNew) ? BGS.last : null;   // keep the previous texture on screen while a new one loads (never the menu painting under a match)
 }
 const terrImg = (kind, side) => { const im = TART[kind][side]; return artOk(im) ? im : null; };
 // w = drawn width (art units); fx, fy = the swivel as a fraction of the sprite; nat = the barrel's native angle (blue; red mirrors it)
@@ -2588,7 +2591,7 @@ function bgLayer() {   // the painted battlefield with its light tint (clipped b
   if (!BG) return false;
   if (S.p && (S.p[0].hp <= 30 || S.p[1].hp <= 30) && !BGS.pre) { BGS.pre = 1; const k0 = bgKey(); for (const s of ['blue', 'red']) loadImg(RES[k0].bg.replace('/bg_', '/bg_' + s + '_')); }
   const tint = S.phase === 'combat' ? 0.2 : (endSide() >= 0 ? 0 : 0.07);
-  if (S && S.mode === 'demo' && !BGS.mpre) { BGS.mpre = 1; const kk = bgKey(); if (!(kk in BGS)) BGS[kk] = loadImg(RES[kk].bg); }   // warm the match backdrop while the menu shows
+  if (S && S.mode === 'demo' && !BGS.mpre) { BGS.mpre = 1; const kk = bgKey(); if (!(kk in BGS)) BGS[kk] = loadImg(RES[kk].bg); setTimeout(() => { for (const k in RES) if (!(k in BGS)) BGS[k] = loadImg(RES[k].bg); }, 1500); }   // warm the match backdrop while the menu shows
   if (!BGC.cv) BGC.cv = document.createElement('canvas');
   if (BGC.src !== BG || BGC.w !== cv.width || BGC.h !== cv.height || BGC.tint !== tint) {
     BGC.cv.width = cv.width; BGC.cv.height = cv.height;
