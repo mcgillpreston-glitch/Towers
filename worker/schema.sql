@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, uid TEXT, handle TEXT, ver INTEGER, winner INTEGER, rounds INTEGER, t INTEGER, body TEXT);
+CREATE INDEX IF NOT EXISTS runs_ver ON runs (ver, t);

@@ -44,3 +44,9 @@ Read this before changing anything that touches saved builds, match logs, names 
 - **Names**: add new bad words to `BAD` and reserved ones to `RESERVED`.
 - **After any change**: run the two-account test (claim a name twice, file matching and mismatching reports, load a ghost) before publishing.
 - **Publishing**: update the Artifact, rebuild `index.html`, push `main` and `gh-pages` (see the publish steps in the repo notes).
+
+## Run uploads (match logs)
+Settings › "Send my match runs automatically" is on by default. When a match ends, `logFlush()` uploads every finished, unsent log:
+- **Inside Claude:** `BK.putRun(id, doc)` writes `runs/{uid}/m/{matchId}`. Capability rules: `runs` read/write `owner`, `runs/{self}` write `interact`. The owner (and Claude, through ArtifactData) can read them for analysis.
+- **Anywhere else:** set `RUN_ENDPOINT` in the page to a deployed `worker/runs.js` (Cloudflare Worker + D1, see `worker/`). Empty by default; the client holds no secrets.
+Sent ids are remembered in `bk-runs-sent`; failed uploads retry on the next match end, on startup and when the box is re-checked. Unchecking it keeps logs on the device only.

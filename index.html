@@ -276,8 +276,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 .tmenu .th{margin:0;font-size:12px;line-height:1.35;opacity:.78}
 select{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:4px 6px}
 select option{color:#111}
-</style>
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style></head><body>
+</style><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style></head><body>
 <div id="tip" role="tooltip" hidden></div>
 <div class="app">
   <header class="hud panel">
@@ -967,8 +966,8 @@ function buildPost(w, fallen) {
   return {r: S.round, w, head, ln, t: Math.round(el * 10) / 10, s: sides};
 }
 /* ---------- automatic match logs, kept on this device for tuning ---------- */
-const LOGKEY = 'bk-logs-v1', LOGPREF = {auto: true};
-try { const v = JSON.parse(localStorage.getItem('bk-logpref') || 'null'); if (v && typeof v === 'object') LOGPREF.auto = v.auto !== false; } catch (e) {}
+const LOGKEY = 'bk-logs-v1', LOGPREF = {send: true};
+try { const v = JSON.parse(localStorage.getItem('bk-logpref') || 'null'); if (v && typeof v === 'object') LOGPREF.send = v.send !== false; } catch (e) {}
 function saveLogPref() { try { localStorage.setItem('bk-logpref', JSON.stringify(LOGPREF)); } catch (e) {} }
 function logsLoad() { try { const a = JSON.parse(localStorage.getItem(LOGKEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
 function logPersist() {
@@ -1002,7 +1001,31 @@ function logEnd() {
   S.log.end = {winner: S.winner, rounds: S.round, hp: S.p.map(P => P.hp), stats: S.stats.p};
   logPersist();
   pvpRecord();
-  if (LOGPREF.auto) logDownload(false);
+  logFlush();
+}
+/* ---------- run upload: finished matches go to the shared store (Claude db) and/or RUN_ENDPOINT for later analysis ---------- */
+const RUN_ENDPOINT = '';      // optional: URL of the Cloudflare Worker in worker/ (POST JSON). Empty = Claude db only.
+const SENTKEY = 'bk-runs-sent';
+let flushing = false;
+async function logSend(m) {
+  const doc = Object.assign({}, m, {uid: PVP.uid || null, handle: HANDLE, ver: GAME_VER, schema: SCHEMA, sent: Date.now()});
+  let text = JSON.stringify(doc);
+  if (text.length > 200000) { doc.rounds = doc.rounds.map(r => Object.assign({}, r, {post: null})); text = JSON.stringify(doc); }
+  let ok = false;
+  if (PVP.db && PVP.uid && BK.putRun) { await BK.putRun(m.id, doc); ok = true; }
+  if (RUN_ENDPOINT) { const r = await fetch(RUN_ENDPOINT, {method: 'POST', headers: {'content-type': 'application/json'}, body: text}); if (!r.ok) throw new Error('run upload ' + r.status); ok = true; }
+  return ok;
+}
+async function logFlush() {
+  if (flushing || !LOGPREF.send) return;
+  flushing = true;
+  try {
+    const sent = lsGet(SENTKEY, []);
+    for (const m of logsLoad()) {
+      if (!m.end || sent.includes(m.id)) continue;
+      try { if (await logSend(m)) { sent.push(m.id); lsSet(SENTKEY, sent.slice(-60)); } } catch (e) { break; }
+    }
+  } finally { flushing = false; }
 }
 /* ---------- async PvP: ghost builds from other players + wins leaderboard ---------- */
 const GHKEY = 'bk-ghosts-v1', LBKEY = 'bk-lb-v1', HKEY = 'bk-handle', MYKEY = 'bk-mybuilds-v1';
@@ -1061,6 +1084,7 @@ const BK_CLAUDE = {
   async listBuilds() { const s = await this.db.collection('ghosts').limit(300).get(); return s.docs.map(d => Object.assign({id: d.id}, d.data())); },
   async putBuilds(handle, builds) { await this.db.doc('ghosts/' + this.uid).set({handle, t: Date.now(), builds, v: SCHEMA}); },
   async listReports() { const s = await this.db.collection('reports').limit(500).get(); return s.docs.map(d => ({id: d.id, m: (d.data() || {}).m})); },
+  async putRun(id, doc) { await this.db.doc('runs/' + this.uid + '/m/' + id).set(doc); },
   async putReports(m) { await this.db.doc('reports/' + this.uid).set({m, t: Date.now(), v: SCHEMA}); }
 };
 let BK = BK_CLAUDE;
@@ -1103,6 +1127,7 @@ async function pvpInit() {
     }
   } catch (e) { PVP.db = null; }
   overlaySig = '';
+  logFlush();
 }
 let pushQ = Promise.resolve();
 function pvpPushLb() { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => BK.putLb(myLb())).catch(e => { PVP.err = 'Leaderboard upload failed'; }); }
@@ -3599,7 +3624,7 @@ function drawTitles() {
     if (t.delay > 0) continue;
     const fadeIn = Math.min(1, t.age / 0.12), fadeOut = Math.min(1, t.life / 0.35), a = fadeIn * fadeOut;
     const pop = 1 + Math.max(0, 0.25 - t.age) * 1.6;
-    const y = H / 2 - 30;
+    const y = 150 + t.size * 0.12;   // in the sky above the lanes, off the bridge path
     ctx.save(); ctx.translate(W / 2, y); ctx.scale(pop, pop);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '900 ' + t.size + 'px Cinzel, Georgia, serif';
@@ -4631,7 +4656,7 @@ function menuHtml() {
   return '<div class="kicker">Paused for you only · the match keeps running</div><h1>Menu</h1>' +
     '<div class="btns"><button class="btn prime" data-act="resume" type="button">Resume</button><button class="btn" data-act="stats" type="button">Match stats</button><button class="btn" data-act="wiki:basics" type="button">Wiki</button><button class="btn" data-act="logdl" type="button">Download logs</button></div>' +
     settingsHtml() +
-    '<h2>Match logs</h2><div class="setrow"><label><input type="checkbox" id="mAuto"' + (LOGPREF.auto ? ' checked' : '') + '> Auto-download the match file when a match ends</label></div><p class="hint">Every round is saved on this device automatically (last 12 matches) for tuning.</p>' +
+    '<h2>Match logs</h2><div class="setrow"><label><input type="checkbox" id="mAuto"' + (LOGPREF.send ? ' checked' : '') + '> Send my match runs automatically (uncheck to keep them on this device only)</label></div><p class="hint">Finished matches are uploaded for balance analysis: builds, round results and damage totals, plus your player name. Every round is also saved on this device (last 12 matches); use Download logs to export them.</p>' +
     '<h2>Leave</h2><p class="hint">' + (S.mode === 'cpu' ? 'Leaving ends this match against the CPU.' : 'Leaving forfeits the match for your rival.') + '</p>' +
     '<div class="btns"><button class="btn" data-act="leave" type="button">Leave game</button><button class="btn quiet" data-act="menu" type="button">Main menu</button></div>';
 }
@@ -4698,7 +4723,7 @@ function showOverlay() {
   if (S.ui.wiki && ((S.ui.menu && inMatch()) || mode === 'demo')) { card(wikiHtml()).classList.add('wikic'); return; }
   if (S.ui.menu && inMatch()) {
     card(menuHtml(), true);
-    if ($('mAuto')) $('mAuto').addEventListener('change', e => { LOGPREF.auto = !!e.target.checked; saveLogPref(); });
+    if ($('mAuto')) $('mAuto').addEventListener('change', e => { LOGPREF.send = !!e.target.checked; saveLogPref(); if (LOGPREF.send) logFlush(); });
     bindSettings();
     return;
   }
@@ -4717,6 +4742,18 @@ function showOverlay() {
   if (mode === 'demo') {
     const online = roomChecked && roomNS;
     card(
+      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button><button class="btn small" data-act="settings" type="button" style="align-self:flex-end">Settings</button></div>' +
+      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Signed-in online matches are ranked, and your build becomes an async rival.</p>') +
+      '<div class="modes">' +
+        '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU holds the Crimson Keep for Vermilion on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
+        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
+        '<div class="mode"><h2>Against a friend</h2>' +
+          (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
+            '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
+            (S.joinErr ? '<p class="warn">' + S.joinErr + '</p>' : '')
+          : '<p class="hint">' + (roomChecked ? 'Online play couldn’t load. Check your connection and reload the page.' : 'Connecting to rooms…') + '</p>') +
+        '</div>' +
+      '</div>' +
       '<div class="kicker">2489 · The Last Accord</div>' +
       '<h1>Of Blood &amp; Glass</h1>' +
       '<p>Azurecourt and Vermilion face off across the Concord Span, each behind a glass-armored Keep with ten turret mounts. Two lovers meet only if one Keep falls. Plan for 90 to 120 seconds, then 30 seconds of combat plays out on its own.</p>' +
@@ -4731,18 +4768,6 @@ function showOverlay() {
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
-      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button><button class="btn small" data-act="settings" type="button" style="align-self:flex-end">Settings</button></div>' +
-      (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Signed-in online matches are ranked, and your build becomes an async rival.</p>') +
-      '<div class="modes">' +
-        '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU holds the Crimson Keep for Vermilion on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
-        '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
-        '<div class="mode"><h2>Against a friend</h2>' +
-          (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
-            '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
-            (S.joinErr ? '<p class="warn">' + S.joinErr + '</p>' : '')
-          : '<p class="hint">' + (roomChecked ? 'Online play couldn’t load. Check your connection and reload the page.' : 'Connecting to rooms…') + '</p>') +
-        '</div>' +
-      '</div>' +
       '<p class="hint">Turn up the music with the volume controls at the bottom right. ' + (peerMode() ? 'To play a friend, send them this page’s link and your room code.' : 'A friend needs access to this page (Share menu) and must be signed in.') + '</p>'
     );
     return;
