@@ -52,3 +52,6 @@ Found with a fixed-board lab (same saved round, swap blue's board, replay) plus 
 - When the match ends the battlefield swaps to the winner's painting: `art/battlefield/bg_red_{4k,1440,1080,720}.webp` (red wins, blue keep wrecked) or `bg_blue_*.webp` (blue wins, red keep wrecked). These have no bridges, so mechs and terrain are not drawn on them. They are preloaded once either Tactician is at 30 HP or less. A draw keeps the normal background.
 
 - Backdrops: `bg_*` (4 roof / 6 side barrels) is used for planning and combat; `bg_menu_*` (the previous painting) stays behind the main menu; `bg_red_*` / `bg_blue_*` are the end screens.
+
+## Barrier nerf
+Barrier HP 400 -> 240, cost 6 -> 7 gold, and a damaged barrier now mends only half its damage between rounds (it was fully repaired free, including at combat start). Lab (40 fights per cell, +/-8 pts noise): at round 9 the slow-field + near-barrier combo gained +30 win points over no terrain before the change and about +17 after; a lone near-gate barrier keeps roughly +100 keep HP.
