@@ -13,13 +13,13 @@ planning +30 s, barrierCost 6, slowCost 4, refund 0.5, barrierHp 400, barrierRad
 Measured unimpeded travel (mean of 12, turrets off): trooper 11-13 s, bike ~5 s, bulwark ~17 s, titan ~11 s. Two slow fields add ~0.5-4 s; a single unit cannot break a barrier within a round, a group can.
 
 ## Art dependencies
-Separate bridge foreground mask; 10-socket tower art (painted keep shows 3 roof / 5 side sockets); final terrain sprites (`art/terrain/{barrier,slow_field}_{blue,red}.webp`, sizes/pivots in `TERRAIN_DRAW`). Dev overlay: backquote key or `?dev`.
+Separate bridge foreground mask; 10-socket tower art (painted keep now shows 4 roof / 6 side barrels); final terrain sprites (`art/terrain/{barrier,slow_field}_{blue,red}.webp`, sizes/pivots in `TERRAIN_DRAW`). Dev overlay: backquote key or `?dev`.
 
 GAME_VER is 4 (old async builds are ignored).
 
 ## Update: drones, mounts, weapon art, HUD
 - Drones launch from their own keep's roof and arc to a point on the upper three quarters of the opposing tower (`launchDrone`/`placeDrone`); they ignore the ground routes and terrain.
-- The ten mounts now sit on the painted tower: three roof barrels and five side barrels exactly, R4 on the corner pinnacle and S6 on the pillar base (no painted socket for those two). Weapon sprites are drawn 30% larger (roof weapons keep their old size) so they cover the painted barrels.
+- The ten mounts sit on the painted tower, one per barrel: four roof barrels and six side barrels (new bg art). Note: the bg_red_* / bg_blue_* end-screen paintings still show the older 3 roof / 5 side tower (no painted socket for those two). Weapon sprites are drawn 30% larger (roof weapons keep their old size) so they cover the painted barrels.
 - Weapon and projectile art (`assets/w_*`, `assets/p_*`) are the 4K sources cropped to the same framing as before (weapons 1120 px long side, projectile strips 1920 px wide).
 - Top HUD rebuilt as live HTML/CSS from the HUD handoff (phase / timer / round centre panel, equal health tracks, LV | G | streak row).
 
