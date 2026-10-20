@@ -802,9 +802,9 @@ function statsFor(unit, lv) {
   return s;
 }
 function boardSig(P) { return P.board.map(u => u ? u.r + '.' + u.star + '.' + u.items.join('') : '-').join('|'); }
-const ROOF_RANGE = 1.3;   // the roof mounts sit far from the lanes, so they reach 30% further
-const ROOF_DMG = 2.1;      // and hit 110% harder, since a roof mount sees fewer targets for less time
-const roofRange = (s, i) => { if (i < 4) { s.range *= ROOF_RANGE; s.dmg *= ROOF_DMG; } return s; };
+// only arcing launchers get a roof bonus (range, damage); beams and guns are the same on every mount
+const ROOF_FX = {mortar: {r: 1.3, d: 2.3}, swarm: {r: 1.3, d: 1.9}, flak: {r: 1.3, d: 1.0}};   // mortar covers Plasma Mortar and Hellfire Rack
+const roofRange = (s, i) => { const f = i < 4 && ROOF_FX[s.kind]; if (f) { s.range *= f.r; s.dmg *= f.d; } return s; };
 function buildTurrets(P) {
   const {lv} = traitLevels(P.board);
   P.traitLv = lv;
@@ -3043,7 +3043,7 @@ function drawTurrets(side) {
     if (planning && S.ui.sel && (i === selM || (selBench && i === S.ui.hov))) {
       const su = selM >= 0 ? u : P.bench[S.ui.sel.i];
       if (su) {
-        const rs = Object.assign({}, statsFor(su, traitLevels(P.board).lv)); if (i < 4) { rs.range *= ROOF_RANGE; rs.dmg *= ROOF_DMG; }
+        const rs = Object.assign({}, statsFor(su, traitLevels(P.board).lv)); roofRange(rs, i);
         ctx.save(); ctx.strokeStyle = 'rgba(' + F.rgb + ',.95)'; ctx.fillStyle = 'rgba(' + F.rgb + ',.1)'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(' + F.rgb + ',1)'; ctx.shadowBlur = 8; ctx.setLineDash([10, 7]);
         ctx.beginPath(); ctx.arc(x, y, rs.range, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         if (rs.min) { ctx.beginPath(); ctx.arc(x, y, rs.min, 0, Math.PI * 2); ctx.stroke(); }
