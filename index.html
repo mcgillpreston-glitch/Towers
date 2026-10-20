@@ -135,18 +135,18 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .join input:focus{outline:2px solid var(--volt);outline-offset:1px}
 .code{font:900 40px var(--f-display);letter-spacing:.2em;color:var(--ether);text-shadow:0 0 18px rgba(62,200,230,.6),0 0 30px rgba(232,201,138,.35);user-select:all;-webkit-user-select:all}
 /* planning dock */
-.dock{display:flex;flex-direction:column;gap:8px;padding:10px 14px;max-height:50vh;overflow-y:auto}
-.eco{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.dock{display:flex;flex-direction:column;gap:5px;padding:6px 12px;max-height:38vh;overflow-y:auto}
+.eco{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .stat{display:flex;flex-direction:column;gap:2px;min-width:70px}
 .stat span{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--bz-hi);white-space:nowrap}
-.stat b{font:900 22px var(--f-display);font-variant-numeric:tabular-nums;color:var(--warn);line-height:1.1;text-shadow:0 0 12px rgba(255,196,107,.5)}
+.stat b{font:900 18px var(--f-display);font-variant-numeric:tabular-nums;color:var(--warn);line-height:1.1;text-shadow:0 0 12px rgba(255,196,107,.5)}
 .stat em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
 .stat.grow{flex:1;min-width:150px}
 .xpbar{height:7px;background:#0a0716 padding-box,var(--gild) border-box;border:1px solid transparent;margin-block:3px;clip-path:polygon(3px 0,calc(100% - 3px) 0,100% 50%,calc(100% - 3px) 100%,3px 100%,0 50%)}
 .xpbar i{display:block;height:100%;background:linear-gradient(180deg,#d6fbff,var(--cr) 50%,#0e5566)}
 .spacer{flex:1}
 .shop{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.unit{position:relative;display:flex;flex-direction:column;gap:3px;text-align:left;padding:8px 10px 8px;background:linear-gradient(180deg,#171236,#0b0816) padding-box,var(--gild) border-box;border:2px solid transparent;color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px color-mix(in srgb,var(--t) 55%,transparent),inset 0 0 22px -8px var(--t)}
+.unit{position:relative;display:flex;flex-direction:column;gap:2px;text-align:left;padding:5px 8px 5px;background:linear-gradient(180deg,#171236,#0b0816) padding-box,var(--gild) border-box;border:2px solid transparent;color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px color-mix(in srgb,var(--t) 55%,transparent),inset 0 0 22px -8px var(--t)}
 .unit::after{content:"";position:absolute;right:6px;bottom:6px;width:7px;height:7px;transform:rotate(45deg);background:var(--t);box-shadow:0 0 8px var(--t);pointer-events:none}
 .unit:hover:not(:disabled){box-shadow:inset 0 0 0 1px rgba(5,3,11,.9),inset 0 0 0 2px var(--t),inset 0 0 28px -6px var(--t),0 0 16px -4px var(--t)}
 .unit:disabled{cursor:not-allowed;opacity:.5}
@@ -163,7 +163,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .g10{grid-template-columns:repeat(5,1fr)}
 .g8{grid-template-columns:repeat(4,1fr)}
 .g6{grid-template-columns:repeat(3,1fr)}
-.chip{position:relative;min-height:42px;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:3px 7px;background:linear-gradient(180deg,#120d26,#0b0816) padding-box,linear-gradient(135deg,var(--bz-hi),var(--bz-lo)) border-box;border:1.5px solid transparent;color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;text-align:left;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t,transparent) 45%,transparent),inset 0 0 14px -8px var(--t,transparent)}
+.chip{position:relative;min-height:34px;display:flex;flex-direction:column;justify-content:center;gap:1px;padding:3px 7px;background:linear-gradient(180deg,#120d26,#0b0816) padding-box,linear-gradient(135deg,var(--bz-hi),var(--bz-lo)) border-box;border:1.5px solid transparent;color:var(--ink);cursor:pointer;font-family:var(--f-ui);min-width:0;text-align:left;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--t,transparent) 45%,transparent),inset 0 0 14px -8px var(--t,transparent)}
 .chip.empty{background:rgba(5,3,11,.5) padding-box,linear-gradient(135deg,rgba(232,201,138,.3),rgba(90,63,28,.3)) border-box;border-style:dashed;color:var(--muted)}
 .chip.sel{outline:2px solid var(--ether);outline-offset:1px;box-shadow:0 0 16px rgba(62,200,230,.6)}
 .chip.target{background:linear-gradient(180deg,#120d26,#0b0816) padding-box,linear-gradient(135deg,#9ff0ff,#3ec8e6) border-box;border-style:dashed}
@@ -171,8 +171,8 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .chip .cn{font:700 11px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .cs{font-size:10px;letter-spacing:.06em}
 .chip .ml{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-.unit .ti{position:absolute;right:8px;top:30px;width:58px;height:40px;object-fit:contain;filter:drop-shadow(0 2px 4px #000);pointer-events:none}
-.unit .ud{padding-right:62px}
+.unit .ti{position:absolute;right:6px;top:26px;width:46px;height:30px;object-fit:contain;filter:drop-shadow(0 2px 4px #000);pointer-events:none}
+.unit .ut{padding-right:50px}
 .chip .ti{position:absolute;right:3px;bottom:2px;width:34px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 2px #000);pointer-events:none}
 .chip .ti.core{width:26px;height:26px;border-radius:50%;bottom:auto;top:50%;transform:translateY(-50%)}
 .chip .ci{position:absolute;right:5px;top:5px;display:flex;gap:5px}
@@ -183,9 +183,9 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .lockb{text-align:center;font:700 9px var(--f-display);letter-spacing:.16em;padding:3px 5px;border:1px solid var(--bz-hi);background:#0b0816;color:var(--muted);cursor:pointer}
 .lockb.on{color:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(255,200,80,.5)}
 .mode input[type=text]{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:inherit;min-width:0}.mode .btns{flex-wrap:nowrap}.namebar{display:flex;gap:12px;flex-wrap:wrap}.namebar label{display:flex;flex-direction:column;gap:3px;font:700 10px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}.namebar input{background:#0b0816;border:1px solid var(--bz-hi);color:var(--ink);padding:6px 8px;font:14px var(--f-body,inherit);letter-spacing:0;text-transform:none;width:170px}.filebtn{position:relative;overflow:hidden}.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}table.wk tr.me th,table.wk tr.me td{color:var(--warn)}
-.witness{position:absolute;left:29%;right:29%;top:40%;display:flex;justify-content:space-between;gap:14px;pointer-events:none;z-index:6}
-.wp{max-width:49%;opacity:0;transition:opacity .9s;padding:5px 9px;background:rgba(8,6,22,.5);border-top:1px solid rgba(255,255,255,.15);font-size:13px;line-height:1.35;text-shadow:0 0 8px rgba(160,200,255,.45);animation:wshim 3.2s ease-in-out infinite}
-.wp{display:flex;gap:9px;align-items:center}.wp img{width:68px;height:102px;object-fit:cover;flex:none;filter:drop-shadow(0 0 8px rgba(140,190,255,.6))}.wp.r img{filter:drop-shadow(0 0 8px rgba(255,130,110,.6))}.wp>div{min-width:0}
+.witness{position:absolute;left:1.5%;right:1.5%;top:5%;display:flex;justify-content:space-between;gap:14px;pointer-events:none;z-index:6}
+.wp{max-width:30%;opacity:0;transition:opacity .9s;padding:4px 7px;background:rgba(8,6,22,.5);border-top:1px solid rgba(255,255,255,.15);font-size:11px;line-height:1.35;text-shadow:0 0 8px rgba(160,200,255,.45);animation:wshim 3.2s ease-in-out infinite}
+.wp{display:flex;gap:9px;align-items:center}.wp img{width:46px;height:70px;object-fit:cover;flex:none;filter:drop-shadow(0 0 8px rgba(140,190,255,.6))}.wp.r img{filter:drop-shadow(0 0 8px rgba(255,130,110,.6))}.wp>div{min-width:0}
 .bark{position:absolute;left:50%;bottom:12px;transform:translate(-50%,10px);display:flex;gap:10px;align-items:center;max-width:min(520px,86%);padding:6px 12px 6px 8px;background:rgba(8,6,22,.82);border:1px solid var(--bz-hi);opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;z-index:7}
 .bark.on{opacity:1;transform:translate(-50%,0)}.bark img{width:44px;height:66px;object-fit:cover;flex:none}.bark b{display:block;font:700 10px var(--f-display);letter-spacing:.16em;text-transform:uppercase}.bark .hint{font-size:11px;margin-left:6px}.bark i{display:block;font-style:italic;font-size:13px;line-height:1.35}
 .pt{width:34px;height:51px;object-fit:cover;vertical-align:middle;margin-right:8px}.crl{display:flex;gap:10px;align-items:center}
@@ -211,7 +211,7 @@ table.wk th{white-space:nowrap}
 @keyframes cdpop{0%{transform:translateX(-50%) scale(1.9);opacity:0}15%{opacity:1}100%{transform:translateX(-50%) scale(1);opacity:1}}
 .drop{outline:2px dashed var(--ether);outline-offset:1px;background-color:rgba(62,200,230,.12)}
 [data-act^="slot:i:"]{touch-action:none}
-.upgs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.upgs{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
 .upgs .zl{margin:0}.upgs .h{color:var(--muted);font-size:12px}
 .upg .pips{letter-spacing:.1em;color:var(--ether);font-size:9px}
 .calls{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
@@ -263,7 +263,7 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
   .card h1{font-size:23px}
   .code{font-size:30px}
   .hpnum{min-width:30px;height:30px;font-size:14px}
-  .dock{max-height:56vh}
+  .dock{max-height:44vh}
   .sound{gap:8px;padding-right:8px}
   .sound input[type=range]{width:64px}
 }
@@ -4456,13 +4456,14 @@ function renderDock() {
   }
   const locked = P.ready, onBoard = boardCount(P), interest = S.me >= 0 ? interestFor(S.me) : interestOf(P.gold), comeback = S.me >= 0 ? comebackFor(S.me) : 0;
   const need = XPNEED[P.level];
+  const upgH = '<span class="upgs">' + UPG.map((U, i) => { const lv = P.up[i], nx = lv < 3 ? U.cost[lv] : 0; return '<button type="button" class="btn small upg" data-act="upg:' + i + '" data-tip="' + U.name + ' · level ' + lv + ' / 3. ' + U.fx + (lv < 3 ? ' Next level: ' + nx + ' gold.' : ' Maxed.') + ' Lasts the whole match."' + (locked || lv >= 3 || P.gold < nx ? ' disabled' : '') + '>' + U.name.replace(/^Army /, '') + ' <span class="pips">' + '●'.repeat(lv) + '○'.repeat(3 - lv) + '</span> <b>' + (lv >= 3 ? 'MAX' : nx + 'g') + '</b></button>'; }).join('') + '</span>';
   let h = '<div class="eco">' +
     '<div class="stat" data-tip="Gold. Each round pays 9 + interest (+1 at 4 gold, then +1 per 6 more, max +5 at 28 gold; it only counts gold up to 10 above the rival pile, and the poorer side gets comeback pay: +1 per 10 gold behind, max +3) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (comeback ? ' · +' + comeback + ' comeback' : '') + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
     '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small bet' + (P.bet ? ' on' : '') + '" data-act="bet" data-tip="Wager gold on winning this round (key B cycles 0, 5, 10, 20). Win: stake x' + betOdds(S.me)[0] + ' back. Flawless win (your keep untouched, theirs damaged): x' + betOdds(S.me)[1] + '. Draw: refunded. Loss: stake gone. The odds shrink when you lead on HP or streak and grow when you trail. Wagered gold earns no interest."' + (locked ? ' disabled' : '') + '>Wager <b>' + (P.bet ? P.bet + 'g' : 'off') + ' <em>x' + betOdds(S.me)[0] + '</em></b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
-    sound +
+    sound + upgH +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
     '</div><div class="shop">';
   for (let i = 0; i < 5; i++) {
@@ -4472,9 +4473,9 @@ function renderDock() {
     const mst = mergeStar(P, r);
     h += '<div class="sc"><button type="button" class="unit' + (mst ? ' merge' : '') + '" ' + (mst ? 'data-merge="' + r + ':' + mst + '" ' : '') + 'data-act="buy:' + i + '" data-tipk="r:' + r + '" style="--t:' + TIER_C[R.tier] + '"' + (locked || P.gold < R.tier ? ' disabled' : '') + '>' +
       (own ? '<span class="own">' + own + '/3</span>' : '') + wIcon(R.id) +
-      '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span><span class="ud">' + R.short + '</span></button><span class="lockb' + (P.lock[i] ? ' on' : '') + '" data-act="lock:' + i + '" data-tip="' + (P.lock[i] ? 'Locked: this turret stays in the shop through rerolls and into the next round. Tap to unlock.' : 'Lock this turret so rerolls and the next round keep it.') + '">' + (P.lock[i] ? 'LOCKED' : 'LOCK') + '</span></div>';
+      '<span class="un">' + R.name + '<em>' + R.tier + 'g</em></span><span class="ut">' + R.traits.map(t => TRAITS[t].name).join(' · ') + '</span></button><span class="lockb' + (P.lock[i] ? ' on' : '') + '" data-act="lock:' + i + '" data-tip="' + (P.lock[i] ? 'Locked: this turret stays in the shop through rerolls and into the next round. Tap to unlock.' : 'Lock this turret so rerolls and the next round keep it.') + '">' + (P.lock[i] ? 'LOCKED' : 'LOCK') + '</span></div>';
   }
-  h += '</div><div class="upgs"><span class="zl">Army upgrades</span>' + UPG.map((U, i) => { const lv = P.up[i], nx = lv < 3 ? U.cost[lv] : 0; return '<button type="button" class="btn small upg" data-act="upg:' + i + '" data-tip="' + U.name + ' · level ' + lv + ' / 3. ' + U.fx + (lv < 3 ? ' Next level: ' + nx + ' gold.' : ' Maxed.') + ' Lasts the whole match."' + (locked || lv >= 3 || P.gold < nx ? ' disabled' : '') + '>' + U.name + ' <span class="pips">' + '●'.repeat(lv) + '○'.repeat(3 - lv) + '</span> <b>' + (lv >= 3 ? 'MAX' : nx + 'g') + '</b></button>'; }).join('') + '<span class="h">Mechs you send are tougher, faster and hit the keep harder.</span></div><div class="zones">' +
+  h += '</div><div class="zones">' +
     '<div><div class="zl">Keep mounts · ' + onBoard + ' / ' + P.level + '</div><div class="g g10">' + P.board.map((u, i) => chipHtml(u, 'm', i, MOUNT_LABEL[i] + ' <b class="kb">' + ((i + 1) % 10) + '</b>', locked)).join('') + '</div></div>' +
     '<div><div class="zl">Bench</div><div class="g g8">' + P.bench.map((u, i) => chipHtml(u, 'b', i, '', locked)).join('') + '</div></div>' +
     '<div class="zcores"><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6">';
