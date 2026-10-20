@@ -291,6 +291,130 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 .tmenu .th{margin:0;font-size:12px;line-height:1.35;opacity:.78}
 select{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:4px 6px}
 select option{color:#111}
+
+/* ---- Mobile layout (data-ui="mobile"): chosen automatically from the device, or forced in Settings ---- */
+html[data-ui=mobile] body{font-size:14px}
+html[data-ui=mobile] .app{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-width:none;gap:5px;padding:6px}
+html[data-ui=mobile] .app.battle header.hud{padding-block:3px}
+html[data-ui=mobile] .panel{border-width:2px}
+html[data-ui=mobile] .panel::before,html[data-ui=mobile] .panel::after{display:none}
+html[data-ui=mobile] header.hud{grid-template-columns:minmax(0,1fr) 92px minmax(0,1fr);gap:5px;padding:4px 5px}
+html[data-ui=mobile] .team{padding:3px 6px;gap:3px}
+html[data-ui=mobile] .tname{gap:5px}
+html[data-ui=mobile] .tname b{font-size:12px;letter-spacing:.05em}
+html[data-ui=mobile] .tname span,html[data-ui=mobile] .hplab{display:none}
+html[data-ui=mobile] .hprow{gap:5px}
+html[data-ui=mobile] .hpbar{height:10px}
+html[data-ui=mobile] .hpnum{min-width:28px;height:28px;font-size:13px;border-width:2px}
+html[data-ui=mobile] .sub{font-size:10px;gap:5px;letter-spacing:.06em}
+html[data-ui=mobile] .clock{padding:4px 6px 4px}
+html[data-ui=mobile] .phase,html[data-ui=mobile] .rnd{font-size:9px;letter-spacing:.12em}
+html[data-ui=mobile] .phase::before,html[data-ui=mobile] .phase::after,html[data-ui=mobile] .rnd::before,html[data-ui=mobile] .rnd::after{margin:0 3px;width:3px;height:3px}
+html[data-ui=mobile] .time{font-size:22px;margin:2px 0}
+html[data-ui=mobile] .witness,html[data-ui=mobile] .bark{display:none}
+html[data-ui=mobile] #cdown{font-size:56px}
+/* touch targets */
+html[data-ui=mobile] .btn{min-height:40px;padding:8px 12px;letter-spacing:.08em}
+html[data-ui=mobile] .btn.small{min-height:38px;padding:6px 9px;font-size:10.5px}
+html[data-ui=mobile] .chip{min-height:40px}
+html[data-ui=mobile] .lockb{padding:6px 5px;font-size:9px}
+html[data-ui=mobile] .chip .kb,html[data-ui=mobile] .unit .ud{display:none}
+html[data-ui=mobile] select,html[data-ui=mobile] input[type=text]{min-height:38px;font-size:16px}
+/* the sound strip: just the buttons, volume lives in Settings */
+html[data-ui=mobile] .sound{right:4px;top:4px;bottom:auto;gap:4px;padding:2px;background:rgba(8,6,22,.72);border-width:1px}
+html[data-ui=mobile] .sound label{display:none}
+html[data-ui=mobile] .sound .btn.small{min-height:32px;padding:4px 8px;font-size:10px;letter-spacing:.06em}
+html[data-ui=mobile] #statsBtn,html[data-ui=mobile] #menuBtn{font-size:0}
+html[data-ui=mobile] #statsBtn::before{content:"Stats";font-size:10px}
+html[data-ui=mobile] #menuBtn::before{content:"Menu";font-size:10px}
+/* the card overlay becomes a full-screen page instead of a small scrolling window */
+html[data-ui=mobile] .overlay{position:fixed;inset:0;z-index:30;padding:54px 6px 6px;align-items:flex-start;pointer-events:none}
+html[data-ui=mobile] .overlay:has(.card){background:rgba(4,3,12,.8);pointer-events:auto}
+html[data-ui=mobile] .card,html[data-ui=mobile] .card.narrow,html[data-ui=mobile] .card.post{width:100%;max-height:100%;padding:14px 12px;gap:10px}
+html[data-ui=mobile] .card h1{font-size:22px}
+html[data-ui=mobile] .card.post h1{font-size:20px}
+html[data-ui=mobile] .card.wikic{width:calc(100vw - 12px);max-height:94dvh}
+html[data-ui=mobile] .modes,html[data-ui=mobile] .rules,html[data-ui=mobile] .pcols{grid-template-columns:1fr}
+html[data-ui=mobile] .setrow{flex-direction:column;align-items:stretch;gap:10px}
+html[data-ui=mobile] .setrow input[type=range]{width:100%}
+/* portrait: field on top, planning tools below with everything visible at once */
+html[data-ui=mobile][data-o=p] .stage{flex:none;width:100%;aspect-ratio:16/9;min-height:0}
+html[data-ui=mobile][data-o=p] .dock{flex:1;min-height:0;max-height:none;padding:6px;gap:4px;scrollbar-width:none}
+html[data-ui=mobile] .dock::-webkit-scrollbar{display:none}
+html[data-ui=mobile] .eco{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+html[data-ui=mobile] .eco>*{order:5;min-width:0}
+html[data-ui=mobile] .eco>.stat{grid-column:span 2;order:1}
+html[data-ui=mobile] .eco>.stat.grow{order:2;min-width:0}
+html[data-ui=mobile] .eco>.btn.prime{grid-column:span 2;order:3}
+html[data-ui=mobile] .eco>.btn:not(.prime){grid-column:span 2}
+html[data-ui=mobile] .eco>.spacer{display:none}
+html[data-ui=mobile] .eco>.upgs{grid-column:1/-1;order:6;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+html[data-ui=mobile] .eco .btn{padding:3px 2px;text-align:center;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;min-height:36px}
+html[data-ui=mobile] .eco .btn.prime{font-size:13px;min-height:40px}
+html[data-ui=mobile] .stat b{font-size:16px}
+html[data-ui=mobile] .stat span{font-size:9px;letter-spacing:.12em;white-space:normal}
+html[data-ui=mobile] .stat em{display:none}
+html[data-ui=mobile] .stat.grow{min-width:0;gap:0}
+html[data-ui=mobile] .stat.grow span{font-size:8.5px;letter-spacing:.06em;line-height:1.25}
+html[data-ui=mobile] .xpbar{margin-block:1px}
+html[data-ui=mobile] .sc{min-width:0}
+html[data-ui=mobile] .unit{padding:3px 5px;min-width:0;overflow:hidden}
+html[data-ui=mobile] .unit .un{font-size:10.5px;padding:2px 4px;margin:-1px -3px 0;white-space:nowrap}
+html[data-ui=mobile] .unit .ut{font-size:8px;letter-spacing:.06em;padding-right:34px}
+html[data-ui=mobile] .unit .ti{width:32px;height:22px;top:20px;right:3px}
+html[data-ui=mobile] .unit::after{display:none}
+html[data-ui=mobile] .sc{gap:2px}
+html[data-ui=mobile] .lockb{padding:2px 3px;font-size:8px}
+html[data-ui=mobile] .zl{margin-bottom:2px;font-size:9px}
+html[data-ui=mobile] .zones{grid-template-columns:1fr;gap:3px}
+html[data-ui=mobile] .g{gap:3px}
+html[data-ui=mobile] .g10{grid-template-columns:repeat(5,1fr)}
+html[data-ui=mobile] .g8{grid-template-columns:repeat(4,1fr)}
+html[data-ui=mobile] .g6{grid-template-columns:repeat(6,1fr)}
+html[data-ui=mobile] .chip{min-height:33px;padding:2px 4px}
+html[data-ui=mobile] .chip .cn{font-size:9.5px}
+html[data-ui=mobile] .chip .ml{font-size:8px;letter-spacing:.06em}
+html[data-ui=mobile] .chip .ti{width:24px;height:18px}
+html[data-ui=mobile] .selbar{font-size:11.5px;min-height:0;gap:6px}
+html[data-ui=mobile] .selbar .h{display:none}
+html[data-ui=mobile][data-o=p] .shop{grid-template-columns:repeat(3,1fr);gap:4px}
+html[data-ui=mobile][data-o=p] .dock .cline::after{content:"Turn your phone sideways for a bigger battlefield.";flex-basis:100%;color:var(--muted);font-size:12px}
+html[data-ui=mobile] .setrow label{white-space:normal}
+/* landscape phone: the field fills the screen, planning tools slide up as a sheet */
+html[data-ui=mobile][data-o=l] .app{padding:3px 6px;gap:3px}
+html[data-ui=mobile][data-o=l] .stage{flex:1;min-height:0}
+html[data-ui=mobile][data-o=l] header.hud{grid-template-columns:minmax(0,1fr) 150px minmax(0,1fr);padding:2px 5px}
+html[data-ui=mobile][data-o=l] .team{flex-direction:row;align-items:center;justify-content:space-between;padding:2px 6px}
+html[data-ui=mobile][data-o=l] .team.r{flex-direction:row-reverse}
+html[data-ui=mobile][data-o=l] .hprow{width:auto;flex:1}
+html[data-ui=mobile][data-o=l] .clock{display:flex;gap:8px;align-items:center;justify-content:center;padding:2px 8px}
+html[data-ui=mobile][data-o=l] .time{margin:0;font-size:18px}
+html[data-ui=mobile][data-o=l] .phase::before,html[data-ui=mobile][data-o=l] .phase::after,html[data-ui=mobile][data-o=l] .rnd::before,html[data-ui=mobile][data-o=l] .rnd::after{display:none}
+html[data-ui=mobile][data-o=l] .dock{position:fixed;left:0;right:0;bottom:0;z-index:25;max-height:62dvh;padding:5px 8px 6px;transform:translateY(105%);transition:transform .22s ease;overflow-y:auto}
+html[data-ui=mobile][data-o=l][data-sheet="1"] .dock{transform:none}
+html[data-ui=mobile][data-o=l]:not([data-plan]) .dock{transform:none;max-height:none;padding:3px 8px;background:rgba(8,6,22,.78);border-width:1px;overflow:visible}
+html[data-ui=mobile][data-o=l]:not([data-plan]) .cline{gap:8px;font-size:12px;flex-wrap:nowrap}
+html[data-ui=mobile][data-o=l]:not([data-plan]) .cline{display:none}
+html[data-ui=mobile][data-o=l]:not([data-plan]) .dock:not(:has(.calls)){display:none}
+html[data-ui=mobile][data-o=l]:not([data-plan]) .cline .btn{min-height:30px;padding:3px 6px;font-size:10px}
+html[data-ui=mobile][data-o=l] .eco{grid-template-columns:repeat(12,1fr)}
+html[data-ui=mobile][data-o=l] .eco>.stat{grid-column:span 1}
+html[data-ui=mobile][data-o=l] .eco>.stat.grow{grid-column:span 3}
+html[data-ui=mobile][data-o=l] .eco>.btn.prime{grid-column:span 2}
+html[data-ui=mobile][data-o=l] .eco>.btn:not(.prime){grid-column:span 2}
+html[data-ui=mobile][data-o=l] .eco>.upgs{grid-column:1/-1;order:6}
+html[data-ui=mobile][data-o=l] .eco .btn{min-height:32px}
+html[data-ui=mobile][data-o=l] .stat em{display:none}
+html[data-ui=mobile][data-o=l] .shop{grid-template-columns:repeat(5,1fr);gap:4px}
+html[data-ui=mobile][data-o=l] .zones{grid-template-columns:5fr 4fr 3fr;gap:6px}
+html[data-ui=mobile][data-o=l] .g6{grid-template-columns:repeat(3,1fr)}
+html[data-ui=mobile][data-o=l] .chip{min-height:30px}
+html[data-ui=mobile][data-o=l] .overlay{padding-top:36px}
+html[data-ui=mobile][data-o=l] .sound{top:4px;right:auto;left:4px}
+#sheetBtn{display:none}
+html[data-ui=mobile][data-o=l] #sheetBtn{display:block;position:fixed;right:8px;bottom:8px;z-index:26;min-height:40px}
+html[data-ui=mobile][data-o=l] #sheetBtn[hidden]{display:none}
+html[data-ui=mobile][data-o=l][data-sheet="1"] #sheetBtn{bottom:auto;top:40px}
 </style><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style></head><body>
 <div id="tip" role="tooltip" hidden></div>
 <div class="app">
@@ -316,6 +440,7 @@ select option{color:#111}
   </div>
 
   <div class="dock panel" id="dock"></div>
+  <button class="btn prime small" id="sheetBtn" type="button" hidden>Build</button>
 </div>
 
 <script>
@@ -1562,6 +1687,18 @@ const ENERGY = {menu: 0.35, intro: 0.6, groove: 0.75, drop: 1, build: 0.55, drop
 // the soundtrack: the theme plays in menus and planning, the battle track plays in combat
 const TRACKS = {theme: 'ballista_bby.mp3', battle: 'OoooooOOOooo.mp3'};
 const VOL = {music: 0.7, fx: 0.8};
+const UIP = {mode: 'auto'};
+try { const u = localStorage.getItem('bk-ui'); if (u === 'mobile' || u === 'desktop') UIP.mode = u; } catch (e) {}
+function uiAuto() { let c = false; try { c = matchMedia('(pointer:coarse)').matches; } catch (e) {} return (c && Math.min(innerWidth, innerHeight) <= 820) || innerWidth <= 640; }
+function uiIsMobile() { return UIP.mode === 'mobile' || (UIP.mode === 'auto' && uiAuto()); }
+function applyUi() {
+  const r = document.documentElement;
+  r.dataset.ui = uiIsMobile() ? 'mobile' : 'desktop';
+  r.dataset.o = innerHeight > innerWidth ? 'p' : 'l';
+}
+applyUi();
+addEventListener('resize', applyUi); addEventListener('orientationchange', applyUi);
+function saveUi() { try { localStorage.setItem('bk-ui', UIP.mode); } catch (e) {} }
 function saveVideo() { try { localStorage.setItem('bk-video', JSON.stringify(VIDEO)); } catch (e) {} }
 try { const v = JSON.parse(localStorage.getItem('bk-vol') || 'null'); if (v && typeof v === 'object') { if (Number.isFinite(v.music)) VOL.music = clamp(v.music, 0, 1); if (Number.isFinite(v.fx)) VOL.fx = clamp(v.fx, 0, 1); if (v.muted) muted = true; } } catch (e) {}
 MUS.tracks = {};
@@ -4518,8 +4655,19 @@ $('dock').addEventListener('mouseover', e => {
   S.ui.mhl = m; applyMergeHl();
 });
 $('dock').addEventListener('mouseleave', () => { if (S.ui.mhl) { S.ui.mhl = null; applyMergeHl(); } });
+let sheetPh = '';
+function syncSheet(planning) {
+  const r = document.documentElement, b = $('sheetBtn');
+  b.hidden = !planning;
+  if (planning) r.dataset.plan = '1'; else delete r.dataset.plan;
+  const ph = planning ? 'plan' : '';
+  if (ph !== sheetPh) { sheetPh = ph; if (planning) r.dataset.sheet = '1'; else delete r.dataset.sheet; }
+  b.textContent = r.dataset.sheet === '1' ? 'Hide' : 'Build';
+}
+$('sheetBtn').addEventListener('click', () => { const r = document.documentElement; if (r.dataset.sheet === '1') delete r.dataset.sheet; else r.dataset.sheet = '1'; $('sheetBtn').textContent = r.dataset.sheet === '1' ? 'Hide' : 'Build'; fit(); });
 function renderDock() {
   const d = $('dock'), P = myP(), sound = '';
+  syncSheet(!!P && S.mode !== 'demo' && S.phase === 'setup');
   if (!P || S.mode === 'demo') {
     d.innerHTML = '<div class="cline"><span class="h">' + (S.mode === 'demo' ? 'Two CPU keeps spar while you choose a mode.' : S.me < 0 && S.mode === 'guest' && S.phase !== 'connecting' && S.phase !== 'joined' ? 'Spectating this match.' : 'Planning tools appear when the match starts.') + '</span><span class="spacer"></span>' + sound + '</div>';
     return;
@@ -4708,7 +4856,8 @@ function wikiHtml() {
 }
 function settingsHtml() {
   const opts = Object.keys(RES).map(k => '<option value="' + k + '"' + (VIDEO.res === k ? ' selected' : '') + '>' + RES[k].name + (k === '4k' ? ' (default)' : '') + '</option>').join('') + '<option value="auto"' + (VIDEO.res === 'auto' ? ' selected' : '') + '>Match my display</option>';
-  return '<h2>Audio</h2><div class="setrow">' +
+  return '<h2>Layout</h2><div class="setrow"><label>Interface <select id="mUi" aria-label="Interface layout"><option value="auto"' + (UIP.mode === 'auto' ? ' selected' : '') + '>Automatic (' + (uiAuto() ? 'phone' : 'desktop') + ' for this device)</option><option value="mobile"' + (UIP.mode === 'mobile' ? ' selected' : '') + '>Mobile / touch</option><option value="desktop"' + (UIP.mode === 'desktop' ? ' selected' : '') + '>Desktop</option></select></label></div>' +
+    '<h2>Audio</h2><div class="setrow">' +
       '<label>Music <input type="range" id="mVolMusic" min="0" max="100" value="' + Math.round(VOL.music * 100) + '" aria-label="Music volume"></label>' +
       '<label>Effects <input type="range" id="mVolFx" min="0" max="100" value="' + Math.round(VOL.fx * 100) + '" aria-label="Effects volume"></label>' +
       '<button class="btn small" data-act="mute" type="button">' + (muted ? 'Unmute' : 'Mute') + '</button></div>' +
@@ -4724,6 +4873,7 @@ function bindSettings() {
   const mm = $('mVolMusic'), mf = $('mVolFx');
   if (mm) mm.addEventListener('input', e => { VOL.music = clamp((+e.target.value || 0) / 100, 0, 1); $('volMusic').value = e.target.value; applyVolumes(); });
   if (mf) mf.addEventListener('input', e => { VOL.fx = clamp((+e.target.value || 0) / 100, 0, 1); $('volFx').value = e.target.value; applyVolumes(); });
+  if ($('mUi')) $('mUi').addEventListener('change', e => { UIP.mode = ['mobile', 'desktop'].includes(e.target.value) ? e.target.value : 'auto'; saveUi(); applyUi(); fit(); overlaySig = ''; });
   if ($('mShake')) $('mShake').addEventListener('change', e => { VIDEO.shake = !!e.target.checked; saveVideo(); });
   if ($('mAdapt')) $('mAdapt').addEventListener('change', e => { VIDEO.adapt = !!e.target.checked; PERF.step = 0; PERF.n = 0; saveVideo(); fit(); });
   if ($('mLow')) $('mLow').addEventListener('change', e => { VIDEO.low = !!e.target.checked; saveVideo(); });

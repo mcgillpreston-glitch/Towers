@@ -58,3 +58,7 @@ Barrier HP 400 -> 240, cost 6 -> 7 gold, and a damaged barrier now mends only ha
 
 ## Keep health windows
 `bg_{4k,1440,1080,720}.webp` are now RGBA (from `Battlefield_Health_Window_Marks_4K.png`): each keep has a transparent pointed-arch window. `drawKeepWindows()` paints a dark glass backing plus glowing faction liquid (keep HP / `KEEP_HP`, drains top to bottom, calibration in `art/battlefield/keep_health_voids.json`) under the background, so the gold tracery stays in front. The old keep bar above each keep is dropped on this backdrop; its text label stays. The menu (`bg_menu_*`) and end-screen (`bg_red_*`, `bg_blue_*`) paintings are opaque and draw no windows. Backgrounds are cache-busted with `?v=3`.
+
+## Mobile layout
+
+`html[data-ui]` is `mobile` or `desktop`; `data-o` is `p` (portrait) or `l` (landscape). The default is automatic: mobile when the device has a coarse pointer and its short side is 820 px or less, or the window is 640 px wide or less. Settings > Layout > Interface can force Mobile or Desktop (`bk-ui` in localStorage). Portrait stacks HUD, 16:9 field and a dock with no inner scroll; landscape gives the field the screen and slides the planning dock up as a sheet (Build/Hide button).
