@@ -94,9 +94,10 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .card.post{width:min(1060px,calc(100% - 16px));padding:14px 20px;gap:8px}
 .card.post h1{font-size:26px}
 .pwhy p{margin:0 0 3px;font-size:13px;max-width:none;color:#e6e2ff}
+.posthead{display:flex;justify-content:space-between;align-items:center;gap:14px}.posthead h1{font-size:26px}.posthead .btn{flex:none}
 .pcols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .pcol h2{margin-bottom:4px}
-.pw{display:grid;grid-template-columns:52px minmax(120px,1.5fr) 1fr 66px 78px;align-items:center;gap:6px;padding:2px 4px;font-size:11.5px;background:rgba(0,0,0,.3);margin-bottom:2px}
+.pw{display:grid;grid-template-columns:34px minmax(120px,1.5fr) 1fr 48px 58px;align-items:center;gap:6px;padding:2px 4px;font-size:11.5px;background:rgba(0,0,0,.3);margin-bottom:2px}
 .pw.empty,.pw.idle{opacity:.55}
 .pw .pl{color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.06em}
 .pw .pn{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -4664,25 +4665,29 @@ function postHtml() {
   const mx = Math.max(1, ...sd.flatMap(x => x.sl.map(y => y ? y[2] : 0)));
   const rowT = (lab, f) => '<tr><th>' + lab + '</th><td style="color:' + SIDES[0].c + '">' + f(0) + '</td><td style="color:' + SIDES[1].c + '">' + f(1) + '</td></tr>';
   const col = i => {
-    const x = sd[i], tot = Math.max(1, x.d), best = Math.max(...x.sl.map(y => y ? y[2] : 0));
-    let h = '<div class="pcol"><h2 style="color:' + SIDES[i].c + '">' + nm(i) + ' · weapons by slot</h2>';
+    const x = sd[i], best = Math.max(...x.sl.map(y => y ? y[2] : 0));
+    let h = '<div class="pcol"><h2 style="color:' + SIDES[i].c + '">' + nm(i) + '</h2>', rows = 0;
     x.sl.forEach((y, k) => {
-      if (!y) { h += '<div class="pw empty"><span class="pl">' + MOUNT_LABEL[k] + '</span><span class="pn">empty</span></div>'; return; }
-      const R = ROSTER[y[0]], pct = Math.round(100 * y[2] / tot), idle = y[2] === 0, mvp = !idle && y[2] === best;
+      if (!y) return;
+      const R = ROSTER[y[0]], idle = y[2] === 0, mvp = !idle && y[2] === best; rows++;
       h += '<div class="pw' + (idle ? ' idle' : '') + '"><span class="pl">' + MOUNT_LABEL[k] + '</span><span class="pn" style="color:' + TIER_C[R.tier] + '">' + R.name + ' <i style="color:' + STAR_C[y[1]] + '">' + '★'.repeat(y[1]) + '</i>' + (mvp ? ' <b class="mvp">MVP</b>' : '') + (idle ? ' <b class="idl">IDLE</b>' : '') + '</span>' +
-        '<span class="pb"><i style="width:' + Math.round(100 * y[2] / mx) + '%;background:' + SIDES[i].c + '"></i></span><span class="pv">' + y[2] + ' <em>' + pct + '%</em></span><span class="pk">' + y[3] + ' hit · ' + y[4] + ' kill</span></div>';
+        '<span class="pb"><i style="width:' + Math.round(100 * y[2] / mx) + '%;background:' + SIDES[i].c + '"></i></span><span class="pv">' + y[2] + '</span><span class="pk">' + y[4] + ' kill' + (y[4] === 1 ? '' : 's') + '</span></div>';
     });
-    if (x.st) h += '<div class="pw"><span class="pl">Storm</span><span class="pn">Trait lightning</span><span class="pb"><i style="width:' + Math.round(100 * x.st / mx) + '%;background:' + SIDES[i].c + '"></i></span><span class="pv">' + x.st + ' <em>' + Math.round(100 * x.st / tot) + '%</em></span><span class="pk">– · ' + x.sk + ' kill</span></div>';
+    if (x.st) { rows++; h += '<div class="pw"><span class="pl">Storm</span><span class="pn">Trait lightning</span><span class="pb"><i style="width:' + Math.round(100 * x.st / mx) + '%;background:' + SIDES[i].c + '"></i></span><span class="pv">' + x.st + '</span><span class="pk">' + x.sk + ' kill' + (x.sk === 1 ? '' : 's') + '</span></div>'; }
+    if (!rows) h += '<p class="hint">No turrets fielded.</p>';
     return h + '</div>';
   };
   const decided = S.p[0].hp <= 0 || S.p[1].hp <= 0, dw = S.p[0].hp === S.p[1].hp ? -1 : S.p[0].hp > S.p[1].hp ? 0 : 1;
-  return (decided && S.mode !== 'demo' ? outcomeBanner(dw) : '') + '<div class="kicker">Round ' + P.r + ' · After-action report · ' + P.t + 's of combat</div><h1>' + P.head + '</h1>' +
-    '<div class="pwhy">' + P.ln.map(t => '<p>' + t + '</p>').join('') + '</div>' +
+  const keep = P.ln.filter((t, i) => i === 0 || /^(Biggest leak|Idle turrets)/.test(t)).map(t => t.replace(/^Biggest leak: ([^:]+): /, 'Weak spot · $1 — ').replace(/^Biggest leak: /, 'Weak spot · '));
+  const nxt = (S.mode === 'cpu' || S.mode === 'host') ? '<button class="btn prime" data-act="skipres" type="button">Next round ▸</button>' : '<span class="hint">Next round starts shortly.</span>';
+  const leaks = sd[0].nl || sd[1].nl;
+  return (decided && S.mode !== 'demo' ? outcomeBanner(dw) : '') +
+    '<div class="posthead"><div><div class="kicker">Round ' + P.r + ' · ' + P.t + 's of combat</div><h1>' + P.head + '</h1></div>' + nxt + '</div>' +
+    '<div class="pwhy">' + keep.map(t => '<p>' + t + '</p>').join('') + '</div>' +
     '<table class="stats"><thead><tr><th></th><th style="color:' + SIDES[0].c + '">' + nm(0) + '</th><th style="color:' + SIDES[1].c + '">' + nm(1) + '</th></tr></thead><tbody>' +
-      rowT('Hits landed', i => sd[i].h) + rowT('Damage dealt', i => sd[i].d) + rowT('Kills', i => sd[i].k) + rowT('Keep HP left', i => sd[i].kp) + rowT('Enemies leaked into own keep', i => sd[i].nl) +
+      rowT('Damage dealt', i => sd[i].d) + rowT('Kills', i => sd[i].k) + rowT('Keep HP left', i => sd[i].kp) + (leaks ? rowT('Leaked into keep', i => sd[i].nl) : '') +
     '</tbody></table>' +
-    '<div class="pcols">' + col(0) + col(1) + '</div>' +
-    ((S.mode === 'cpu' || S.mode === 'host') ? '<div class="btns"><button class="btn prime" data-act="skipres" type="button">Next round ▸</button></div>' : '<p class="hint">Next round starts shortly.</p>');
+    '<div class="pcols">' + col(0) + col(1) + '</div>';
 }
 let witKey = '';
 function updateWitness() {
