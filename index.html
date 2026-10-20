@@ -104,6 +104,12 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid v
 .mvp{color:#ffd23a;font-size:9px;letter-spacing:.1em}
 .idl{color:#ff8a8a;font-size:9px;letter-spacing:.1em}
 @media(max-width:820px){.pcols{grid-template-columns:1fr}}
+.endbanner{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 12px;margin:-4px 0 2px;border-bottom:1px solid rgba(232,201,138,.28);text-align:center}
+.endbanner span,.endbanner:not(:has(span)){font:900 clamp(36px,7vw,62px) var(--f-display);letter-spacing:.24em;text-indent:.24em;text-transform:uppercase;line-height:1}
+.endbanner em{font:700 11px var(--f-display);font-style:normal;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
+.endbanner.win span{background:linear-gradient(180deg,#fff6dc 0%,#ffd86b 55%,#e39a1c 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(255,205,90,.55))}
+.endbanner.lose span{background:linear-gradient(180deg,#ffd0c8 0%,#ff6a55 55%,#8e1d1d 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(255,80,60,.45))}
+.endbanner.draw span,.endbanner.draw:not(:has(span)){color:#cfd6ee}
 .kicker{font:700 11px var(--f-display);letter-spacing:.3em;text-transform:uppercase;color:var(--bz-hi)}
 .card h1{margin:0;font:900 32px var(--f-display);letter-spacing:.06em;text-transform:uppercase;line-height:1.1;background:linear-gradient(180deg,#fff6dc 0%,#e8c98a 40%,#9ff0ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-wrap:balance;filter:drop-shadow(0 0 10px rgba(62,200,230,.35))}
 .card h2{margin:0;font:700 12px var(--f-display);letter-spacing:.24em;text-transform:uppercase;color:var(--bz-hi)}
@@ -2504,10 +2510,12 @@ function loadImg(path) { if (typeof Image === 'undefined') return null; const im
 const TART = {barrier: TERRAIN_ART.barrier.map(loadImg), slow: TERRAIN_ART.slow.map(loadImg)};
 const BGS = {};
 function bgKey() { const r = effRes(); if (RES[r]) return r; const w = cv.width; return w >= 3000 ? '4k' : w >= 2200 ? '1440' : w >= 1500 ? '1080' : '720'; }
+// the end-of-match painting: the winner's colour is shown with the losing keep wrecked (bg_red_* when red wins, bg_blue_* when blue wins)
+const endSide = () => S && S.phase === 'over' && S.winner >= 0 ? S.winner : -1;
 function bgImage() {
-  const key = bgKey();
-  if (!(key in BGS)) BGS[key] = loadImg(RES[key].bg);
-  const im = BGS[key];
+  const key = bgKey(), es = endSide(), vk = es >= 0 ? key + (es ? 'r' : 'b') : key;
+  if (!(vk in BGS)) BGS[vk] = loadImg(es >= 0 ? RES[key].bg.replace('/bg_', '/bg_' + (es ? 'red' : 'blue') + '_') : RES[key].bg);
+  const im = BGS[vk];
   if (artOk(im)) { BGS.last = im; return im; }
   return artOk(BGS.last) ? BGS.last : null;   // keep the previous texture on screen while a new one loads
 }
@@ -2537,7 +2545,8 @@ const BGC = {cv: null, src: null, w: 0, h: 0, tint: -1};
 function bgLayer() {   // the painted battlefield with its light tint (clipped by whatever clip is active); picture and tint are baked once and re-baked only when the texture, canvas size or tint changes
   const BG = bgImage();
   if (!BG) return false;
-  const tint = S.phase === 'combat' ? 0.2 : 0.07;
+  if (S.p && (S.p[0].hp <= 30 || S.p[1].hp <= 30) && !BGS.pre) { BGS.pre = 1; const k0 = bgKey(); for (const s of ['blue', 'red']) loadImg(RES[k0].bg.replace('/bg_', '/bg_' + s + '_')); }
+  const tint = S.phase === 'combat' ? 0.2 : (endSide() >= 0 ? 0 : 0.07);
   if (!BGC.cv) BGC.cv = document.createElement('canvas');
   if (BGC.src !== BG || BGC.w !== cv.width || BGC.h !== cv.height || BGC.tint !== tint) {
     BGC.cv.width = cv.width; BGC.cv.height = cv.height;
@@ -2559,6 +2568,7 @@ function vignette() {   // the edge darkening is baked once into a small picture
   return VIG;
 }
 function drawFlyoverMask() {
+  if (endSide() >= 0) return;
   ctx.save(); ctx.beginPath();
   FLY_MASK.forEach(([u, v], i) => i ? ctx.lineTo(u * W, v * H) : ctx.moveTo(u * W, v * H));
   ctx.closePath(); ctx.clip();
@@ -3660,6 +3670,7 @@ function inFlyZone(u) {
   return x1 > FLYB[0] && x0 < FLYB[2] && y1 > FLYB[1] && y0 < FLYB[3];
 }
 function drawGround() {
+  if (endSide() >= 0) return;   // the end-of-match painting has no bridges, so no mechs or terrain are drawn on it
   // Blue (route 0) goes UNDER the flyover: a blue unit whose feet are inside the flyover patch is drawn first, the deck is laid back over it,
   // and a faint silhouette stays readable. Everything else that touches the patch (the red units on the deck, blue units still in front of it)
   // is drawn after the deck.
@@ -4640,7 +4651,8 @@ function postHtml() {
     if (x.st) h += '<div class="pw"><span class="pl">Storm</span><span class="pn">Trait lightning</span><span class="pb"><i style="width:' + Math.round(100 * x.st / mx) + '%;background:' + SIDES[i].c + '"></i></span><span class="pv">' + x.st + ' <em>' + Math.round(100 * x.st / tot) + '%</em></span><span class="pk">– · ' + x.sk + ' kill</span></div>';
     return h + '</div>';
   };
-  return '<div class="kicker">Round ' + P.r + ' · After-action report · ' + P.t + 's of combat</div><h1>' + P.head + '</h1>' +
+  const decided = S.p[0].hp <= 0 || S.p[1].hp <= 0, dw = S.p[0].hp === S.p[1].hp ? -1 : S.p[0].hp > S.p[1].hp ? 0 : 1;
+  return (decided && S.mode !== 'demo' ? outcomeBanner(dw) : '') + '<div class="kicker">Round ' + P.r + ' · After-action report · ' + P.t + 's of combat</div><h1>' + P.head + '</h1>' +
     '<div class="pwhy">' + P.ln.map(t => '<p>' + t + '</p>').join('') + '</div>' +
     '<table class="stats"><thead><tr><th></th><th style="color:' + SIDES[0].c + '">' + nm(0) + '</th><th style="color:' + SIDES[1].c + '">' + nm(1) + '</th></tr></thead><tbody>' +
       rowT('Hits landed', i => sd[i].h) + rowT('Damage dealt', i => sd[i].d) + rowT('Kills', i => sd[i].k) + rowT('Keep HP left', i => sd[i].kp) + rowT('Enemies leaked into own keep', i => sd[i].nl) +
@@ -4663,6 +4675,13 @@ function updateWitness() {
   if (!L.firstChild.src || !L.firstChild.getAttribute('src')) { L.firstChild.src = PORT.romeo; R.lastChild.src = PORT.juliette; }
   if (a) L.lastChild.lastChild.textContent = a; if (b) R.firstChild.lastChild.textContent = b;
   L.classList.toggle('on', !!ia); R.classList.toggle('on', !!ib);
+}
+// the big result line at the top of the match summary (and of the final round's report)
+function outcomeBanner(w) {
+  const me = S.me;
+  if (me < 0) return '<div class="endbanner draw">' + (w < 0 ? 'Dead even' : SIDES[w].name + ' wins') + '</div>';
+  const cls = w < 0 ? 'draw' : w === me ? 'win' : 'lose';
+  return '<div class="endbanner ' + cls + '"><span>' + (w < 0 ? 'Dead even' : w === me ? 'Victory' : 'Defeat') + '</span><em>' + (w < 0 ? 'Neither keep stands' : SIDES[w].name + ' ' + (w === me ? 'holds the field' : 'takes the field')) + '</em></div>';
 }
 function endingHtml(w) {
   if (w < 0) return '<div class="pwhy"><p class="hint">Neither Crown holds. The Span stays closed, and the Last Accord is not yet kept.</p></div>';
@@ -4748,7 +4767,7 @@ function showOverlay() {
     if (mode === 'cpu') btns = '<button class="btn prime" data-act="again" type="button">Run it back</button>';
     else if (mode === 'host') { const g = guestPresence(); btns = net && net.rematch ? '<button class="btn" type="button" disabled>Waiting for rival…</button>' : '<button class="btn prime" data-act="again" type="button">' + (g && g.r ? 'Accept rematch' : 'Rematch') + '</button>'; }
     else if (mode === 'guest' && me >= 0) btns = net && net.in.r ? '<button class="btn" type="button" disabled>Waiting for rival…</button>' : '<button class="btn prime" data-act="again" type="button">' + (S.hostRematch ? 'Accept rematch' : 'Rematch') + '</button>';
-    card('<div class="kicker">Match over · ' + S.round + ' rounds</div><h1>' + title + '</h1>' +
+    card(outcomeBanner(w) + '<div class="kicker">Match over · ' + S.round + ' rounds</div>' +
       (P ? '<p>You finished on ' + Math.max(0, Math.ceil(P.hp)) + ' HP at level ' + P.level + ', with ' + P.kills + ' kills across the match.</p>' : '') +
       '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button></div>' +
       endingHtml(w) + '<h2>Match summary</h2>' + statsHtml(true));

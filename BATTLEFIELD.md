@@ -46,3 +46,7 @@ Found with a fixed-board lab (same saved round, swap blue's board, replay) plus 
 - Armor: damage floor 50% of the hit (was 30%); Titan armor 4.
 - Slow field speed multiplier 0.70. Drone breach scaling capped at x2 and at most 12 drones in the air per side in rounds 1-3. Titan drops capped at 2 per drop before round 10.
 - CPU values Glacier higher (64). Economy tests found no exploit: hoarding, tanking, XP rush, upgrade rush and max wagers all stayed within noise or lost.
+
+## End-of-match screen
+- The match summary card opens with a large VICTORY / DEFEAT banner (spectators see "<side> wins"); the final round's after-action report carries it too.
+- When the match ends the battlefield swaps to the winner's painting: `art/battlefield/bg_red_{4k,1440,1080,720}.webp` (red wins, blue keep wrecked) or `bg_blue_*.webp` (blue wins, red keep wrecked). These have no bridges, so mechs and terrain are not drawn on them. They are preloaded once either Tactician is at 30 HP or less. A draw keeps the normal background.
