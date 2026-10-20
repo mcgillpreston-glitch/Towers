@@ -55,3 +55,6 @@ Found with a fixed-board lab (same saved round, swap blue's board, replay) plus 
 
 ## Barrier nerf
 Barrier HP 400 -> 240, cost 6 -> 7 gold, and a damaged barrier now mends only half its damage between rounds (it was fully repaired free, including at combat start). Lab (40 fights per cell, +/-8 pts noise): at round 9 the slow-field + near-barrier combo gained +30 win points over no terrain before the change and about +17 after; a lone near-gate barrier keeps roughly +100 keep HP.
+
+## Keep health windows
+`bg_{4k,1440,1080,720}.webp` are now RGBA (from `Battlefield_Health_Window_Marks_4K.png`): each keep has a transparent pointed-arch window. `drawKeepWindows()` paints a dark glass backing plus glowing faction liquid (keep HP / `KEEP_HP`, drains top to bottom, calibration in `art/battlefield/keep_health_voids.json`) under the background, so the gold tracery stays in front. The old keep bar above each keep is dropped on this backdrop; its text label stays. The menu (`bg_menu_*`) and end-screen (`bg_red_*`, `bg_blue_*`) paintings are opaque and draw no windows. Backgrounds are cache-busted with `?v=3`.
