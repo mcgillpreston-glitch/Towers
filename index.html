@@ -304,7 +304,7 @@ select option{color:#111}
 // texture or canvas resolution never changes ranges, speeds or hit tests.
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
 // Terrain (barriers and slow fields). PROVISIONAL balance values: the route handoff did not specify any, so they all live here.
-const TERRAIN = {plan: 30, barrierCost: 6, slowCost: 4, refund: 0.5, barrierHp: 400, barrierRadius: 16, slowMul: 0.55, slowRadius: 62};
+const TERRAIN = {plan: 30, barrierCost: 6, slowCost: 4, refund: 0.5, barrierHp: 400, barrierRadius: 16, slowMul: 0.7, slowRadius: 62};
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
 const PACE = 1.28;
 const setupLen = r => (r >= 7 ? 90 : r >= 4 ? 75 : 60) + TERRAIN.plan;   // planning grows as the board fills up, plus the terrain-building time
@@ -474,7 +474,7 @@ const ROSTER = [
   {id: 'vulcan',      name: 'Vulcan',        tier: 1, kind: 'hitscan', range: 360, rate: 20,   dmg: 4.0, air: 1, ground: 1, traits: ['kinetic', 'rapid'],     rgb: '255,210,58',  short: 'Rotary cannon, shreds light units'},
   {id: 'flak',        name: 'Flak Nest',     tier: 1, kind: 'flak',    range: 520, rate: 3.8,  dmg: 34,  air: 1, ground: 0, splash: 52, traits: ['skyguard', 'explosive'], rgb: '255,154,58', short: 'Bursting shells, drones only'},
   {id: 'cryo',        name: 'Cryo Lance',    tier: 1, kind: 'cryo',    range: 320, rate: 6,    dmg: 3.6,   air: 1, ground: 1, traits: ['cryo', 'energy'],       rgb: '127,230,255', short: 'Slows targets by half'},
-  {id: 'torch',       name: 'Plasma Torch',  tier: 1, kind: 'torch',   range: 225, rate: 14,   dmg: 6.4, air: 1, ground: 1, cone: 0.5, traits: ['plasma', 'rapid'], rgb: '255,106,42', short: 'Cone of fire at the gate'},
+  {id: 'torch',       name: 'Plasma Torch',  tier: 1, kind: 'torch',   range: 260, rate: 14,   dmg: 4.6, air: 1, ground: 1, cone: 0.5, traits: ['plasma', 'rapid'], rgb: '255,106,42', short: 'Cone of fire at the gate'},
   {id: 'arc',         name: 'Arc Coil',      tier: 2, kind: 'arc',     range: 270, rate: 2.4,  dmg: 19,  air: 1, ground: 1, chain: 4, traits: ['energy', 'storm'],  rgb: '160,140,255', short: 'Lightning jumps four targets'},
   {id: 'swarm',       name: 'Swarm Pod',     tier: 2, kind: 'swarm',   range: 550, rate: 0.9,  dmg: 8.8,  air: 1, ground: 1, count: 4, splash: 22, traits: ['explosive', 'skyguard'], rgb: '125,255,176', short: 'Four homing micro-missiles'},
   {id: 'needle',      name: 'Needle Gun',    tier: 2, kind: 'hitscan', range: 460, rate: 4.4,  dmg: 8,  air: 1, ground: 1, traits: ['kinetic', 'sniper'],    rgb: '220,230,255', short: 'Long-range precision shots'},
@@ -483,7 +483,7 @@ const ROSTER = [
   {id: 'tesla',       name: 'Tesla Spire',   tier: 3, kind: 'arc',     range: 300, rate: 1.7,  dmg: 21,  air: 1, ground: 1, chain: 7, traits: ['storm', 'heavy'],   rgb: '190,160,255', short: 'Lightning jumps seven targets'},
   {id: 'hellfire',    name: 'Hellfire Rack', tier: 4, kind: 'mortar',  range: 760, rate: 0.9,  dmg: 32,  air: 0, ground: 1, min: 130, splash: 52, count: 3, traits: ['explosive', 'heavy'], rgb: '255,90,60', short: 'Three plasma shells per volley'},
   {id: 'lancer',      name: 'Photon Lancer', tier: 4, kind: 'rail',    range: 640, rate: 0.55, dmg: 40, air: 1, ground: 1, traits: ['sniper', 'energy'],     rgb: '255,240,170', short: 'Piercing beam, up to 5 targets, weakens per hit'},
-  {id: 'glacier',     name: 'Glacier Core',  tier: 4, kind: 'frost',   range: 280, rate: 0.9,  dmg: 33,  air: 1, ground: 1, traits: ['cryo', 'heavy'],        rgb: '170,240,255', short: 'Freezing pulse hits all nearby'},
+  {id: 'glacier',     name: 'Glacier Core',  tier: 4, kind: 'frost',   range: 310, rate: 0.9,  dmg: 33,  air: 1, ground: 1, traits: ['cryo', 'heavy'],        rgb: '170,240,255', short: 'Freezing pulse hits all nearby'},
   {id: 'singularity', name: 'Singularity',   tier: 5, kind: 'void',    range: 620, rate: 0.36, dmg: 32,  air: 1, ground: 1, radius: 80, traits: ['storm', 'heavy'], rgb: '200,120,255', short: 'Black hole that drags and crushes'},
   {id: 'sunlance',    name: 'Sunlance',      tier: 5, kind: 'beam',    range: 720, rate: 10,   dmg: 6.4,   air: 1, ground: 1, traits: ['plasma', 'sniper'],     rgb: '255,220,120', short: 'Beam that burns hotter on one target'}
 ];
@@ -497,14 +497,14 @@ const TRAITS = {
   storm:     {name: 'Storm',     tiers: [2, 3], desc: ['Lightning hits 3 every 5s', 'Lightning hits 6 every 4s']},
   sniper:    {name: 'Sniper',    tiers: [2, 3], desc: ['Sniper +20% range, +15% dmg', 'Sniper +45% range, +35% dmg']},
   rapid:     {name: 'Rapid',     tiers: [2],    desc: ['Rapid +40% fire rate']},
-  heavy:     {name: 'Heavy',     tiers: [2, 3], desc: ['Keep shield +250', 'Keep shield +600']}
+  heavy:     {name: 'Heavy',     tiers: [2, 3], desc: ['Keep shield +150', 'Keep shield +350']}
 };
 const ITEMS = {
   N: {name: 'Neutron Core',   fx: '+40% damage',               color: '#b46bff', glow: '180,107,255'},
   O: {name: 'Overclock Chip', fx: '+35% fire rate',            color: '#3ee0ff', glow: '62,224,255'},
-  T: {name: 'Tri-Barrel',     fx: 'Also hits a second target', color: '#ff4a5a', glow: '255,74,90'},
+  T: {name: 'Tri-Barrel',     fx: 'Also hits a second target for 60% (+15% per extra copy)', color: '#ff4a5a', glow: '255,74,90'},
   X: {name: 'Nova Charge',    fx: '+50% splash, +15% damage',  color: '#ffb020', glow: '255,176,32'},
-  L: {name: 'Nano Lens',      fx: '+25% range',                color: '#7dffb0', glow: '125,255,176'}
+  L: {name: 'Nano Lens',      fx: '+25% range (stacks to +30%)',                color: '#7dffb0', glow: '125,255,176'}
 };
 const ITEM_KEYS = 'NOTXL';
 const ODDS = {3: [75, 25, 0, 0, 0], 4: [55, 30, 15, 0, 0], 5: [45, 33, 20, 2, 0], 6: [30, 40, 25, 5, 0], 7: [19, 30, 35, 15, 1], 8: [15, 22, 33, 25, 5], 9: [10, 15, 30, 33, 12], 10: [5, 10, 20, 40, 25]};
@@ -533,7 +533,7 @@ const TYPES = {
   bike:    {name: 'Razor Bike',   hp: 30,  spd: 150, w: 42, h: 24, dps: 7,  armor: 0},
   bulwark: {name: 'Bulwark',      hp: 150, spd: 44,  w: 30, h: 42, dps: 11, armor: 4},
   drone:   {name: 'Wasp Drone',   hp: 28,  spd: 105, w: 28, h: 16, dps: 6,  armor: 0, fly: true},
-  titan:   {name: 'Titan Walker', hp: 560, spd: 68,  w: 70, h: 76, dps: 32, armor: 6}
+  titan:   {name: 'Titan Walker', hp: 560, spd: 68,  w: 70, h: 76, dps: 32, armor: 4}
 };
 const TYPE_KEYS = Object.keys(TYPES);
 for (const k in TYPES) { TYPES[k].w *= US; TYPES[k].h *= US; TYPES[k].spd *= 1.25 * PACE; }
@@ -544,7 +544,7 @@ const UPG = [
   {id: 't', name: 'Thrusters', cost: [5, 8, 12],  fx: 'Your mechs move 6% faster per level.'}
 ];
 const CALLS = [
-  {id: 'rally',  key: 'Q', name: 'Rally',      cost: 10, cd: 14, fx: 'Your mechs move 35% faster and take 25% less damage for 8 s.'},
+  {id: 'rally',  key: 'Q', name: 'Rally',      cost: 12, cd: 16, fx: 'Your mechs move 10% faster and take 10% less damage for 8 s.'},
   {id: 'drones', key: 'W', name: 'Drone wave', cost: 8,  cd: 10, fx: 'Six Wasp Drones launch from your keep and fly at theirs.'},
   {id: 'bikes',  key: 'E', name: 'Bike rush',  cost: 10, cd: 10, fx: 'Five fast Razor Bikes race down the lane.'},
   {id: 'titan',  key: 'R', name: 'Titan',      cost: 28, cd: 22, fx: 'A Titan Walker marches out now. Huge keep damage if it lands.'},
@@ -781,7 +781,7 @@ function traitLevels(board) {
 }
 function statsFor(unit, lv) {
   const R = ROSTER[unit.r], s = {...R}, has = t => R.traits.includes(t);
-  let dm = STAR_D[unit.star], rm = STAR_R[unit.star], rg = 1, sp = 1, tri = 0;
+  let dm = STAR_D[unit.star], rm = STAR_R[unit.star], rg = 1, sp = 1, tri = 0, lens = 0;
   if (has('kinetic') && lv.kinetic) dm *= [1, 1.25, 1.6][lv.kinetic];
   if (has('energy') && lv.energy) rm *= [1, 1.3, 1.7][lv.energy];
   if (has('explosive') && lv.explosive) { sp *= [1, 1.35, 1.8][lv.explosive]; dm *= [1, 1.1, 1.25][lv.explosive]; }
@@ -789,8 +789,10 @@ function statsFor(unit, lv) {
   if (has('rapid') && lv.rapid) rm *= 1.4;
   for (const it of unit.items) {
     if (it === 'N') dm *= 1.4; else if (it === 'O') rm *= 1.35; else if (it === 'T') tri++;
-    else if (it === 'X') { sp *= 1.5; dm *= 1.15; } else if (it === 'L') rg *= 1.25;
+    else if (it === 'X') { sp *= 1.5; dm *= 1.15; } else if (it === 'L') lens++;
   }
+  if (lens) rg *= Math.min(1.3, 1.25 + 0.025 * (lens - 1));   // lenses stack to +30% at most
+  sp = Math.min(sp, 2);                                         // splash and pull radius grow at most x2 from cores and traits
   if (tri && ['torch', 'frost', 'void', 'beam'].includes(R.kind)) { dm *= 1 + 0.25 * tri; tri = 0; }
   s.dmg = R.dmg * dm; s.rate = R.rate * rm; s.range = R.range * rg;
   if (s.splash) s.splash *= sp;
@@ -868,7 +870,7 @@ function startCombat() {
   for (const P of S.p) {
     P.ready = true;
     buildTurrets(P);
-    P.keep = KEEP_HP; P.shield = [0, 250, 600][P.traitLv.heavy || 0];
+    P.keep = KEEP_HP; P.shield = [0, 150, 350][P.traitLv.heavy || 0];
     for (const T of P.terr) if (T.k === 1) T.hp = TERRAIN.barrierHp;
     P.reload = rnd(0.6, 1.4); P.stormT = 3; P.roundKills = 0; P.crit = false;
   }
@@ -1036,7 +1038,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const GAME_VER = 3;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
+const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
   async init() {
@@ -1306,7 +1308,7 @@ function cpuTerrain(P, side, hard) {
 
 /* ---------- the hard tactician ---------- */
 // rough strength of each weapon at 1 star, learned from balance sweeps (higher is better)
-const CPU_V = {lancer: 85, rail: 76, singularity: 84, sunlance: 78, hellfire: 72, mortar: 58, needle: 52, tesla: 68, swarm: 44, glacier: 52, cryo: 44, arc: 62, torch: 42, vulcan: 40, flak: 38};
+const CPU_V = {lancer: 85, rail: 76, singularity: 84, sunlance: 78, hellfire: 72, mortar: 58, needle: 52, tesla: 68, swarm: 44, glacier: 64, cryo: 44, arc: 62, torch: 42, vulcan: 40, flak: 38};
 const CPU_EDGE = 5, CPU_XP = 2;
 const CPU_AIR = new Set(['swarm', 'flak', 'arc', 'tesla', 'needle', 'vulcan', 'cryo', 'sunlance']);
 const CPU_ANTI = {drone: ['swarm', 'flak', 'arc', 'tesla', 'needle'], bike: ['cryo', 'arc', 'needle', 'vulcan', 'tesla', 'glacier'], titan: ['rail', 'lancer', 'mortar', 'hellfire', 'singularity', 'sunlance'], bulwark: ['rail', 'lancer', 'mortar', 'hellfire'], trooper: ['mortar', 'arc', 'tesla', 'glacier', 'hellfire']};
@@ -1331,7 +1333,7 @@ function cpuAdapt(side) {
 }
 function cpuVal(u, lv, adapt) {
   const R = ROSTER[u.r], base = statsFor({r: u.r, star: 1, items: []}, {}), s = statsFor(u, lv);
-  const mult = (s.dmg * s.rate * (1 + (s.tri || 0) * 0.3)) / Math.max(1e-6, base.dmg * base.rate);
+  const mult = (s.dmg * s.rate * (1 + (s.tri ? Math.min(0.9, 0.45 + 0.15 * s.tri) : 0))) / Math.max(1e-6, base.dmg * base.rate);
   let v = (CPU_V[R.id] || 40) * Math.pow(mult, 0.8) * ((adapt && adapt[R.id]) || 1);
   if (lv.heavy && R.traits.includes('heavy')) v *= 1 + 0.04 * lv.heavy;
   return v;
@@ -1911,9 +1913,9 @@ function hurt(u, d, side, real, s, num, pure) {
   if (u.warp > 0) return;
   u.flash = 0.07;
   if (!real) return;
-  if (S.p[u.side].rally > 0) d *= 0.75;
+  if (S.p[u.side].rally > 0) d *= 0.9;
   if (s) { if (u.fly) d *= s.sky; if (u.slow > 0) d *= s.cryoBonus; if (s.burn) u.burn = {dps: s.burn, t: 2, side, slot: s.slot}; }
-  if (!pure) d = Math.max(d * 0.3, d - u.armor);
+  if (!pure) d = Math.max(d * 0.5, d - u.armor);
   rsCredit(side, s, Math.max(0, Math.min(d, u.hp)), pure); u.lastSlot = s && s.slot != null ? s.slot : -1;
   u.hp -= d; u.byShot = true; u.lastBy = side;
   if (num) ev(['h', Math.round(u.x), Math.round(ucenter(u)[1]), Math.round(d), side]);
@@ -1964,7 +1966,7 @@ function turretsUpdate(side, dt, real) {
       if (T.cd <= 0) {
         T.cd += 1 / s.rate; if (T.cd < 0) T.cd = 0;
         fireTurret(side, T, T.tgt, mx, my, real, false);
-        for (let n = 0; n < s.tri; n++) { const o = findTarget(side, mx, my, s, T.tgt); if (o) fireTurret(side, T, o, mx, my, real, true); }
+        if (s.tri > 0) { const o = findTarget(side, mx, my, s, T.tgt); if (o) { const d0 = s.dmg; s.dmg = d0 * Math.min(0.9, 0.45 + 0.15 * s.tri); fireTurret(side, T, o, mx, my, real, true); s.dmg = d0; } }   // one extra target at 60%, +15% per further copy
       }
     } else {
       if (T.cd < 0) T.cd = 0;
@@ -2236,14 +2238,14 @@ function simulate(dt) {
   if (S.dropDone < 1 && el >= 6) {
     S.dropDone = 1;
     S.quiet = 1;
-    for (let n = 0; n < 1 + Math.floor((S.round - 1) / 3); n++) { spawn('titan', 0); spawn('titan', 1); }
+    for (let n = 0; n < Math.min(S.round < 10 ? 2 : 9, 1 + Math.floor((S.round - 1) / 3)); n++) { spawn('titan', 0); spawn('titan', 1); }
     S.quiet = 0;
     for (let n = 0; n < 3; n++) { spawn('bike', 0); spawn('bike', 1); }
     ev(['d', 1]);
   } else if (S.dropDone < 2 && S.round >= 3 && el >= 17) {
     S.dropDone = 2;
     S.quiet = 1;
-    for (let n = 0; n < 1 + Math.floor((S.round - 2) / 4); n++) { spawn('titan', 0); spawn('titan', 1); }
+    for (let n = 0; n < Math.min(S.round < 10 ? 2 : 9, 1 + Math.floor((S.round - 2) / 4)); n++) { spawn('titan', 0); spawn('titan', 1); }
     S.quiet = 0;
     ev(['d', 2]);
   }
@@ -2257,7 +2259,8 @@ function simulate(dt) {
   S.strikes = S.strikes.filter(s => !s.dead);
   S.spawnT -= dt;
   if (S.spawnT <= 0 && S.units.length < UNIT_CAP) {
-    const t = pickType(I), n = 1 + (Math.random() < 0.3 * I ? 1 : 0) + (Math.random() < 0.15 * I ? 1 : 0);
+    let t = pickType(I); if (t === 'drone' && S.round <= 3 && S.units.reduce((a, u) => a + (u.type === 'drone' && u.side === 0 && u.hp > 0 ? 1 : 0), 0) >= 12) t = 'trooper';   // early rounds: at most 12 drones in the air per side
+    const n = 1 + (Math.random() < 0.3 * I ? 1 : 0) + (Math.random() < 0.15 * I ? 1 : 0);
     for (let j = 0; j < n; j++) { spawn(t, 0); spawn(t, 1); }
     S.spawnT = Math.max(0.06, 0.62 / (1 + 2.6 * I)) * rnd(0.5, 1.4) * (EARLY_EASE[S.round] || 1);
     if (Math.random() < 0.12 + 0.2 * I) S.spawnT *= 0.2;
@@ -2270,7 +2273,7 @@ function simulate(dt) {
 }
 function breach(u) {
   if (u.breached) return;
-  const dmg = BREACH[u.type] * (1 + 0.12 * S.p[u.side].up[1]) * (1 + 0.15 * (S.round - 1)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
+  const dmg = BREACH[u.type] * (1 + 0.12 * S.p[u.side].up[1]) * Math.min(u.type === 'drone' ? 2 : 9, 1 + 0.15 * (S.round - 1)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
   u.breached = true; u.hp = 0;
   if (S.rs) S.rs.br[u.side ^ 1].push([u.type, Math.round(dmg), Math.round((COMBAT_LEN - S.timeLeft) * 10) / 10]);
   hitKeep(u.side ^ 1, dmg);
@@ -2338,7 +2341,7 @@ function worldStep(dt, live) {
     u.t += dt * fz; u.flash = Math.max(0, u.flash - dt); u.slow = Math.max(0, u.slow - dt);
     if (u.burn && u.burn.t > 0) { u.burn.t -= dt; rsCredit(u.burn.side, {slot: u.burn.slot}, Math.max(0, Math.min(u.burn.dps * dt, u.hp)), true); u.lastSlot = u.burn.slot == null ? -1 : u.burn.slot; u.hp -= u.burn.dps * dt; u.byShot = true; u.lastBy = u.burn.side; }
     if (u.warp > 0) { u.warp -= dt; continue; }   // titans materialise before they march
-    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.35 : 1) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
+    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
     if (u.fly) {
       // drones follow their own route a little above the deck and ignore the terrain
       u.bob = Math.sin(u.t * 3) * 8; u.atk = false;
@@ -4559,7 +4562,7 @@ function wikiHtml() {
     b = '<p>Each turret type counts once toward a trait, so field different turrets that share it. Traits switch on at the listed counts.</p><table class="stats wk"><thead><tr><th>Trait</th><th>Needs</th><th>Effect</th></tr></thead><tbody>' +
       Object.values(TRAITS).map(T => '<tr><th>' + T.name + '</th><td>' + T.tiers.join(' / ') + '</td><td class="l">' + T.desc.join('<br>') + '</td></tr>').join('') + '</tbody></table>';
   } else if (tab === 'cores') {
-    b = '<p>A turret holds up to 3 cores. Duplicates stack: damage, fire rate, range and splash multiply per core; Tri-Barrel adds an extra target per copy. Cores drop from fallen mechs and arrive every 3rd round. Removing a core costs 1 gold (drag it to the rack or right-click it).</p><table class="stats wk"><tbody>' +
+    b = '<p>A turret holds up to 3 cores. Duplicates stack: damage, fire rate, range and splash multiply per core; Tri-Barrel adds one extra target at 60% damage (+15% per further copy), Nano Lens range stacks to +30% and core splash growth is capped at x2. Cores drop from fallen mechs and arrive every 3rd round. Removing a core costs 1 gold (drag it to the rack or right-click it).</p><table class="stats wk"><tbody>' +
       Object.values(ITEMS).map(I => '<tr><th style="color:' + I.color + '">' + I.name + '</th><td class="l">' + I.fx + '</td></tr>').join('') + '</tbody></table>';
   } else if (tab === 'economy') {
     b = '<table class="stats wk"><tbody>' +
