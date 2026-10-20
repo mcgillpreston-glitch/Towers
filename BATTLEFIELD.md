@@ -28,3 +28,12 @@ Profiling a heavy combat (both boards full, ~45 units) showed game logic under 2
 
 ## Graphics test
 Settings > Performance > "Run graphics test" plays a scripted heavy battle (both boards full, about 44 units, drones, titans) for 5 s at each of 4K, 1440p, 1080p and 720p on the player's own device, then shows average fps, 1% low and the share of slow frames per resolution, recommends the sharpest one with avg >= 55 fps and 1% low >= 40 (falling back to avg >= 40 / 1% low >= 28, else 720p), and offers a button to apply it. The result is stored in localStorage (`bk-bench`) and a copyable summary line includes GPU, screen and core count.
+
+## Balance pass (GAME_VER 3)
+Tuned from ~600 headless Hard-vs-Hard demo matches:
+- Roof mounts (R1-R4): range x1.3 and damage x2.1 (`ROOF_RANGE`, `ROOF_DMG`).
+- Round 1-2 spawn easing (`EARLY_EASE`); explosive/sniper/heavy traits now tier at 2 and 3 pieces; cryo trait is +25%/+50% on slowed foes.
+- Bike breach 18 -> 11 and spawn weight lowered; drones breach 16 -> 30, 28 HP, higher spawn weight, so ignoring air defence now hurts.
+- Weapons: cryo 3.6, torch 6.4, swarm 8.8, hellfire 32, sunlance 6.4, mortar 34 damage.
+- CPU: per-weapon values retuned and trait-aware buying (`cpuSyn`).
+- Terrain: a barrier adds only about 3 points of round win rate; the "slow-only boards lose" skew in logs is selection (a broken barrier marks a side already under pressure).

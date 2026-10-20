@@ -271,9 +271,8 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 select{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:4px 6px}
 select option{color:#111}
 </style>
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
-</head>
-<body><div id="tip" role="tooltip" hidden></div>
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style></head><body>
+<div id="tip" role="tooltip" hidden></div>
 <div class="app">
   <header class="hud panel">
     <div class="team l"><div class="tname"><b>AZURECOURT</b><span id="tag0">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span><span class="hplab">HP</span></div><div class="sub"><span id="lv0" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd0" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st0" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
@@ -474,31 +473,31 @@ const STAR_C = ['', '#d08a4a', '#dfe3f2', '#ffd23a'];
 const ROSTER = [
   {id: 'vulcan',      name: 'Vulcan',        tier: 1, kind: 'hitscan', range: 360, rate: 20,   dmg: 4.0, air: 1, ground: 1, traits: ['kinetic', 'rapid'],     rgb: '255,210,58',  short: 'Rotary cannon, shreds light units'},
   {id: 'flak',        name: 'Flak Nest',     tier: 1, kind: 'flak',    range: 520, rate: 3.8,  dmg: 34,  air: 1, ground: 0, splash: 52, traits: ['skyguard', 'explosive'], rgb: '255,154,58', short: 'Bursting shells, drones only'},
-  {id: 'cryo',        name: 'Cryo Lance',    tier: 1, kind: 'cryo',    range: 320, rate: 6,    dmg: 2.1,   air: 1, ground: 1, traits: ['cryo', 'energy'],       rgb: '127,230,255', short: 'Slows targets by half'},
-  {id: 'torch',       name: 'Plasma Torch',  tier: 1, kind: 'torch',   range: 225, rate: 14,   dmg: 8.2, air: 1, ground: 1, cone: 0.5, traits: ['plasma', 'rapid'], rgb: '255,106,42', short: 'Cone of fire at the gate'},
+  {id: 'cryo',        name: 'Cryo Lance',    tier: 1, kind: 'cryo',    range: 320, rate: 6,    dmg: 3.6,   air: 1, ground: 1, traits: ['cryo', 'energy'],       rgb: '127,230,255', short: 'Slows targets by half'},
+  {id: 'torch',       name: 'Plasma Torch',  tier: 1, kind: 'torch',   range: 225, rate: 14,   dmg: 6.4, air: 1, ground: 1, cone: 0.5, traits: ['plasma', 'rapid'], rgb: '255,106,42', short: 'Cone of fire at the gate'},
   {id: 'arc',         name: 'Arc Coil',      tier: 2, kind: 'arc',     range: 270, rate: 2.4,  dmg: 19,  air: 1, ground: 1, chain: 4, traits: ['energy', 'storm'],  rgb: '160,140,255', short: 'Lightning jumps four targets'},
-  {id: 'swarm',       name: 'Swarm Pod',     tier: 2, kind: 'swarm',   range: 550, rate: 0.9,  dmg: 7.5,  air: 1, ground: 1, count: 4, splash: 22, traits: ['explosive', 'skyguard'], rgb: '125,255,176', short: 'Four homing micro-missiles'},
+  {id: 'swarm',       name: 'Swarm Pod',     tier: 2, kind: 'swarm',   range: 550, rate: 0.9,  dmg: 8.8,  air: 1, ground: 1, count: 4, splash: 22, traits: ['explosive', 'skyguard'], rgb: '125,255,176', short: 'Four homing micro-missiles'},
   {id: 'needle',      name: 'Needle Gun',    tier: 2, kind: 'hitscan', range: 460, rate: 4.4,  dmg: 8,  air: 1, ground: 1, traits: ['kinetic', 'sniper'],    rgb: '220,230,255', short: 'Long-range precision shots'},
-  {id: 'mortar',      name: 'Plasma Mortar', tier: 3, kind: 'mortar',  range: 740, rate: 1,    dmg: 30,  air: 0, ground: 1, min: 130, splash: 56, count: 1, traits: ['plasma', 'explosive'], rgb: '255,63,174', short: 'Lobbed plasma, wide splash'},
+  {id: 'mortar',      name: 'Plasma Mortar', tier: 3, kind: 'mortar',  range: 740, rate: 1,    dmg: 34,  air: 0, ground: 1, min: 130, splash: 56, count: 1, traits: ['plasma', 'explosive'], rgb: '255,63,174', short: 'Lobbed plasma, wide splash'},
   {id: 'rail',        name: 'Railgun',       tier: 3, kind: 'rail',    range: 560, rate: 0.9,  dmg: 28,  air: 1, ground: 1, traits: ['kinetic', 'sniper'],    rgb: '220,244,255', short: 'Pierces up to 3 targets, weakens per hit'},
   {id: 'tesla',       name: 'Tesla Spire',   tier: 3, kind: 'arc',     range: 300, rate: 1.7,  dmg: 21,  air: 1, ground: 1, chain: 7, traits: ['storm', 'heavy'],   rgb: '190,160,255', short: 'Lightning jumps seven targets'},
-  {id: 'hellfire',    name: 'Hellfire Rack', tier: 4, kind: 'mortar',  range: 760, rate: 0.9,  dmg: 18,  air: 0, ground: 1, min: 130, splash: 52, count: 3, traits: ['explosive', 'heavy'], rgb: '255,90,60', short: 'Three plasma shells per volley'},
+  {id: 'hellfire',    name: 'Hellfire Rack', tier: 4, kind: 'mortar',  range: 760, rate: 0.9,  dmg: 32,  air: 0, ground: 1, min: 130, splash: 52, count: 3, traits: ['explosive', 'heavy'], rgb: '255,90,60', short: 'Three plasma shells per volley'},
   {id: 'lancer',      name: 'Photon Lancer', tier: 4, kind: 'rail',    range: 640, rate: 0.55, dmg: 40, air: 1, ground: 1, traits: ['sniper', 'energy'],     rgb: '255,240,170', short: 'Piercing beam, up to 5 targets, weakens per hit'},
   {id: 'glacier',     name: 'Glacier Core',  tier: 4, kind: 'frost',   range: 280, rate: 0.9,  dmg: 33,  air: 1, ground: 1, traits: ['cryo', 'heavy'],        rgb: '170,240,255', short: 'Freezing pulse hits all nearby'},
   {id: 'singularity', name: 'Singularity',   tier: 5, kind: 'void',    range: 620, rate: 0.36, dmg: 32,  air: 1, ground: 1, radius: 80, traits: ['storm', 'heavy'], rgb: '200,120,255', short: 'Black hole that drags and crushes'},
-  {id: 'sunlance',    name: 'Sunlance',      tier: 5, kind: 'beam',    range: 720, rate: 10,   dmg: 3.3,   air: 1, ground: 1, traits: ['plasma', 'sniper'],     rgb: '255,220,120', short: 'Beam that burns hotter on one target'}
+  {id: 'sunlance',    name: 'Sunlance',      tier: 5, kind: 'beam',    range: 720, rate: 10,   dmg: 6.4,   air: 1, ground: 1, traits: ['plasma', 'sniper'],     rgb: '255,220,120', short: 'Beam that burns hotter on one target'}
 ];
 const TRAITS = {
   kinetic:   {name: 'Kinetic',   tiers: [2, 3], desc: ['Kinetic +25% damage', 'Kinetic +60% damage']},
   energy:    {name: 'Energy',    tiers: [2, 3], desc: ['Energy +30% fire rate', 'Energy +70% fire rate']},
-  explosive: {name: 'Explosive', tiers: [2, 4], desc: ['Explosive +35% splash', 'Explosive +80% splash, +25% dmg']},
+  explosive: {name: 'Explosive', tiers: [2, 3], desc: ['Explosive +35% splash', 'Explosive +80% splash, +25% dmg']},
   skyguard:  {name: 'Skyguard',  tiers: [2],    desc: ['All turrets +60% vs drones']},
-  cryo:      {name: 'Cryo',      tiers: [1, 2], desc: ['Slowed foes take +15%', 'Slowed foes take +35%']},
+  cryo:      {name: 'Cryo',      tiers: [1, 2], desc: ['Slowed foes take +25%', 'Slowed foes take +50%']},
   plasma:    {name: 'Plasma',    tiers: [2, 3], desc: ['Plasma hits burn 8/s', 'Plasma hits burn 18/s']},
   storm:     {name: 'Storm',     tiers: [2, 3], desc: ['Lightning hits 3 every 5s', 'Lightning hits 6 every 4s']},
-  sniper:    {name: 'Sniper',    tiers: [2, 4], desc: ['Sniper +20% range, +15% dmg', 'Sniper +45% range, +35% dmg']},
+  sniper:    {name: 'Sniper',    tiers: [2, 3], desc: ['Sniper +20% range, +15% dmg', 'Sniper +45% range, +35% dmg']},
   rapid:     {name: 'Rapid',     tiers: [2],    desc: ['Rapid +40% fire rate']},
-  heavy:     {name: 'Heavy',     tiers: [2, 4], desc: ['Keep shield +250', 'Keep shield +600']}
+  heavy:     {name: 'Heavy',     tiers: [2, 3], desc: ['Keep shield +250', 'Keep shield +600']}
 };
 const ITEMS = {
   N: {name: 'Neutron Core',   fx: '+40% damage',               color: '#b46bff', glow: '180,107,255'},
@@ -533,12 +532,12 @@ const TYPES = {
   trooper: {name: 'Exo Trooper',  hp: 40,  spd: 70,  w: 20, h: 34, dps: 9,  armor: 0},
   bike:    {name: 'Razor Bike',   hp: 30,  spd: 150, w: 42, h: 24, dps: 7,  armor: 0},
   bulwark: {name: 'Bulwark',      hp: 150, spd: 44,  w: 30, h: 42, dps: 11, armor: 4},
-  drone:   {name: 'Wasp Drone',   hp: 22,  spd: 105, w: 28, h: 16, dps: 6,  armor: 0, fly: true},
+  drone:   {name: 'Wasp Drone',   hp: 28,  spd: 105, w: 28, h: 16, dps: 6,  armor: 0, fly: true},
   titan:   {name: 'Titan Walker', hp: 560, spd: 68,  w: 70, h: 76, dps: 32, armor: 6}
 };
 const TYPE_KEYS = Object.keys(TYPES);
 for (const k in TYPES) { TYPES[k].w *= US; TYPES[k].h *= US; TYPES[k].spd *= 1.25 * PACE; }
-const BREACH = {trooper: 22, bike: 18, bulwark: 40, drone: 16, titan: 160};
+const BREACH = {trooper: 22, bike: 11, bulwark: 40, drone: 30, titan: 160};
 const UPG = [
   {id: 'a', name: 'Plating',   cost: [6, 10, 15], fx: 'Your mechs have +15% HP per level.'},
   {id: 'w', name: 'Warheads',  cost: [6, 10, 15], fx: 'Mechs that reach the enemy keep hit 12% harder per level.'},
@@ -798,15 +797,18 @@ function statsFor(unit, lv) {
   if (s.radius) s.radius *= sp;
   s.tri = tri;
   s.sky = lv.skyguard ? 1.6 : 1;
-  s.cryoBonus = [1, 1.15, 1.35][lv.cryo || 0];
+  s.cryoBonus = [1, 1.25, 1.5][lv.cryo || 0];
   s.burn = has('plasma') && lv.plasma ? [0, 8, 18][lv.plasma] : 0;
   return s;
 }
 function boardSig(P) { return P.board.map(u => u ? u.r + '.' + u.star + '.' + u.items.join('') : '-').join('|'); }
+const ROOF_RANGE = 1.3;   // the roof mounts sit far from the lanes, so they reach 30% further
+const ROOF_DMG = 2.1;      // and hit 110% harder, since a roof mount sees fewer targets for less time
+const roofRange = (s, i) => { if (i < 4) { s.range *= ROOF_RANGE; s.dmg *= ROOF_DMG; } return s; };
 function buildTurrets(P) {
   const {lv} = traitLevels(P.board);
   P.traitLv = lv;
-  P.turrets = P.board.map((u, i) => u ? {u, s: Object.assign(statsFor(u, lv), {slot: i}), cd: rnd(0, 0.5), ang: 0, tgt: null, flash: 0, scanT: 0, ramp: 0, last: null} : null);
+  P.turrets = P.board.map((u, i) => u ? {u, s: roofRange(Object.assign(statsFor(u, lv), {slot: i}), i), cd: rnd(0, 0.5), ang: 0, tgt: null, flash: 0, scanT: 0, ramp: 0, last: null} : null);
   P.boardSig = boardSig(P);
 }
 
@@ -1031,7 +1033,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const GAME_VER = 2;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
+const GAME_VER = 3;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
   async init() {
@@ -1301,10 +1303,23 @@ function cpuTerrain(P, side, hard) {
 
 /* ---------- the hard tactician ---------- */
 // rough strength of each weapon at 1 star, learned from balance sweeps (higher is better)
-const CPU_V = {lancer: 85, rail: 80, singularity: 80, sunlance: 75, hellfire: 70, mortar: 60, needle: 60, tesla: 52, swarm: 50, glacier: 42, cryo: 42, arc: 42, torch: 38, vulcan: 36, flak: 36};
+const CPU_V = {lancer: 85, rail: 76, singularity: 84, sunlance: 78, hellfire: 72, mortar: 58, needle: 52, tesla: 68, swarm: 44, glacier: 52, cryo: 44, arc: 62, torch: 42, vulcan: 40, flak: 38};
 const CPU_EDGE = 5, CPU_XP = 2;
 const CPU_AIR = new Set(['swarm', 'flak', 'arc', 'tesla', 'needle', 'vulcan', 'cryo', 'sunlance']);
 const CPU_ANTI = {drone: ['swarm', 'flak', 'arc', 'tesla', 'needle'], bike: ['cryo', 'arc', 'needle', 'vulcan', 'tesla', 'glacier'], titan: ['rail', 'lancer', 'mortar', 'hellfire', 'singularity', 'sunlance'], bulwark: ['rail', 'lancer', 'mortar', 'hellfire'], trooper: ['mortar', 'arc', 'tesla', 'glacier', 'hellfire']};
+// how much a new weapon type would help the board's trait bonuses: a reached tier counts most, progress towards one counts a little
+function cpuSyn(P, r) {
+  const all = P.board.concat(P.bench).filter(Boolean);
+  if (all.some(u => u.r === r)) return 0;
+  const cnt = traitLevels(all).cnt;
+  let b = 0;
+  for (const t of ROSTER[r].traits) {
+    const c = (cnt[t] || 0) + 1, tiers = TRAITS[t].tiers;
+    if (tiers.includes(c)) b += 36;
+    else { const nx = tiers.find(x => x > c); if (nx) b += 7 * c; }
+  }
+  return b;
+}
 function cpuAdapt(side) {
   // lean toward whatever got through last round
   const m = {}, post = S.post && S.post.s && S.post.s[side];
@@ -1402,7 +1417,7 @@ function cpuHard(P, side) {
     const cand = [];
     for (let i = 0; i < 5; i++) {
       const r = P.shop[i]; if (r < 0) continue;
-      const R = ROSTER[r], cost = R.tier, c1 = ownedCopies(P, r, 1), c2 = ownedCopies(P, r, 2), v = (CPU_V[R.id] || 40) * (adapt[R.id] || 1);
+      const R = ROSTER[r], cost = R.tier, c1 = ownedCopies(P, r, 1), c2 = ownedCopies(P, r, 2), v = (CPU_V[R.id] || 40) * (adapt[R.id] || 1) + 0.6 * cpuSyn(P, r);
       if (P.gold < cost) continue;
       let pr = -1, free = false;
       if (c1 >= 2) { pr = 2000 + v; free = true; }                   // this copy makes a star-up right now
@@ -1863,8 +1878,9 @@ function phaseFx(ph) {
 /* =========================================================================
    COMBAT SIMULATION (solo, demo and room host)
    ========================================================================= */
+const EARLY_EASE = {1: 1.7, 2: 1.25};   // the first rounds have only a few turrets, so their waves arrive more slowly
 function pickType(I) {
-  const w = [['trooper', 5], ['bike', 1 + 3 * I], ['bulwark', 0.6 + 1.8 * I], ['drone', 0.6 + 2.2 * I]];
+  const w = [['trooper', 5], ['bike', 1 + 2.2 * I], ['bulwark', 0.6 + 1.8 * I], ['drone', 0.8 + 2.8 * I]];
   let tot = 0; for (const [, x] of w) tot += x;
   let r = Math.random() * tot;
   for (const [t, x] of w) { r -= x; if (r <= 0) return t; }
@@ -2240,7 +2256,7 @@ function simulate(dt) {
   if (S.spawnT <= 0 && S.units.length < UNIT_CAP) {
     const t = pickType(I), n = 1 + (Math.random() < 0.3 * I ? 1 : 0) + (Math.random() < 0.15 * I ? 1 : 0);
     for (let j = 0; j < n; j++) { spawn(t, 0); spawn(t, 1); }
-    S.spawnT = Math.max(0.06, 0.62 / (1 + 2.6 * I)) * rnd(0.5, 1.4);
+    S.spawnT = Math.max(0.06, 0.62 / (1 + 2.6 * I)) * rnd(0.5, 1.4) * (EARLY_EASE[S.round] || 1);
     if (Math.random() < 0.12 + 0.2 * I) S.spawnT *= 0.2;
   }
   for (let side = 0; side < 2; side++) { stormTick(side, dt); }
@@ -3027,7 +3043,7 @@ function drawTurrets(side) {
     if (planning && S.ui.sel && (i === selM || (selBench && i === S.ui.hov))) {
       const su = selM >= 0 ? u : P.bench[S.ui.sel.i];
       if (su) {
-        const rs = statsFor(su, traitLevels(P.board).lv);
+        const rs = Object.assign({}, statsFor(su, traitLevels(P.board).lv)); if (i < 4) { rs.range *= ROOF_RANGE; rs.dmg *= ROOF_DMG; }
         ctx.save(); ctx.strokeStyle = 'rgba(' + F.rgb + ',.95)'; ctx.fillStyle = 'rgba(' + F.rgb + ',.1)'; ctx.lineWidth = 3; ctx.shadowColor = 'rgba(' + F.rgb + ',1)'; ctx.shadowBlur = 8; ctx.setLineDash([10, 7]);
         ctx.beginPath(); ctx.arc(x, y, rs.range, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         if (rs.min) { ctx.beginPath(); ctx.arc(x, y, rs.min, 0, Math.PI * 2); ctx.stroke(); }
