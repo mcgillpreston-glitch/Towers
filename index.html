@@ -1511,10 +1511,10 @@ function cpuHard(P, side) {
 let k = 1;
 // render resolution of the canvas. 4K is the default; lower settings also load a smaller background texture
 const RES = {
-  '4k': {w: 3840, h: 2160, name: '4K · 3840 × 2160', bg: 'art/battlefield/bg_4k.webp'},
-  '1440': {w: 2560, h: 1440, name: '1440p · 2560 × 1440', bg: 'art/battlefield/bg_1440.webp'},
-  '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp'},
-  '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp'}
+  '4k': {w: 3840, h: 2160, name: '4K · 3840 × 2160', bg: 'art/battlefield/bg_4k.webp?v=2'},
+  '1440': {w: 2560, h: 1440, name: '1440p · 2560 × 1440', bg: 'art/battlefield/bg_1440.webp?v=2'},
+  '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp?v=2'},
+  '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp?v=2'}
 };
 const VIDEO = {shake: true, low: false, res: '4k', adapt: true};
 try { const v = JSON.parse(localStorage.getItem('bk-video') || 'null'); if (v && typeof v === 'object') { VIDEO.shake = v.shake !== false; VIDEO.low = !!v.low; VIDEO.adapt = v.adapt !== false; if (v.res === 'auto' || RES[v.res]) VIDEO.res = v.res; } } catch (e) {}
