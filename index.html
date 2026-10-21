@@ -485,7 +485,7 @@ const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
 // Terrain (barriers and slow fields). PROVISIONAL balance values: the route handoff did not specify any, so they all live here.
 const TERRAIN = {plan: 30, barrierCost: 7, slowCost: 4, refund: 0.5, barrierHp: 240, repair: 0.5, barrierRadius: 16, slowMul: 0.7, slowRadius: 62};
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
-const PACE = 1.28;
+const PACE = 1.4;
 const setupLen = r => (r >= 7 ? 90 : r >= 4 ? 75 : 60) + TERRAIN.plan;   // planning grows as the board fills up, plus the terrain-building time
 const BATTLE_ZOOM = 1, SETUP_LEN = 60 + TERRAIN.plan, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
@@ -1069,6 +1069,11 @@ function hitKeep(side, amt) {
 function endCombat(fallen) {
   const P0 = S.p[0], P1 = S.p[1];
   let w;
+  // chip damage: a round never ends with both keeps untouched. The side that dealt clearly more turret damage lands a glancing hit.
+  if (fallen < 0 && P0.keep >= KEEP_HP - 0.5 && P1.keep >= KEEP_HP - 0.5 && S.rs) {
+    const rd0 = i => S.rs.sl[i].reduce((a, c) => a + (c ? c.d : 0), 0) + S.rs.storm[i], c0 = rd0(0), c1 = rd0(1), cm = Math.max(c0, c1);
+    if (cm > 0 && Math.abs(c0 - c1) / cm > 0.03) hitKeep(c0 > c1 ? 1 : 0, Math.min(200, 60 + 12 * S.round));
+  }
   if (fallen >= 0 && !(P0.keep <= 0 && P1.keep <= 0)) w = fallen ^ 1;
   else if (Math.ceil(Math.max(0, P0.keep)) !== Math.ceil(Math.max(0, P1.keep))) w = P0.keep > P1.keep ? 0 : 1;
   else {
@@ -2444,10 +2449,10 @@ function simulate(dt) {
   for (const P of S.p) { P.rally = Math.max(0, P.rally - dt); for (let j = 0; j < 5; j++) P.cd[j] = Math.max(0, P.cd[j] - dt); }
   if (S.mode === 'cpu' && S.diff === 'hard' && !S.ghost) cpuCalls(1, dt);
   // overtime: if both keeps are still untouched after 20 s, titans keep marching until somebody leaks
-  if (COMBAT_LEN - S.timeLeft >= 20 && S.p[0].keep >= KEEP_HP - 0.5 && S.p[1].keep >= KEEP_HP - 0.5) {
+  if (COMBAT_LEN - S.timeLeft >= 16 && S.p[0].keep >= KEEP_HP - 0.5 && S.p[1].keep >= KEEP_HP - 0.5) {
     if (!S.ot) { S.ot = 1; S.otT = 0; ev(['n', 2, 0]); }
     S.otT -= dt;
-    if (S.otT <= 0) { S.otT = 3.5; S.quiet = 1; spawn('titan', 0); spawn('titan', 1); S.quiet = 0; }
+    if (S.otT <= 0) { S.otT = 2.5; S.quiet = 1; spawn('titan', 0); spawn('titan', 1); S.quiet = 0; }
   }
   const el = COMBAT_LEN - S.timeLeft, I = heat();
   // mech drops: the first at 6 s, a second at 17 s from round 3
@@ -2489,7 +2494,7 @@ function simulate(dt) {
 }
 function breach(u) {
   if (u.breached) return;
-  const dmg = BREACH[u.type] * (1 + 0.12 * S.p[u.side].up[1]) * Math.min(u.type === 'drone' ? 2 : 9, 1 + 0.15 * (S.round - 1)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
+  const dmg = BREACH[u.type] * (1 + 0.12 * S.p[u.side].up[1]) * Math.min(u.type === 'drone' ? 2 : 9, 1 + 0.15 * (S.round - 1)) * (1 + 0.5 * Math.max(0, (4 - S.round) / 3)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
   u.breached = true; u.hp = 0;
   if (S.rs) S.rs.br[u.side ^ 1].push([u.type, Math.round(dmg), Math.round((COMBAT_LEN - S.timeLeft) * 10) / 10]);
   hitKeep(u.side ^ 1, dmg);
@@ -4848,7 +4853,7 @@ function wikiHtml() {
   } else if (tab === 'basics') {
     b = '<div class="wcards">' +
       card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Thirty seconds of it are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
-      card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 20 s, overtime Titans march until one side breaks.') +
+      card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 16 s, overtime Titans march until one side breaks. A round never ends with both untouched: the side that dealt clearly more damage lands a glancing hit.') +
       card('3 · Win', 'Lose rounds, lose HP. Last one standing wins.', 'Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. From round 5 the mech waves get tougher every round.') +
       card('Mounts', '4 on the roof (R1-R4), 6 on the side (S1-S6).', 'Launchers that lob their shots gain from height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top. Short-range turrets on the roof may never fire; check the after-action report for idle turrets.') +
       card('Terrain', 'Two gates: barrier or slow field.', 'Each army walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you. Each can hold a barrier (enemy troops stop and break it before they can pass) or a slow field (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A damaged barrier mends half its damage each round for free, a broken one must be rebuilt, and drones fly over everything.') +
