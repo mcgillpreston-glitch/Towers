@@ -152,7 +152,8 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .stat span{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:#f0d79a;white-space:nowrap}
 .stat b{font:900 18px var(--f-display);font-variant-numeric:tabular-nums;line-height:1.1;background:linear-gradient(180deg,#fff6d8,#f0cf7a 50%,#c08a2e);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 8px rgba(255,196,107,.45))}
 .stat em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
-.stat.grow{flex:1;min-width:150px}
+.stat.grow{flex:1 1 190px;min-width:190px;overflow:hidden}
+.stat.grow em,.stat.grow>span{white-space:normal}
 .xpbar{height:8px;background:#06080f padding-box,var(--gild) border-box;border:1.5px solid transparent;margin-block:3px;clip-path:polygon(4px 0,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,4px 100%,0 50%)}
 .xpbar i{display:block;height:100%;background:linear-gradient(180deg,#d6fbff,#4fd8ff 50%,#0b6fb0)}
 .spacer{flex:1}
