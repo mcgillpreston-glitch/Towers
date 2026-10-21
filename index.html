@@ -209,6 +209,22 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .wtabs{display:flex;gap:6px;flex-wrap:wrap}
 .wiki{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
 .wiki p{margin:0}
+.wcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.wc{--wc:#e8c76a;display:flex;gap:10px;align-items:center;padding:8px 10px;min-width:0;border:1px solid color-mix(in srgb,var(--wc) 55%,transparent);border-left:3px solid var(--wc);background:linear-gradient(90deg,color-mix(in srgb,var(--wc) 14%,transparent),rgba(5,3,11,.5));position:relative}
+.wc[data-tip]{cursor:var(--cur-hot)}
+.wc[data-tip]::after{content:"i";position:absolute;right:6px;top:5px;width:14px;height:14px;border-radius:50%;border:1px solid rgba(246,226,168,.6);font:italic 700 10px/12px Georgia,serif;text-align:center;color:#f0d79a}
+.wc>div{min-width:0}
+.wc b{display:block;font:700 12px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--bz-hi);padding-right:16px}
+.wc span{display:block;font-size:13px;line-height:1.3;color:var(--muted)}
+.wc .wi{width:46px;height:56px;object-fit:contain;flex:none;margin:0;filter:drop-shadow(0 2px 4px #000)}
+.wc .wi.pt{object-fit:cover;width:38px;height:56px}
+.wtowns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wtown{border:1px solid color-mix(in srgb,var(--wc) 55%,transparent);background:linear-gradient(180deg,color-mix(in srgb,var(--wc) 12%,transparent),rgba(5,3,11,.5));padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.wtown h3{margin:0;font:900 16px var(--f-display);letter-spacing:.14em;text-transform:uppercase}
+.wr{display:flex;gap:10px;align-items:baseline;cursor:var(--cur-hot);border-top:1px solid rgba(246,226,168,.15);padding-top:5px}
+.wr i{font:700 10px var(--f-display);letter-spacing:.16em;text-transform:uppercase;color:#f0d79a;font-style:normal;flex:none;width:76px}
+.wr span{font-size:14px}
+html[data-ui=mobile] .wtowns{grid-template-columns:1fr}
 table.wk td.l{text-align:left}
 table.wk th{white-space:nowrap}
 .bet em{font-style:normal;opacity:.8;margin-left:3px;font-size:10px}
@@ -4266,6 +4282,7 @@ addEventListener('pointermove', e => {
   setTip('<div>' + escA(txt) + '</div>', e.clientX, e.clientY, 's' + txt);
 });
 addEventListener('pointerdown', () => setTip(null));
+addEventListener('click', e => { const el = e.target && e.target.closest ? e.target.closest('.wiki [data-tip]') : null; if (el && e.pointerType !== 'mouse') setTip('<div>' + escA(el.getAttribute('data-tip')) + '</div>', e.clientX, e.clientY, 'w' + el.getAttribute('data-tip').length); });
 if (document.addEventListener) document.addEventListener('pointerleave', () => setTip(null));
 const inMatch = () => S.mode !== 'demo' && !['lobby', 'connecting', 'joined', 'neterr', 'gone'].includes(S.phase);
 addEventListener('keydown', e => {
@@ -4753,34 +4770,40 @@ const WIKI_TABS = [['world', 'World'], ['towns', 'The towns'], ['crews', 'The cr
 function wikiHtml() {
   const tab = S.ui.wiki || 'world';
   let b = '';
+  const tp = t => ' data-tip="' + escA(t) + '"';
+  const card = (title, line, tip, o) => { o = o || {}; return '<div class="wc"' + (tip ? tp(tip) : '') + (o.c ? ' style="--wc:' + o.c + '"' : '') + '>' + (o.img || '') + '<div><b' + (o.tc ? ' style="color:' + o.tc + '"' : '') + '>' + title + '</b><span>' + line + '</span></div></div>'; };
+  const pimg = k => '<img class="wi pt" src="' + PORT[k] + '" alt="">';
+  const hintTap = '<p class="hint">Hover a card (or tap it on a phone) for the full story.</p>';
   if (tab === 'world') {
-    b = `<p>The Vela Reach was a rocky harbor before the seas rose. By 2489 it is an inhabited structure of reef foundations, suspended quays and glass that carries more than light, and its two halves are called towns because calling them fortresses would admit how much life has been arranged around a threat.</p>
-      <p><b>Azurecourt</b> lies west of the battlefield, behind the <b>Sapphire Keep</b>. <b>Vermilion</b> lies east, behind the <b>Crimson Keep</b>. Between them runs the <b>Concord Span</b>, a broad level bridge with a star-shaped inlay at its centre, the Midmark. The Keeps share one architecture: ivory ceramic-alloy, gold contacts, and colored witnessglass that is the badge of whichever civic root governs it. Blue and red are political inheritances, not biological categories.</p>
-      <p><b>The Glass Night, 2357.</b> During a storm, Ansel Montavere ordered a brake sequence and Viola Capravell ordered a protective seal. Each order was defensible. Together, in an interlock nobody had tested, they trapped a thermal load inside the Prime Conduit. Eighty-six people died. In the second week, the two administrations began editing the logs.</p>
-      <p><b>The Last Accord, 2489.</b> Romeo Montavere (27, a civic witness of Azurecourt) and Juliette Capravell (26, a ceremonial engineer of Vermilion) have loved each other for five years. They appear to each other only as witnessglass projections. The <b>Concordance Lock</b> ties every resident to one of two civic roots and bars ordinary crossing. Neither House will provide the reciprocal acts that would reopen it.</p>
-      <p>When a Keep's Crown loses sovereign continuity, one root remains and one administration is responsible for both lovers. That is the only door, and it opens through somebody else's defeat. The tower is an obstacle in front of a town, not the town. The defeated town still has to wake up somewhere the next morning.</p>
-      <p class="hint">Either side can win, and either victory can bring the lovers together. Neither victory proves one population deserved to lose its name, customs or authority.</p>`;
+    b = '<div class="wcards">' +
+      card('The Vela Reach', 'A harbor city on reef and glass, split into two towns.', `The Vela Reach was a rocky harbor before the seas rose. By 2489 it is an inhabited structure of reef foundations, suspended quays and glass that carries more than light. Its two halves are called towns because calling them fortresses would admit how much life has been arranged around a threat.`) +
+      card('Azurecourt', 'West. Sapphire Keep. Blue.', `Azurecourt lies west of the battlefield, behind the Sapphire Keep. The Keeps share one architecture: ivory ceramic-alloy, gold contacts, and colored witnessglass that is the badge of whichever civic root governs it. Blue and red are political inheritances, not biological categories.`, {c: SIDES[0].c, tc: SIDES[0].c}) +
+      card('Vermilion', 'East. Crimson Keep. Red.', `Vermilion lies east, behind the Crimson Keep. Between the towns runs the Concord Span, a broad level bridge with a star-shaped inlay at its centre, the Midmark.`, {c: SIDES[1].c, tc: SIDES[1].c}) +
+      card('The Glass Night · 2357', 'A storm, two orders, 86 dead, two edited logs.', `During a storm, Ansel Montavere ordered a brake sequence and Viola Capravell ordered a protective seal. Each order was defensible. Together, in an interlock nobody had tested, they trapped a thermal load inside the Prime Conduit. Eighty-six people died. In the second week, the two administrations began editing the logs.`) +
+      card('The Last Accord · 2489', 'Two lovers who can only meet as light.', `Romeo Montavere (27, a civic witness of Azurecourt) and Juliette Capravell (26, a ceremonial engineer of Vermilion) have loved each other for five years. They appear to each other only as witnessglass projections. The Concordance Lock ties every resident to one of two civic roots and bars ordinary crossing.`, {img: pimg('romeo') + pimg('juliette')}) +
+      card('The only door', 'It opens through somebody else\'s defeat.', `When a Keep's Crown loses sovereign continuity, one root remains and one administration is responsible for both lovers. The tower is an obstacle in front of a town, not the town. The defeated town still has to wake up somewhere the next morning. Either side can win, and either victory can bring the lovers together. Neither proves one population deserved to lose its name, customs or authority.`) +
+      '</div>' + hintTap;
   } else if (tab === 'towns') {
-    b = `<table class="stats wk"><thead><tr><th></th><th style="color:${SIDES[0].c}">Azurecourt</th><th style="color:${SIDES[1].c}">Vermilion</th></tr></thead><tbody>
-      <tr><th>Keep</th><td class="l">Sapphire Keep, west</td><td class="l">Crimson Keep, east</td></tr>
-      <tr><th>Ideal</th><td class="l">The Measure: obligations made visible, testable and answerable to someone besides the person claiming to have met them.</td><td class="l">The Remembrance: a promise joined to an identifiable witness, so a fact cannot quietly disappear.</td></tr>
-      <tr><th>At its best</th><td class="l">A bridge marked with its safe load is a promise to the stranger who never met its builder.</td><td class="l">An official cannot deny an obligation that six neighbors heard him accept.</td></tr>
-      <tr><th>Its failure</th><td class="l">Treating a measure as a complete description of what it measures. A person becomes a record.</td><td class="l">Making a person answerable to everyone's record of who they ought to be. Gratitude becomes owed.</td></tr>
-      <tr><th>Ruling House</th><td class="l">Lord Aurel Montavere, a systems adjudicator who exempts his own House from the method he admires. His son Oren is a frontier captain.</td><td class="l">Lady Sabine Capravell, who turns affection into obligation. She tells Juliette which lives her wishes would wound.</td></tr>
-      <tr><th>A blue victory</th><td class="l" colspan="2">The Measure becomes the compulsory public framework of both towns. Vermilion's records are recataloged and its schools teach the western civic format.</td></tr>
-      <tr><th>A red victory</th><td class="l" colspan="2">The Remembrance becomes compulsory. Azurecourt's records must be witnessed through eastern offices, and its institutions keep their work but lose the authority to define citizenship.</td></tr></tbody></table>
-      <p class="hint">Either way this is assimilation, even when the new rulers supply working water and splendid meals. A custom that survives in private does not restore public equality.</p>`;
+    const T = (i, rows) => '<div class="wtown" style="--wc:' + SIDES[i].c + '"><h3 style="color:' + SIDES[i].c + '">' + (i ? 'Vermilion' : 'Azurecourt') + '</h3>' + rows.map(r => '<div class="wr"' + tp(r[2]) + '><i>' + r[0] + '</i><span>' + r[1] + '</span></div>').join('') + '</div>';
+    b = '<div class="wtowns">' +
+      T(0, [['Ideal', 'The Measure', 'Obligations made visible, testable and answerable to someone besides the person claiming to have met them. At its best: a bridge marked with its safe load is a promise to the stranger who never met its builder.'],
+            ['Failure', 'A person becomes a record', 'Treating a measure as a complete description of what it measures.'],
+            ['House', 'Lord Aurel Montavere', 'A systems adjudicator who exempts his own House from the method he admires. His son Oren is a frontier captain.'],
+            ['If blue wins', 'Western civic format', 'The Measure becomes the compulsory public framework of both towns. Vermilion\'s records are recataloged and its schools teach the western civic format.']]) +
+      T(1, [['Ideal', 'The Remembrance', 'A promise joined to an identifiable witness, so a fact cannot quietly disappear. At its best: an official cannot deny an obligation that six neighbors heard him accept.'],
+            ['Failure', 'Gratitude becomes owed', 'Making a person answerable to everyone\'s record of who they ought to be.'],
+            ['House', 'Lady Sabine Capravell', 'Turns affection into obligation. She tells Juliette which lives her wishes would wound.'],
+            ['If red wins', 'Eastern witnessing', 'The Remembrance becomes compulsory. Azurecourt\'s records must be witnessed through eastern offices, and its institutions keep their work but lose the authority to define citizenship.']]) +
+      '</div><p class="hint">Either way this is assimilation, even when the new rulers supply working water and splendid meals.</p>' + hintTap;
   } else if (tab === 'crews') {
-    b = `<p>Each Keep has ten mounts and five named chiefs. Each chief answers for a paired station of two mounts: <b>R1+S1</b>, <b>R2+S2</b>, <b>R3+S3</b>, <b>R4+S4</b> and <b>S5+S6</b>. A specialty is what the chief knows best, not a restriction: any turret fits any mount. Seat a turret and its chief answers.</p>
-      <table class="stats wk"><thead><tr><th>Station</th><th style="color:${SIDES[0].c}">Sapphire Keep</th><th style="color:${SIDES[1].c}">Crimson Keep</th><th>Closest disciplines</th></tr></thead><tbody>` +
-      [0, 1, 2, 3, 4].map(i => '<tr><th>' + ['R1 · S1', 'R2 · S2', 'R3 · S3', 'R4 · S4', 'S5 · S6'][i] + '</th><td class="l"><img class="pt" src="' + PORT[CHIEFS[0][i].img] + '" alt=""><b>' + CHIEFS[0][i].n + '</b>, ' + CHIEFS[0][i].role + ', ' + CHIEFS[0][i].age + '</td><td class="l"><img class="pt" src="' + PORT[CHIEFS[1][i].img] + '" alt=""><b>' + CHIEFS[1][i].n + '</b>, ' + CHIEFS[1][i].role + ', ' + CHIEFS[1][i].age + '</td><td class="l">' + CHIEFS[0][i].disc + '</td></tr>').join('') + `</tbody></table>
-      <p>Ivo Rell and Cassian Voss trade abrasive technical corrections across the Span, and neither calls it friendship. Both notice when the other takes too long to answer. All ten survive either ending; the same practical voice persists under a changed authority.</p>`;
+    const st = ['R1 · S1', 'R2 · S2', 'R3 · S3', 'R4 · S4', 'S5 · S6'];
+    b = '<p>Each keep has five chiefs, each running two mounts. Any turret fits any mount; a chief just knows some turrets best.</p>' + [0, 1].map(side => '<div class="wcards">' + CHIEFS[side].map((c, i) => card(c.n, st[i] + ' · ' + c.role, 'Knows best: ' + c.disc + '. Age ' + c.age + '. “' + c.inst + '”', {c: SIDES[side].c, img: '<img class="wi pt" src="' + PORT[c.img] + '" alt="">'})).join('') + '</div>').join('') + hintTap;
   } else if (tab === 'arsenal') {
     const L = {vulcan: `A rotary cannon that divides force into many repeated acts. Ivo says its temptation is to let repetition replace attention. Cassian says its virtue is that a sequence can be audited.`,
       flak: `Born among the instruments that kept fragile harbor structures clear of debris. Now it denies the other town room above the Span.`,
-      cryo: `A faceted ice spear. Its civilian ancestors held a failure still long enough for a repair crew to arrive. Neris finds the conversion hard to discuss ceremonially.`,
+      cryo: `A faceted ice spear. Its civilian ancestors held a failure still long enough for a repair crew to arrive.`,
       torch: `A furnace made directional. Mira remembers a craft hall in its nozzle; Ysra remembers a public oven. Neither memory makes its use innocent.`,
-      arc: `Forked electrodes from the old promise that a failed line could be bridged long enough to restore a service. Tomas likes the promise. Lucan asks who decides which line is worth restoring.`,
+      arc: `Forked electrodes from the old promise that a failed line could be bridged long enough to restore a service. Lucan asks who decides which line is worth restoring.`,
       swarm: `A honeycomb of folded craft that once carried inspection lights, seed samples and repair compounds. Small does not mean inconsequential.`,
       needle: `The lightest barrel in the heavy arsenal. Ivo warns that precision cannot make a mistaken identification correct.`,
       mortar: `A short elevated tube that casts plasma beyond the operator's sight. Mira dislikes commands that grow less specific as they grow more distant.`,
@@ -4791,30 +4814,27 @@ function wikiHtml() {
       glacier: `Broad where the Cryo Lance is slender, descended from emergency preservation. Time bought for a commander may be time denied to someone waiting elsewhere.`,
       singularity: `A near-black field centre in sculptural containment. Related techniques helped recover inaccessible material. It never granted time travel or revived the dead.`,
       sunlance: `The most ceremonial instrument, a white-gold solar heart in a large focus. Heat becomes care only when someone accepts responsibility for where it goes.`};
-    b = '<p>The fifteen instruments are equipment, not a requirement to install all of them. Each began as civilian harbor engineering before the frontier absorbed it.</p><table class="stats wk"><tbody>' +
-      ROSTER.map(R => '<tr><th style="color:' + TIER_C[R.tier] + '">' + R.name + '</th><td class="l">' + (L[R.id] || '') + '</td></tr>').join('') + '</tbody></table>';
+    b = '<p>Fifteen instruments, all civilian harbor engineering before the frontier took them.</p><div class="wcards">' +
+      ROSTER.map(R => card(R.name, R.short, L[R.id] || '', {tc: TIER_C[R.tier], c: TIER_C[R.tier], img: '<img class="wi" alt="" src="assets/w_b_' + R.id + '.webp" onerror="this.remove()">'})).join('') + '</div>' + hintTap;
   } else if (tab === 'machines') {
-    b = `<p>The towns have outsourced much of their frontier violence to autonomous bodies. This reduces one kind of immediate exposure. It does not make the conflict bloodless: workers repair, couriers cross unstable decks, and civilian food and heat budgets pay for replacements. Blue units advance east from Azurecourt, red units west from Vermilion.</p>
-      <table class="stats wk"><tbody>
-      <tr><th>Exo Trooper</th><td class="l">The most human-shaped proxy, useful in spaces built for human workers and useful to propaganda that wants obedient machines to look like ideal citizenship.</td></tr>
-      <tr><th>Razor Bike</th><td class="l">Speed given a low mechanical body. It descends from urgent inspections and deliveries along exposed structures.</td></tr>
-      <tr><th>Bulwark</th><td class="l">A wall on short tracks. Enduring an attack is not proof that the place it was told to stand is just.</td></tr>
-      <tr><th>Wasp Drone</th><td class="l">An independently deployed flyer, distinct from the Swarm Pod's small craft. It has no inherited hatred; people supplied the procedure that treats certain colors and routes as reason enough to act.</td></tr>
-      <tr><th>Titan Walker</th><td class="l">A large autonomous siege machine on four articulated legs. It is not a walking Keep and carries no Crown. Its scale makes the system's cost harder to ignore.</td></tr></tbody></table>
-      <p><b>The five cores</b> are recognizable objects of skilled craft. Neutron Core: a contained reactor component, a well-seated one is work that resisted being admired before it was understood. Overclock Chip: the luminous processor of faster fire, not a device for accelerating time. Tri-Barrel: a targeting modification for a second target (area weapons gain damage instead). Nova Charge: a wider effect that should prompt a more careful conversation about where it is sent. Nano Lens: a precision optic, not a promise of unlimited sight.</p>
-      <p class="hint">One quiet document in the Witness Journal records a replacement Nano Lens ground in Vermilion for a failed instrument on a shared structure. The western form calls it a licensed exchange, the eastern form a fulfilled repair obligation. Both are correct and incomplete. The lens does not end the war.</p>`;
+    const M = [['Exo Trooper', 'Human-shaped proxy soldier.', 'The most human-shaped proxy, useful in spaces built for human workers and useful to propaganda that wants obedient machines to look like ideal citizenship.'],
+      ['Razor Bike', 'Fast, low, and fragile.', 'Speed given a low mechanical body. It descends from urgent inspections and deliveries along exposed structures.'],
+      ['Bulwark', 'A wall on short tracks.', 'Enduring an attack is not proof that the place it was told to stand is just.'],
+      ['Wasp Drone', 'Flies over everything.', 'An independently deployed flyer, distinct from the Swarm Pod\'s small craft. It has no inherited hatred; people supplied the procedure that treats certain colors and routes as reason enough to act.'],
+      ['Titan Walker', 'Four-legged siege machine.', 'A large autonomous siege machine on four articulated legs. It is not a walking Keep and carries no Crown. Its scale makes the system\'s cost harder to ignore.']];
+    b = '<p>The towns send machines to fight so people do not have to. Blue marches east, red marches west. See the Cores tab for the five cores.</p><div class="wcards">' + M.map(m => card(m[0], m[1], m[2])).join('') + '</div>' + hintTap;
   } else if (tab === 'voices') {
-    b = '<p>The <b>Last Witness</b> is the public interval before each decisive confrontation. Romeo and Juliette use the custom to speak to one another while both towns listen. Light is permitted where bodies are refused. In a match you see one of these exchanges at the start of planning in rounds 1, 4, 7 and so on.</p>' +
-      WITNESS.map(w => '<table class="stats wk"><thead><tr><th colspan="2">' + w.t + '</th></tr></thead><tbody>' + w.l.map(ln => '<tr><th style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '"><img class="pt" src="' + (ln[0] === 'R' ? PORT.romeo : PORT.juliette) + '" alt="">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</th><td class="l">“' + ln[1] + '”</td></tr>').join('') + '</tbody></table>').join('') +
-      '<p class="hint">Two more exchanges belong to the endings and appear only after a victory.</p>';
+    b = '<p>Before each decisive round Romeo and Juliette speak while both towns listen. You see one at the start of planning in rounds 1, 4, 7 and so on.</p>' +
+      WITNESS.map(w => '<table class="stats wk"><thead><tr><th colspan="2">' + w.t + '</th></tr></thead><tbody>' + w.l.map(ln => '<tr><th style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '"><img class="pt" src="' + (ln[0] === 'R' ? PORT.romeo : PORT.juliette) + '" alt="">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</th><td class="l">“' + ln[1] + '”</td></tr>').join('') + '</tbody></table>').join('');
   } else if (tab === 'basics') {
-    b = '<p>Two keeps face each other. Each has ten turret mounts: four on the roof (R1 to R4) and six on the inward-facing side (S1 to S6). Every round has two parts.</p>' +
-      '<p><b>Planning (90 s, 105 s from round 4, 120 s from round 7).</b> Thirty seconds of each planning phase are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. Press Ready to lock in; when both sides are ready, combat starts early.</p>' +
-      '<p><b>Combat (30 s).</b> Mechs march automatically from both keeps. Your turrets shoot the enemy mechs, and any mech that reaches your keep damages it. You can spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 20 s, overtime Titans march until one side breaks.</p>' +
-      '<p><b>Routes and terrain.</b> Each army leaves its own keep door and walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you, and each can hold a <b>barrier</b> (enemy troops stop and break it before they can pass) or a <b>slow field</b> (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A damaged barrier mends half its damage each round for free, a broken one must be rebuilt, and drones fly over everything.</p>' +
-      '<p><b>Roof mounts.</b> Launchers that lob their shots gain from the height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top.</p>' +
-      '<p><b>Winning.</b> Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. Round 5 onward the mech waves get tougher every round.</p>' +
-      '<p><b>Tip.</b> Roof mounts reach farther but short-range turrets there may never fire. Check the after-action report to spot idle turrets.</p>';
+    b = '<div class="wcards">' +
+      card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Thirty seconds of it are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
+      card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 20 s, overtime Titans march until one side breaks.') +
+      card('3 · Win', 'Lose rounds, lose HP. Last one standing wins.', 'Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. From round 5 the mech waves get tougher every round.') +
+      card('Mounts', '4 on the roof (R1-R4), 6 on the side (S1-S6).', 'Launchers that lob their shots gain from height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top. Short-range turrets on the roof may never fire; check the after-action report for idle turrets.') +
+      card('Terrain', 'Two gates: barrier or slow field.', 'Each army walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you. Each can hold a barrier (enemy troops stop and break it before they can pass) or a slow field (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A damaged barrier mends half its damage each round for free, a broken one must be rebuilt, and drones fly over everything.') +
+      card('Wins pay', 'Gold, interest, streaks, wagers.', 'See the Economy tab for income, interest, streaks and wagers.') +
+      '</div>' + hintTap;
   } else if (tab === 'turrets') {
     b = '<table class="stats wk"><thead><tr><th>Turret</th><th>Cost</th><th>Range</th><th>Dmg</th><th>Rate/s</th><th>Hits</th><th>Traits · notes</th></tr></thead><tbody>' +
       ROSTER.map(R => '<tr><th style="color:' + TIER_C[R.tier] + '">' + R.name + '</th><td>' + R.tier + 'g</td><td>' + Math.round(R.range / PX_PER_M) + ' m</td><td>' + (+R.dmg.toFixed(1)) + (R.count ? '×' + R.count : '') + '</td><td>' + (+R.rate.toFixed(1)) + '</td><td>' + (R.air && R.ground ? 'Air + ground' : R.air ? 'Air only' : 'Ground only') + '</td><td class="l">' + R.traits.map(t => TRAITS[t].name).join(' · ') + ' — ' + R.short + (R.splash ? ' (splash)' : '') + (R.chain ? ' (chains ' + R.chain + ')' : '') + '</td></tr>').join('') +
