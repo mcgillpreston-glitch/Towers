@@ -337,17 +337,22 @@ html[data-ui=desktop][data-gut="1"] .wp.r{flex-direction:row-reverse;text-align:
 html[data-ui=desktop][data-gut="1"] .bark{left:8px;bottom:12px;width:calc(var(--gut) - 18px);max-width:none;box-sizing:border-box;transform:translateY(10px)}
 html[data-ui=desktop][data-gut="1"] .bark.on{transform:none}
 /* planning stats: larger, spread across the row */
-html[data-ui=desktop] .eco{gap:14px 22px;align-items:center}
-html[data-ui=desktop] .eco>.stat:first-child{min-width:130px}
+html[data-ui=desktop] .eco{gap:8px 14px;align-items:center;flex-wrap:nowrap}
+html[data-ui=desktop] .eco>.stat:first-child{min-width:96px}
 html[data-ui=desktop] .eco .stat span{font-size:12px;letter-spacing:.18em}
 html[data-ui=desktop] .eco .stat>b:not(:only-child){font-size:34px}
 html[data-ui=desktop] .eco .stat em{font-size:13px}
-html[data-ui=desktop] .eco .stat.grow{flex:1 1 280px;min-width:240px;gap:3px}
+html[data-ui=desktop] .eco .stat.grow{flex:1 1 150px;min-width:130px;gap:3px}
+html[data-ui=desktop] .eco .stat.grow>span{white-space:normal;letter-spacing:.1em}
 html[data-ui=desktop] .eco .stat.grow .xpbar{height:12px;margin-block:4px}
-html[data-ui=desktop] .eco .stat .od b{font-size:21px;min-width:44px}
+html[data-ui=desktop] .eco .stat .od{gap:4px}
+html[data-ui=desktop] .eco .stat .od b{font-size:18px;min-width:38px}
 html[data-ui=desktop] .eco .stat .od b i{font-size:10px}
-html[data-ui=desktop] .eco>.btn{padding:11px 18px;font-size:13px}
-html[data-ui=desktop] .eco>.btn.prime{padding:12px 26px;font-size:15px}
+html[data-ui=desktop] .eco>.btn{padding:10px 14px;font-size:12.5px;white-space:nowrap;flex:none}
+html[data-ui=desktop] .eco{padding-right:170px;min-height:70px}
+html[data-ui=desktop] .eco>[data-act=ready],html[data-ui=desktop] .eco>[data-act=unready]{position:absolute;top:12px;right:22px;z-index:2;padding:14px 30px;font-size:16px}
+html[data-ui=desktop] .dock{max-height:none;overflow:visible}
+html[data-ui=desktop] .stage{min-height:120px}
 html[data-ui=mobile] .eco>.stat.odds{grid-column:span 2;order:4}
 html[data-ui=mobile] .stat .od{gap:4px}
 html[data-ui=mobile] .stat .od b{font-size:12px;min-width:0;flex:1}
