@@ -358,6 +358,26 @@ html[data-ui=mobile] .stat .od{gap:4px}
 html[data-ui=mobile] .stat .od b{font-size:12px;min-width:0;flex:1}
 html[data-ui=mobile] .stat .od b i{font-size:8px}
 html[data-ui=mobile][data-o=l] .eco>.stat.odds{grid-column:span 2}
+/* level, turret slots and XP */
+.lvl{display:grid!important;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center}
+.lvl .lv{display:flex;flex-direction:column;align-items:center;line-height:1}
+.lvl .lv b{font:900 38px var(--f-display)}
+.lvl .sl{display:flex;flex-direction:column;gap:5px}
+.lvl .sl span{white-space:nowrap!important;font-size:12px!important;letter-spacing:.14em!important;color:#f0d79a}
+.lvl .sl span em{font:900 16px var(--f-display);color:#fff2cf;letter-spacing:.04em;margin-left:4px}
+.pips{display:flex;gap:7px;flex-wrap:wrap;padding-left:3px}
+.pip{width:13px;height:13px;transform:rotate(45deg);border:1.5px solid rgba(246,226,168,.65);background:rgba(5,3,11,.6);display:block}
+.pip.on{background:var(--gild-v);border-color:#fff2cf;box-shadow:0 0 9px rgba(255,200,90,.85)}
+.xpbar.big{grid-column:1/-1;height:20px;position:relative;margin:2px 0 0;background:#0d1530 padding-box,var(--gild) border-box}
+.xpbar.big i{box-shadow:0 0 12px rgba(79,216,255,.7)}
+.xpbar.big u{position:absolute;inset:0;display:grid;place-items:center;text-decoration:none;font:800 12px var(--f-display);letter-spacing:.12em;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000}
+html[data-ui=desktop] .eco .stat.grow{flex:1 1 230px;min-width:215px}
+html[data-ui=mobile] .lvl .lv b{font-size:28px}
+html[data-ui=mobile] .lvl .sl span{font-size:9px!important;letter-spacing:.08em!important}
+html[data-ui=mobile] .lvl .sl span em{font-size:13px}
+html[data-ui=mobile] .pips{gap:5px}
+html[data-ui=mobile] .pip{width:10px;height:10px}
+html[data-ui=mobile] .xpbar.big{height:16px}
 /* ---- Mobile layout (data-ui="mobile"): chosen automatically from the device, or forced in Settings ---- */
 html[data-ui=mobile] body{font-size:14px}
 html[data-ui=mobile] .app{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-width:none;gap:5px;padding:6px}
@@ -4741,7 +4761,7 @@ function renderDock() {
   const need = XPNEED[P.level];
   let h = '<div class="eco">' +
     '<div class="stat" data-tip="Gold. Each round pays 9 + interest (+1 at 4 gold, then +1 per 6 more, max +5 at 28 gold; it only counts gold up to 10 above the rival pile, and the poorer side gets comeback pay: +1 per 10 gold behind, max +3) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (comeback ? ' · +' + comeback + ' comeback' : '') + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
-    '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + '</em></div>' +
+    '<div class="stat grow lvl" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><div class="lv"><span>Level</span><b>' + P.level + '</b></div><div class="sl"><span>Turret slots <em>' + onBoard + ' / ' + P.level + '</em></span><div class="pips">' + Array.from({length: P.level}, (_, i) => '<i class="pip' + (i < onBoard ? ' on' : '') + '"></i>').join('') + '</div></div><div class="xpbar big"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i><u>' + (need ? P.xp + ' / ' + need + ' XP' : 'MAX LEVEL') + '</u></div></div>' +
     '<div class="stat odds" data-tip="Shop odds: the chance, in percent, that a shop slot offers a 1, 2, 3, 4 or 5 gold turret at your level."><span>Shop odds</span><div class="od">' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '"><i>' + (i + 1) + 'g</i>' + o + '%</b>').join('') + '</div></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
