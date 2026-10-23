@@ -217,6 +217,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .wp.on{opacity:.95}.wp b{display:block;font:700 9px var(--f-display);letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px}
 .wp.l b{color:#8cc6ff}.wp.r{text-align:right;border-top-color:rgba(255,140,120,.35);text-shadow:0 0 8px rgba(255,150,130,.45)}.wp.r b{color:#ff9a84}.wp i{font-style:italic}
 @keyframes wshim{0%,100%{filter:none}48%{filter:none}50%{filter:brightness(1.25) blur(.3px)}52%{filter:none}}
+.aboutbox{max-height:min(60vh,520px);overflow:auto;padding-right:6px}.aboutbox .stats th{width:30%;text-align:left;vertical-align:top}.aboutbox .stats td{text-align:left}
 .card.wikic{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:hidden;z-index:70}
 .wtabs{display:flex;gap:6px;flex-wrap:wrap}
 .wiki{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
@@ -4898,7 +4899,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [S.ui.set, S.ui.prof, S.ui.pt, S.award && S.award.t, PROF.px.cx + PROF.px.ax + PROF.px.hx, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [S.ui.set, S.ui.about, S.ui.prof, S.ui.pt, S.award && S.award.t, PROF.px.cx + PROF.px.ax + PROF.px.hx, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -5050,7 +5051,29 @@ function settingsHtml() {
       '<label><input type="checkbox" id="mLow"' + (VIDEO.low ? ' checked' : '') + '> Reduced effects (fewer particles, no smoke)</label>' +
       '<label><input type="checkbox" id="mAdapt"' + (VIDEO.adapt ? ' checked' : '') + '> Adaptive resolution (lowers it automatically if combat lags)</label></div>' +
     (RES[VIDEO.res] && effRes() !== VIDEO.res ? '<p class="hint">Now drawing at ' + RES[effRes()].name + ', lowered automatically because combat was running slowly.</p>' : '') +
-    '<p class="hint">4K draws the battlefield at 3840 × 2160 and is the default. If the game runs slowly, choose a lower resolution: it also loads a smaller background picture.</p>' + benchHtml();
+    '<p class="hint">4K draws the battlefield at 3840 × 2160 and is the default. If the game runs slowly, choose a lower resolution: it also loads a smaller background picture.</p>' + benchHtml() +
+    '<h2>About</h2><div class="setrow"><button class="btn small" data-act="about" type="button">About · credits &amp; licences</button></div>';
+}
+function aboutHtml() {
+  const row = (a, b) => '<tr><th>' + a + '</th><td>' + b + '</td></tr>';
+  return '<div class="kicker">Of Blood &amp; Glass</div><h1>About</h1>' +
+    '<div class="aboutbox">' +
+    '<h2>Creation</h2><table class="stats">' +
+      row('Game concept and design', 'Original work by the game\'s creator: the world, factions, lore, rules and balance.') +
+      row('Programming', 'Written with the help of Claude (Anthropic), directed and reviewed by the creator.') +
+      row('Artwork', 'Generated with ChatGPT (OpenAI) on a paid plan, then edited and reworked by the creator. Covers the keeps, turrets, minions, cores, projectiles, shatter effects, battlefield and character portraits.') +
+      row('Intro video', 'Made in Runway on a paid plan.') +
+      row('Music', 'Both tracks, "ballista bby" (menu and planning) and "OoooooOOOooo" (combat), were made by the creator with Suno on a paid plan.') +
+    '</table>' +
+    '<h2>Open-source software and fonts</h2><table class="stats">' +
+      row('PeerJS', 'Peer-to-peer connections for friend matches. MIT licence. Copyright the PeerJS authors. Loaded from a public CDN.') +
+      row('Cinzel', 'Display font by Natanael Gama. SIL Open Font Licence 1.1, via Google Fonts.') +
+      row('Chakra Petch', 'Interface font by Cadson Demak. SIL Open Font Licence 1.1, via Google Fonts.') +
+    '</table>' +
+    '<h2>Names and notices</h2>' +
+    '<p class="hint">Romeo and Juliette are names from William Shakespeare\'s public-domain play. All other characters, places and factions are fictional, and any resemblance to real people is coincidental. Turret and machine names are descriptive terms for fictional devices. This game is an independent work and is not affiliated with or endorsed by OpenAI, Runway, Suno, Anthropic, Google or any other company named here; their names belong to their owners.</p>' +
+    '<p class="hint">Cosmetic levels and titles have no effect on gameplay. Match runs are uploaded only if you leave that option enabled in the menu.</p>' +
+    '</div><div class="btns"><button class="btn prime" data-act="aboutx" type="button">Back</button></div>';
 }
 function bindSettings() {
   const mm = $('mVolMusic'), mf = $('mVolFx');
@@ -5181,6 +5204,7 @@ function profHtml() {
 function showOverlay() {
   $('overlay').innerHTML = '';
   const ph = S.phase, mode = S.mode;
+  if (S.ui.about && ((S.ui.menu && inMatch()) || (S.ui.set && mode === 'demo'))) { card(aboutHtml(), true).classList.add('wikic'); return; }
   if (S.ui.wiki && ((S.ui.menu && inMatch()) || mode === 'demo')) { card(wikiHtml()).classList.add('wikic'); return; }
   if (S.ui.menu && inMatch()) {
     card(menuHtml(), true);
@@ -5269,12 +5293,14 @@ function startCpu(diff) { leaveRoom(); newMatch('cpu', diff); }
 function onAct(a, btn) {
   audio();
   const parts = String(a).split(':'), k0 = parts[0];
-  if (k0 === 'resume') S.ui.menu = false;
+  if (k0 === 'resume') { S.ui.menu = false; S.ui.about = false; }
   else if (k0 === 'skipres') { if (S.phase === 'result' && (S.mode === 'cpu' || S.mode === 'host')) S.phaseT = Math.min(S.phaseT, 0.1); }
   else if (k0 === 'wiki') S.ui.wiki = parts[1] || 'basics';
   else if (k0 === 'wikix') S.ui.wiki = null;
+  else if (k0 === 'about') S.ui.about = true;
+  else if (k0 === 'aboutx') S.ui.about = false;
   else if (k0 === 'settings') S.ui.set = true;
-  else if (k0 === 'setx') S.ui.set = false;
+  else if (k0 === 'setx') { S.ui.set = false; S.ui.about = false; }
   else if (k0 === 'logdl') logDownload(true);
   else if (k0 === 'stats') { S.ui.menu = false; S.ui.tab = !S.ui.tab; }
   else if (k0 === 'leave') { leaveRoom(); newMatch('demo'); }
@@ -5309,7 +5335,7 @@ function onAct(a, btn) {
     else if (S.mode === 'host' && net) net.rematch = true;
     else if (S.mode === 'guest' && net) net.in.r = 1;
   } else if (k0 === 'menu') { leaveRoom(); newMatch('demo'); }
-  if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute' && k0 !== 'wiki' && k0 !== 'wikix' && k0 !== 'logdl') S.ui.menu = false; if (k0 === 'resume') S.ui.wiki = null; if (k0 !== 'stats') S.ui.tab = false; }
+  if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute' && k0 !== 'wiki' && k0 !== 'wikix' && k0 !== 'about' && k0 !== 'aboutx' && k0 !== 'logdl') S.ui.menu = false; if (k0 === 'resume') S.ui.wiki = null; if (k0 !== 'stats') S.ui.tab = false; }
   dockSig = ''; overlaySig = '';
 }
 for (const id of ['overlay', 'dock']) {
