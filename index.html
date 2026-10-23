@@ -505,6 +505,39 @@ html[data-ui=mobile][data-o=l] .sound{top:4px;right:auto;left:4px}
 html[data-ui=mobile][data-o=l] #sheetBtn{display:block;position:fixed;right:8px;bottom:8px;z-index:26;min-height:40px}
 html[data-ui=mobile][data-o=l] #sheetBtn[hidden]{display:none}
 html[data-ui=mobile][data-o=l][data-sheet="1"] #sheetBtn{bottom:auto;top:40px}
+
+/* cores are icons (details in the tooltip) so the mounts and bench get the room */
+html[data-ui] .chip.core{min-height:0;aspect-ratio:1;padding:0;align-items:center;justify-content:center;overflow:hidden}
+html[data-ui] .chip.core .ti{position:static;transform:none;width:76%;height:76%;border-radius:50%;object-fit:contain}
+.chip .cf{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 20px var(--f-display);opacity:.8}
+html[data-ui=desktop] .g6.cg{grid-template-columns:repeat(3,1fr);gap:6px}
+/* desktop: bigger mounts and bench, narrow core rack */
+html[data-ui=desktop] .zones{grid-template-columns:minmax(0,6fr) minmax(0,5fr) minmax(104px,1.4fr);gap:14px}
+html[data-ui=desktop] .zones .g{gap:7px}
+html[data-ui=desktop] .zones .chip:not(.core){min-height:62px;padding:6px 10px}
+html[data-ui=desktop] .zones .chip:not(.core) .cn{font-size:14px}
+html[data-ui=desktop] .zones .chip:not(.core) .ml{font-size:11px}
+html[data-ui=desktop] .zones .chip:not(.core) .ti{width:46px;height:36px}
+html[data-ui=desktop] .zones .zl{font-size:12px;margin-bottom:6px}
+html[data-ui=desktop] .dock .selbar{font-size:14px}
+/* wide desktop windows: gold, level, odds, buy and ready live in the free column right of the keeps */
+html[data-ui=desktop][data-side="1"] .eco{position:fixed;right:10px;top:calc(var(--sty) + 8px);width:calc(var(--gut) - 24px);max-height:calc(var(--sth) - 76px);overflow-y:auto;scrollbar-width:none;z-index:20;display:flex;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:10px;padding:12px;min-height:0;box-sizing:border-box;background:linear-gradient(180deg,rgba(20,14,46,.95),rgba(8,6,20,.97)) padding-box,var(--gild) border-box;border:2px solid transparent}
+html[data-ui=desktop][data-side="1"] .eco::-webkit-scrollbar{display:none}
+html[data-ui=desktop][data-side="1"] .eco>*{width:100%;box-sizing:border-box;min-width:0;flex:none}
+html[data-ui=desktop][data-side="1"] .eco>[data-act=ready],html[data-ui=desktop][data-side="1"] .eco>[data-act=unready]{position:static;order:-1;padding:16px 10px;font-size:18px;text-align:center}
+html[data-ui=desktop][data-side="1"] .eco>.stat:first-child{min-width:0}
+html[data-ui=desktop][data-side="1"] .eco .stat.grow{min-width:0;flex:none}
+html[data-ui=desktop][data-side="1"] .eco .stat .od{flex-wrap:wrap}
+html[data-ui=desktop][data-side="1"] .eco>.spacer{display:none}
+html[data-ui=desktop][data-side="1"] .eco{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px;max-height:calc(var(--sth) - 70px)}
+html[data-ui=desktop][data-side="1"] .eco>*{grid-column:span 2}
+html[data-ui=desktop][data-side="1"] .eco>[data-act=xp],html[data-ui=desktop][data-side="1"] .eco>[data-act=reroll]{grid-column:span 1;padding:9px 4px;font-size:11.5px;letter-spacing:.04em}
+html[data-ui=desktop][data-side="1"] .eco>[data-act=ready],html[data-ui=desktop][data-side="1"] .eco>[data-act=unready]{padding:11px 8px;font-size:17px}
+html[data-ui=desktop][data-side="1"] .eco>.stat:first-of-type{flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+html[data-ui=desktop][data-side="1"] .eco .stat>b:not(:only-child){font-size:26px}
+html[data-ui=desktop][data-side="1"] .eco .stat.grow{gap:1px}
+html[data-ui=desktop][data-side="1"] .eco .stat.grow .xpbar{margin-block:2px}
+html[data-ui=desktop][data-side="1"] .eco .stat .od b{font-size:15px;min-width:30px}
 </style><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style></head><body>
 <div id="tip" role="tooltip" hidden></div>
 <div class="app">
@@ -1863,7 +1896,10 @@ function fit() {
   const scale = Math.min((r.width - 4) / W, (r.height - 4) / H);
   const w = Math.max(1, Math.floor(W * scale)), h = Math.max(1, Math.floor(H * scale));
   cv.style.width = w + 'px'; cv.style.height = h + 'px';
-  { const g = (r.width - w) / 2, rt = document.documentElement; rt.style.setProperty('--gut', Math.max(0, Math.floor(g)) + 'px'); rt.dataset.gut = g >= 190 ? '1' : '0'; }
+  { const g = (r.width - w) / 2, rt = document.documentElement; rt.style.setProperty('--gut', Math.max(0, Math.floor(g)) + 'px'); rt.dataset.gut = g >= 190 ? '1' : '0';
+    const was = rt.dataset.side === '1';           // wide windows: the economy panel moves into the right gutter (hysteresis so it never flickers)
+    rt.dataset.side = rt.dataset.ui === 'desktop' && (was ? g >= 175 : g >= 250) ? '1' : '0';
+    rt.style.setProperty('--sty', Math.round(r.top) + 'px'); rt.style.setProperty('--sth', Math.round(r.height) + 'px'); }
   let bw, bh;
   const er = effRes();
   if (RES[er]) { bw = RES[er].w; bh = RES[er].h; }
@@ -4808,11 +4844,11 @@ function renderDock() {
   h += '</div><div class="zones">' +
     '<div><div class="zl">Keep mounts · ' + onBoard + ' / ' + P.level + '</div><div class="g g10">' + P.board.map((u, i) => chipHtml(u, 'm', i, MOUNT_LABEL[i] + ' <b class="kb">' + ((i + 1) % 10) + '</b>', locked)).join('') + '</div></div>' +
     '<div><div class="zl">Bench</div><div class="g g8">' + P.bench.map((u, i) => chipHtml(u, 'b', i, '', locked)).join('') + '</div></div>' +
-    '<div class="zcores"><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6">';
+    '<div class="zcores"><div class="zl">Cores · ' + P.items.length + ' / ' + MAX_ITEMS + '</div><div class="g g6 cg">';
   for (let i = 0; i < MAX_ITEMS; i++) {
     const it = P.items[i] ? ITEMS[P.items[i]] : null, sel = S.ui.sel && S.ui.sel.z === 'i' && S.ui.sel.i === i;
-    h += it ? '<button type="button" class="chip' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" data-tipk="i:' + P.items[i] + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '>' + cIcon(P.items[i]) + '<span class="cn" style="color:' + it.color + '">' + it.name + '</span><span class="ml">' + it.fx + '</span></button>'
-      : '<div class="chip empty" data-tip="Empty core slot. Cores drop from fallen mechs and arrive every 3rd round."><span class="ml">—</span></div>';
+    h += it ? '<button type="button" class="chip core' + (sel ? ' sel' : '') + '" data-act="slot:i:' + i + '" data-tipk="i:' + P.items[i] + '" aria-label="' + it.name + '" style="--t:' + it.color + '"' + (locked ? ' disabled' : '') + '><span class="cf" style="color:' + it.color + '">' + it.name.charAt(0) + '</span>' + cIcon(P.items[i]) + '</button>'
+      : '<div class="chip core empty" data-tip="Empty core slot. Cores drop from fallen mechs and arrive every 3rd round."></div>';
   }
   h += '</div></div></div>';
   h += '<div class="selbar" role="status">' + (S.ui.msg ? '<span class="m">' + S.ui.msg + '</span>' : selInfo(P) || '<span class="h">' + (locked ? 'Locked in. Waiting for the other keep… Tap Unlock to keep editing.' : 'Buy turrets, tap one to pick it up, then tap a mount. Three copies merge into a stronger star. Keys: D reroll, F buy XP, E sell.') + '</span>') + '</div>';
