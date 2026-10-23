@@ -1080,7 +1080,7 @@ function newMatch(mode, diff) {
     mode, diff: diff || (old && old.diff) || 'hard',
     phase: 'setup', phaseT: mode === 'demo' ? 1.5 : SETUP_LEN, round: 1, timeLeft: COMBAT_LEN,
     p: [newPlayer(), newPlayer()],
-    units: [], projs: [], drops: [], strikes: [], fields: [], rings: [], fires: [], parts: [], texts: [], decals: [], beams: [], blasts: [], titles: [], events: [],
+    units: [], piles: [], projs: [], drops: [], strikes: [], fields: [], rings: [], fires: [], parts: [], texts: [], decals: [], beams: [], blasts: [], titles: [], events: [],
     spawnT: 1, nextId: 1, shake: 0, flash: 0, flashC: '255,255,255', t: 0, kick: 0, energy: 0.3,
     me: mode === 'host' || mode === 'cpu' ? 0 : -1, winner: -1, rw: -1, loser: -1,
     chaos: null, chaosAt: [], wind: 0, dropDone: 0,
@@ -1098,7 +1098,7 @@ function newMatch(mode, diff) {
   }
   for (const P of S.p) buildTurrets(P);
 }
-function clearField() { TRACES = []; S.units = []; S.projs = []; S.drops = []; S.strikes = []; S.fields = []; S.beams = []; S.rings = []; S.fires = []; S.chaos = null; ORB.imp = [0, 0]; ORB.f = [0, 0]; ORB.o = ORB.ov = 0; ORB.rings = []; ORB.sp = []; }
+function clearField() { TRACES = []; S.units = []; S.piles = []; S.projs = []; S.drops = []; S.strikes = []; S.fields = []; S.beams = []; S.rings = []; S.fires = []; S.chaos = null; ORB.imp = [0, 0]; ORB.f = [0, 0]; ORB.o = ORB.ov = 0; ORB.rings = []; ORB.sp = []; }
 const streakBonus = st => { const a = Math.abs(st); return a >= 5 ? 3 : a >= 4 ? 2 : a >= 2 ? 1 : 0; };
 function setPhase(ph, t) { S.phase = ph; S.phaseT = t || 0; phaseFx(ph); }
 function startSetup() {
@@ -2216,6 +2216,7 @@ function applyEvent(d) {
     spark(x, y, rgb, 7, 150); spark(x, y, '255,255,255', 4, 120);
     for (let i = 0; i < 4; i++) S.parts.push({x, y, vx: rnd(-120, 120), vy: rnd(-220, -60), c: '#5a527e', life: rnd(0.6, 1.1), r: rnd(2, 4)});
     S.decals.push({x, y: y + (T.fly ? 34 : T.h * 0.5), r: T.w * 0.55, life: 10});
+    S.piles.push({x, cy: y, gy: d[7] === undefined ? y + (T.fly ? 34 : T.h * 0.5) : d[7], type: TYPE_KEYS[ti], side, t: 0}); if (S.piles.length > 90) S.piles.shift();
     if (S.decals.length > 60) S.decals.shift();
     if (TYPE_KEYS[ti] === 'titan') { fxBlast(x, y, 70, rgb, 0.6); S.shake = Math.max(S.shake, 0.6); sfx('titan', t => boom(t, 0.18, 1.6), 0.2); }
     else sfx('pop', t => zap(t, 700, 120, 0.08, 'square', 0.015), 0.06);
@@ -2769,7 +2770,7 @@ function worldStep(dt, live) {
     const killer = u.side ^ 1, byW = u.byShot && u.lastBy === killer, KP = S.p[killer];
     if (byW && live) { KP.kills++; KP.roundKills++; S.stats.p[killer].kills++; if (S.rs) { const c = u.lastSlot >= 0 && S.rs.sl[killer][u.lastSlot]; if (c) c.k++; else S.rs.stormK[killer]++; } }
     const cy = ucenter(u)[1];
-    ev(['k', Math.round(u.x), Math.round(cy), u.side, TYPE_KEYS.indexOf(u.type), killer, byW ? 1 : 0]);
+    ev(['k', Math.round(u.x), Math.round(cy), u.side, TYPE_KEYS.indexOf(u.type), killer, byW ? 1 : 0, Math.round(u.gy === undefined ? u.y : u.gy)]);
     const pending = S.drops.filter(d => d.side === killer).length;
     if (byW && live && KP.items.length + pending < MAX_ITEMS && Math.random() < (DROP_CH[u.type] || 0)) S.drops.push({id: S.nextId++, kind: randItem(), side: killer, x: u.x, y: cy, gy: u.gy, vx: (killer ? 1 : -1) * rnd(30, 60), vy: -200, t: 0, st: 'fall'});
   }
@@ -2857,6 +2858,7 @@ function cosmetic(dt, rdt) {
   for (const t of S.texts) { t.y -= 30 * dt; t.life -= dt; }
   S.texts = S.texts.filter(t => t.life > 0);
   for (const d of S.decals) d.life -= dt;
+  for (const q of S.piles) q.t += dt;
   S.decals = S.decals.filter(d => d.life > 0);
   for (const b of S.beams) b.life -= dt;
   S.beams = S.beams.filter(b => b.life > 0);
@@ -2902,7 +2904,7 @@ const artOn = () => artOk(ART.tb) && artOk(ART.tr);
 for (const c of ['b', 'r']) {
   loadArt('t' + c, 'tower_' + c + '.webp');
   for (const R of ROSTER) { loadArt('w' + c + R.id, 'w_' + c + '_' + R.id + '.webp'); loadArt('p' + c + R.id, 'p_' + c + '_' + R.id + '.webp'); }
-  for (const k of ['trooper', 'bike', 'bulwark', 'drone', 'titan']) loadArt('m' + c + k, 'm_' + c + '_' + k + '.webp');
+  for (const k of ['trooper', 'bike', 'bulwark', 'drone', 'titan']) { loadArt('m' + c + k, 'm_' + c + '_' + k + '.webp'); loadArt('xi' + c + k, 'xi_' + c + '_' + k + '.webp'); loadArt('xp' + c + k, 'xp_' + c + '_' + k + '.webp'); }
 }
 for (const k of ['N', 'O', 'T', 'X']) loadArt('c' + k, 'core_' + k + '.webp');
 // battlefield background and terrain art (replaceable files; the game runs without them)
@@ -3092,6 +3094,7 @@ function drawScene() {
     }
     ctx.globalCompositeOperation = 'source-over';
   }
+  drawPiles();
   for (const d of S.decals) {
     ctx.globalAlpha = Math.min(1, d.life / 3) * 0.6;
     ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(d.x, (d.y || 0) + 4, d.r, d.r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
@@ -3099,6 +3102,29 @@ function drawScene() {
   }
 }
 // developer overlay (press ` or open the page with ?dev): routes, slots, mounts and the flyover mask on the painted background
+// a destroyed minion shatters (impact keyframe), then settles into a ghosted glass pile that stays on the lane until the round resets
+const PILE_K = 0.8, IMPACT_K = 1.0;
+function drawPiles() {
+  for (const q of S.piles) {
+    const im = ART['xp' + (q.side ? 'r' : 'b') + q.type], un = ART['m' + (q.side ? 'r' : 'b') + q.type];
+    if (!artOk(im) || !artOk(un) || q.t < 0.22) continue;
+    const sc = USZ[q.type] * US / un.height * PILE_K, w = im.width * sc, h = im.height * sc;
+    ctx.globalAlpha = 0.85 * Math.min(1, (q.t - 0.22) / 0.3);
+    ctx.drawImage(im, q.x - w / 2, q.gy + 4 - h, w, h);
+  }
+  ctx.globalAlpha = 1;
+}
+function drawImpacts() {
+  for (const q of S.piles) {
+    if (q.t > 0.6) continue;
+    const im = ART['xi' + (q.side ? 'r' : 'b') + q.type], un = ART['m' + (q.side ? 'r' : 'b') + q.type];
+    if (!artOk(im) || !artOk(un)) continue;
+    const sc = USZ[q.type] * US / un.height * IMPACT_K * (0.88 + 0.22 * q.t / 0.6), w = im.width * sc, h = im.height * sc;
+    ctx.globalAlpha = q.t < 0.1 ? q.t / 0.1 : Math.max(0, 1 - (q.t - 0.18) / 0.42);
+    ctx.drawImage(im, q.x - w / 2, q.cy - h / 2, w, h);
+  }
+  ctx.globalAlpha = 1;
+}
 function drawDev() {
   ctx.save(); ctx.lineWidth = 3; ctx.font = '700 14px sans-serif'; ctx.textAlign = 'left';
   for (const R of ROUTES) {
@@ -4156,6 +4182,7 @@ function render() {
   if (S.shake > 0 && !reduced && VIDEO.shake) ctx.translate((Math.random() - 0.5) * 3.5 * S.shake, (Math.random() - 0.5) * 3.5 * S.shake);
   drawScene();
   drawGround();
+  drawImpacts();
   drawKeeps();
   if (DEV.on) drawDev();
   for (let side = 0; side < 2; side++) drawTurrets(side);
@@ -4630,7 +4657,7 @@ function onGuestPeers(ch) {
 function applySnap(s) {
   if (s.ph === 'lobby') { if (S.phase === 'connecting') S.phase = 'joined'; return; }
   if (s.m !== S.matchId) {
-    S.matchId = s.m; clearField(); S.decals = []; S.texts = []; S.titles = [];
+    S.matchId = s.m; clearField(); S.piles = []; S.decals = []; S.texts = []; S.titles = [];
     S.p = [newPlayer(), newPlayer()]; S.stats = {rounds: [], p: [newStat(), newStat()]};
     S.log = {id: String(s.m).slice(0, 8), mode: 'guest', diff: '', started: new Date().toISOString(), side: 1, handle: HANDLE, rounds: [], end: null};
     if (net) { net.in.m = s.m; net.in.acts = []; net.in.r = 0; net.actN = 0; }
