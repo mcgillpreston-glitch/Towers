@@ -302,13 +302,6 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
   .sound{gap:8px;padding-right:8px}
   .sound input[type=range]{width:64px}
 }
-.tmenu{position:absolute;z-index:40;transform:translate(-50%,-100%);display:flex;flex-direction:column;gap:6px;min-width:200px;max-width:240px;padding:10px;background:rgba(10,8,26,.95);border:1px solid rgba(255,226,138,.55);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.65)}
-.tmenu[hidden]{display:none}
-.tmenu .tt{font:800 12px/1 'Chakra Petch',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#ffe28a}
-.tmenu button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left}
-.tmenu button.on{outline:2px solid #ffe28a}
-.tmenu button i{font-style:normal;opacity:.8}
-.tmenu .th{margin:0;font-size:12px;line-height:1.35;opacity:.78}
 select{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:4px 6px}
 select option{color:#111}
 
@@ -506,7 +499,7 @@ html[data-ui=mobile][data-o=l][data-sheet="1"] #sheetBtn{bottom:auto;top:40px}
 <div class="app">
   <header class="hud panel">
     <div class="team l"><div class="tname"><b>AZURECOURT</b><span id="tag0">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span><span class="hplab">HP</span></div><div class="sub"><span id="lv0" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd0" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st0" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
-    <div class="clock" data-tip="Phase clock. Planning lasts 90 s (rounds 1-3), 105 s (rounds 4-6) or 120 s (round 7+), with 30 s of it for building terrain, then 30 s of automatic combat."><div class="phase" id="sPhase">Planning</div><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Round 1</div></div>
+    <div class="clock" data-tip="Phase clock. Planning lasts 90 s (rounds 1-3), 105 s (rounds 4-6) or 120 s (round 7+), then 30 s of automatic combat."><div class="phase" id="sPhase">Planning</div><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Round 1</div></div>
     <div class="team r"><div class="tname"><b>VERMILION</b><span id="tag1">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><span class="hpnum" id="hpt1">100</span><span class="hplab">HP</span><div class="hpbar"><i id="hp1"></i></div></div><div class="sub"><span id="lv1" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd1" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st1" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
   </header>
 
@@ -515,7 +508,6 @@ html[data-ui=mobile][data-o=l][data-sheet="1"] #sheetBtn{bottom:auto;top:40px}
     <div class="overlay" id="overlay"></div>
     <div class="witness" id="witness"><div class="wp l"><img alt=""><div><b>Romeo Montavere</b><i></i></div></div><div class="wp r"><div><b>Juliette Capravell</b><i></i></div><img alt=""></div><div class="bark" id="bark"><img alt=""><div><b></b><span class="hint"></span><i></i></div></div></div>
     <div id="cdown" aria-hidden="true"></div>
-    <div class="tmenu" id="tmenu" hidden></div>
     <div class="sound panel" id="sound">
       <button class="btn small quiet" id="statsBtn" type="button" data-tip="Match stats: kills, damage, spending and every round so far (Tab)." hidden>Stats · Tab</button>
       <button class="btn small quiet" id="menuBtn" type="button" data-tip="Menu: audio and video settings, leave game, main menu (Esc)." hidden>Menu · Esc</button>
@@ -534,15 +526,10 @@ html[data-ui=mobile][data-o=l][data-sheet="1"] #sheetBtn{bottom:auto;top:40px}
 // The playfield is a fixed 16:9 logical space; the painted background is stretched over it, so changing the
 // texture or canvas resolution never changes ranges, speeds or hit tests.
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
-// Boost pads (haste, drone rotors, vigor). PROVISIONAL balance values: the route handoff did not specify any, so they all live here.
-const TERRAIN = {plan: 30, refund: 0.5, slowRadius: 62};
-// Boost pads: each of your two pads powers your own army during the battle. Two pads of one kind stack.
-const BOOST = {1: {name: 'Haste', cost: 5, v: 0.3}, 2: {name: 'Drone rotors', cost: 4, v: 0.5}, 3: {name: 'Vigor', cost: 6, v: 0.35}};
-const boostN = (side, k) => S.p[side].terr.reduce((a, T) => a + (T.k === k ? 1 : 0), 0);
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
 const PACE = 1.4;
-const setupLen = r => (r >= 7 ? 90 : r >= 4 ? 75 : 60) + TERRAIN.plan;   // planning grows as the board fills up, plus the terrain-building time
-const BATTLE_ZOOM = 1, SETUP_LEN = 60 + TERRAIN.plan, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
+const setupLen = r => r >= 7 ? 120 : r >= 4 ? 105 : 90;   // planning grows as the board fills up
+const BATTLE_ZOOM = 1, SETUP_LEN = 90, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
 const TS = 1.4, US = 0.92, LG = 480;
 // the keeps are painted into the background now; TW is the blue keep's footprint on it (the red keep is its mirror)
@@ -608,18 +595,6 @@ function routeAt(R, d) {
   else { RP.x = xs[i0] + dx * f; RP.y = ys[i0] + dy * f; }
   return RP;
 }
-// the four terrain slots. SLOT_DEFS[owner][0 = far gate, 1 = near gate]; an attacker meets the far slot first
-const SLOT_DEFS = [
-  [{id: 'blue_defense_far_gate', u: 0.348, v: 0.542}, {id: 'blue_defense_near_gate', u: 0.260, v: 0.583}],
-  [{id: 'red_defense_far_gate', u: 0.652, v: 0.542}, {id: 'red_defense_near_gate', u: 0.740, v: 0.583}]
-];
-const SLOTS = SLOT_DEFS.map((arr, side) => arr.map(s => {
-  const R = ROUTES[side ^ 1], x = s.u * W, y = s.v * H;
-  let best = 0, bd = 1e18;
-  for (let i = 0; i < R.n; i++) { const dd = (R.xs[i] - x) ** 2 + (R.ys[i] - y) ** 2; if (dd < bd) { bd = dd; best = i; } }
-  return {id: s.id, side, route: side ^ 1, x, y, at: R.cum[best], off: Math.sqrt(bd)};
-}));
-// painted terrain art is replaceable: drop a file at the path (same size, transparent) and it is used; a missing file falls back to the placeholder
 
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d', {alpha: false});
 const stage = document.getElementById('stage');
@@ -782,8 +757,12 @@ const CALLS = [
   {id: 'drones', key: 'W', name: 'Drone wave', cost: 8,  cd: 10, fx: 'Six Wasp Drones launch from your keep and fly at theirs.'},
   {id: 'bikes',  key: 'E', name: 'Bike rush',  cost: 10, cd: 10, fx: 'Five fast Razor Bikes race down the lane.'},
   {id: 'titan',  key: 'R', name: 'Titan',      cost: 28, cd: 22, fx: 'A Titan Walker marches out now. Huge keep damage if it lands.'},
-  {id: 'aegis',  key: 'T', name: 'Aegis',      cost: 12, cd: 18, fx: 'Your keep gains a 200-point shield.'}
+  {id: 'aegis',  key: 'T', name: 'Aegis',      cost: 12, cd: 18, fx: 'Your keep gains a 200-point shield.'},
+  {id: 'haste',  key: 'Y', name: 'Haste',      cost: 8,  cd: 14, fx: 'Your whole army moves 30% faster for 8 s.'},
+  {id: 'rotors', key: 'U', name: 'Rotors',     cost: 6,  cd: 12, fx: 'Your drones fly 50% faster for 8 s.'},
+  {id: 'vigor',  key: 'I', name: 'Vigor',      cost: 10, cd: 16, fx: 'Every mech of yours gains 35% health now, and new ones spawn with it for 10 s.'}
 ];
+const NCALL = CALLS.length;
 const DROP_CH = {trooper: 0.01, bike: 0.02, bulwark: 0.035, drone: 0.02, titan: 1};
 
 const CHAOS = [
@@ -804,8 +783,8 @@ function randomOfTier(t) { const pool = ROSTER.map((R, i) => R.tier === t ? i : 
 function newStat() { return {kills: 0, breach: 0, spent: 0, rerolls: 0, xp: 0, stars: 0, dealt: 0, wins: 0}; }
 function newPlayer() {
   return {
-    bet: 0, betRes: null, lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: [0, 0, 0, 0, 0], rally: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
-    shop: [-1, -1, -1, -1, -1], bench: Array(BENCH).fill(null), board: Array(10).fill(null), items: [], terr: [{k: 0, hp: 0}, {k: 0, hp: 0}],
+    bet: 0, betRes: null, lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: Array(8).fill(0), rally: 0, haste: 0, rotor: 0, vigor: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
+    shop: [-1, -1, -1, -1, -1], bench: Array(BENCH).fill(null), board: Array(10).fill(null), items: [],
     ready: false, kills: 0, roundKills: 0, lastDmg: 0, lastIncome: 0, msg: '', msgN: 0, actSeen: 0,
     turrets: [], traitLv: {}, boardSig: '',
     aim: {ang: 0.5, pow: 0.8}, reload: 1.5, reloadMax: CANNON.reload, recoil: 0, odT: 0, stormT: 4
@@ -948,6 +927,9 @@ function callIn(side, i) {
   else if (C.id === 'bikes') spawnN('bike', side, 5);
   else if (C.id === 'titan') spawn('titan', side);
   else if (C.id === 'aegis') P.shield += 200;
+  else if (C.id === 'haste') P.haste = 8;
+  else if (C.id === 'rotors') P.rotor = 8;
+  else if (C.id === 'vigor') { P.vigor = 10; for (const u of S.units) if (u.side === side && u.hp > 0) { u.hp *= 1.35; u.max *= 1.35; } }
   ev(['q', side, i]);
   return '';
 }
@@ -956,18 +938,6 @@ function equipItem(P, ii, z, i) {
   if (!it || !u) return '';
   if (u.items.length >= 3) return ROSTER[u.r].name + ' already holds 3 cores.';
   u.items.push(it); P.items.splice(ii, 1);
-  return '';
-}
-const terrCost = k => BOOST[k] ? BOOST[k].cost : 0;
-function buildTerrain(P, side, i, k) {
-  if (!(i === 0 || i === 1) || !(k >= 0 && k <= 3)) return '';
-  const T = P.terr[i];
-  if (T.k === k) return '';
-  const back = Math.floor(terrCost(T.k) * TERRAIN.refund), cost = terrCost(k);
-  if (P.gold + back < cost) return BOOST[k].name + ' costs ' + cost + ' gold.';
-  P.gold += back - cost;
-  if (cost && S.stats) S.stats.p[side].spent += cost;
-  T.k = k; T.hp = 0;
   return '';
 }
 function applyAct(side, a) {
@@ -993,7 +963,6 @@ function applyAct(side, a) {
     case 'strip': return stripCores(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'lock': { const i = a.i | 0; if (i >= 0 && i < 5 && P.shop[i] >= 0) P.lock[i] = P.lock[i] ? 0 : 1; return ''; }
     case 'bet': case 'upg': return '';   // wagers and army upgrades were removed
-    case 'terr': return buildTerrain(P, side, a.i | 0, a.k | 0);
     case 'mvitem': return mvItem(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.k | 0, a.to === 'm' ? 'm' : a.to === 'i' ? 'i' : 'b', a.ti | 0);
     case 'ready': P.ready = true; return '';
   }
@@ -1104,7 +1073,7 @@ function startCombat() {
   const rec = () => Array.from({length: 10}, () => ({d: 0, h: 0, k: 0}));
   S.rs = {sl: [rec(), rec()], storm: [0, 0], stormK: [0, 0], h: [0, 0], br: [[], []], t0: 0};
   clearField();
-  S.ot = 0; for (const P of S.p) { P.cd = [0, 0, 0, 0, 0]; P.rally = 0; }
+  S.ot = 0; for (const P of S.p) { P.cd = Array(8).fill(0); P.rally = 0; P.haste = 0; P.rotor = 0; P.vigor = 0; }
   S.timeLeft = COMBAT_LEN; S.spawnT = 0.5; S.dropDone = 0; S.rw = -1; S.loser = -1;
   S.chaosAt = S.round >= 2 ? [rnd(5, 9)].concat(S.round >= 5 ? [rnd(17, 21)] : []) : [];
   if (S.mode === 'demo') setPhase('combat'); else setPhase('intro', INTRO_LEN);
@@ -1544,26 +1513,13 @@ function cpuSetup(side, diff) {
     let buys = 0;
     for (let i = 0; i < 5 && buys < 2; i++) { const r = P.shop[i]; if (r >= 0 && P.gold >= ROSTER[r].tier && Math.random() < 0.6 && P.bench.indexOf(null) >= 0) { buyShop(P, i, side); buys++; } }
     cpuArrange(P, false);
-    cpuTerrain(P, side, false);
     const on = P.board.map((u, i) => u ? i : -1).filter(i => i >= 0);
     if (on.length >= P.level && on.length > 2) { const i = on[on.length - 1], k2 = P.bench.indexOf(null); if (k2 >= 0) { P.bench[k2] = P.board[i]; P.board[i] = null; } }
     P.ready = true;
     return;
   }
   cpuHard(P, side);
-  cpuTerrain(P, side, true);
 }
-// the CPU spends spare gold on boost pads: haste first, then vigor (hard) or rotors
-function cpuTerrain(P, side, hard) {
-  if (S.round < 2 && S.mode !== 'demo') return;
-  const want = hard ? [1, 3] : [1, 0];
-  for (let i = 0; i < 2; i++) {
-    const k = want[i], T = P.terr[i];
-    if (!k || T.k) continue;
-    if (P.gold >= terrCost(k) + (hard ? 2 : 6)) buildTerrain(P, side, i, k);
-  }
-}
-
 /* ---------- the hard tactician ---------- */
 // rough strength of each weapon at 1 star, learned from balance sweeps (higher is better)
 const CPU_V = {lancer: 85, rail: 76, singularity: 84, sunlance: 78, hellfire: 72, mortar: 58, needle: 52, tesla: 68, swarm: 44, glacier: 64, cryo: 44, arc: 62, torch: 42, vulcan: 40, flak: 38};
@@ -1648,6 +1604,8 @@ function cpuCalls(side, dt) {
   if (weak && ready(4)) callIn(side, 4);
   else if (el > 9 && ready(3) && Math.random() < 0.5) callIn(side, 3);
   else if (mine >= 6 && P.rally <= 0 && ready(0) && Math.random() < 0.35) callIn(side, 0);
+  else if (mine >= 5 && P.haste <= 0 && ready(5) && Math.random() < 0.3) callIn(side, 5);
+  else if (mine >= 5 && P.vigor <= 0 && ready(7) && Math.random() < 0.2) callIn(side, 7);
   else if (ready(1) && Math.random() < 0.3) callIn(side, 1);
   else if (ready(2) && Math.random() < 0.25) callIn(side, 2);
 }
@@ -2098,12 +2056,6 @@ function applyEvent(d) {
     spark(x, y - 20, F.rgb, 26, 260);
     S.shake = Math.max(S.shake, 0.15);
     sfx('warp', t => { zap(t, 120, 900, 0.5, 'sawtooth', 0.05); nz(t + 0.3, 0.3, 'lowpass', 1500, 0, 0.08, 0.3, MUS.sfx); }, 0.3);
-  } else if (type === 't') {
-    const sl = SLOTS[d[1]] && SLOTS[d[1]][d[2]]; if (!sl) return;
-    const rgb = SIDES[d[1]].rgb;
-    fxBlast(sl.x, sl.y - 24, 64, rgb, 0.5); spark(sl.x, sl.y - 24, rgb, 18, 220); smoke(sl.x, sl.y - 10, 4, 14);
-    S.shake = Math.max(S.shake, 0.12);
-    sfx('bardown', t => boom(t, 0.08, 1.1), 0.1);
   } else if (type === 'u') {
     if (!demo) addTitle('SUPPLY DROP', 'A free core for both keeps', '125,255,176', 1.8, 54);
   } else if (type === 'c') {
@@ -2152,11 +2104,12 @@ function pickType(I) {
   for (const [t, x] of w) { r -= x; if (r <= 0) return t; }
   return 'trooper';
 }
+const P0v = side => S.p[side].vigor > 0 ? 1.35 : 1;
 function spawn(type, side) {
   const d = TYPES[type], I = heat(), dir = side ? -1 : 1;
   const u = {id: S.nextId++, type, side, ...d, hp: d.hp * 0.75 * (1 + 0.6 * I + 0.3 * I * I), t: Math.random() * 6, flash: 0, atk: false, slow: 0, burn: null, byShot: false, lastBy: -1};
   const up = S.p[side].up;
-  u.hp *= (1 + 0.15 * up[0]) * (1 + 0.08 * Math.max(0, S.round - 4)) * (1 + BOOST[3].v * boostN(side, 3)); u.max = u.hp;
+  u.hp *= (1 + 0.15 * up[0]) * (1 + 0.08 * Math.max(0, S.round - 4)) * (P0v(side)); u.max = u.hp;
   u.spd = d.spd * (1 + 0.2 * I) * rnd(0.8, 1.25) * (1 + 0.06 * up[2]);
   // leave the keep's main doorway and follow that side's own route; formation offsets stay inside the deck and mirror between sides
   u.route = side; u.d = 0; u.lat = type === 'titan' ? 0 : ((u.id % 5) - 2) * 3; u.fh = d.fly ? rnd(46, 92) : 0; u.bob = 0;
@@ -2486,7 +2439,7 @@ function simulate(dt) {
   if (S.mode === 'host') hostReadGuest();
   // battle pay: 1 gold every 2.5 s of combat, so call-ins are affordable even after a full shop
   for (const P of S.p) { P.pay = (P.pay || 0) + dt; if (P.pay >= 2.5) { P.pay -= 2.5; P.gold += 1; } }
-  for (const P of S.p) { P.rally = Math.max(0, P.rally - dt); for (let j = 0; j < 5; j++) P.cd[j] = Math.max(0, P.cd[j] - dt); }
+  for (const P of S.p) { P.rally = Math.max(0, P.rally - dt); P.haste = Math.max(0, P.haste - dt); P.rotor = Math.max(0, P.rotor - dt); P.vigor = Math.max(0, P.vigor - dt); for (let j = 0; j < NCALL; j++) P.cd[j] = Math.max(0, P.cd[j] - dt); }
   if (S.mode === 'cpu' && S.diff === 'hard' && !S.ghost) cpuCalls(1, dt);
   // overtime: if both keeps are still untouched after 20 s, titans keep marching until somebody leaks
   if (COMBAT_LEN - S.timeLeft >= 16 && S.p[0].keep >= KEEP_HP - 0.5 && S.p[1].keep >= KEEP_HP - 0.5) {
@@ -2582,7 +2535,7 @@ function worldStep(dt, live) {
     u.t += dt * fz; u.flash = Math.max(0, u.flash - dt); u.slow = Math.max(0, u.slow - dt);
     if (u.burn && u.burn.t > 0) { u.burn.t -= dt; rsCredit(u.burn.side, {slot: u.burn.slot}, Math.max(0, Math.min(u.burn.dps * dt, u.hp)), true); u.lastSlot = u.burn.slot == null ? -1 : u.burn.slot; u.hp -= u.burn.dps * dt; u.byShot = true; u.lastBy = u.burn.side; }
     if (u.warp > 0) { u.warp -= dt; continue; }   // titans materialise before they march
-    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (1 + (u.fly ? BOOST[2].v * boostN(u.side, 2) : 0) + BOOST[1].v * boostN(u.side, 1)) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
+    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (1 + (u.fly && S.p[u.side].rotor > 0 ? 0.5 : 0) + (S.p[u.side].haste > 0 ? 0.3 : 0)) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
     if (u.fly) {
       // drones follow their own route a little above the deck and ignore the terrain
       u.bob = Math.sin(u.t * 3) * 8; u.atk = false;
@@ -2666,7 +2619,7 @@ function cosmetic(dt, rdt) {
   S.flash = Math.max(0, S.flash - rdt * 1.6);
   S.slowT = Math.max(0, S.slowT - rdt);
   if (S.ui.msgT > 0) { S.ui.msgT -= rdt; if (S.ui.msgT <= 0) S.ui.msg = ''; }
-  for (const P of S.p) { P.recoil = Math.max(0, P.recoil - dt * 5); for (const T of P.terr) if (T.hit > 0) T.hit = Math.max(0, T.hit - dt); }
+  for (const P of S.p) { P.recoil = Math.max(0, P.recoil - dt * 5); }
   S.keepFlash[0] = Math.max(0, S.keepFlash[0] - rdt * 2); S.keepFlash[1] = Math.max(0, S.keepFlash[1] - rdt * 2);
   for (const t of S.titles) { if (t.delay > 0) t.delay -= rdt; else { t.age += rdt; t.life -= rdt; } }
   S.titles = S.titles.filter(t => t.life > 0);
@@ -2942,11 +2895,6 @@ function drawDev() {
     ctx.fillStyle = 'rgba(' + col + ',1)';
     for (let d = 0; d <= R.len; d += 100) { const q = routeAt(R, d); ctx.fillRect(q.x - 3, q.y - 3, 6, 6); }
     const q = routeAt(R, 0); ctx.fillText(R.id + ' · ' + Math.round(R.len), q.x + 10, q.y - 12);
-  }
-  for (let side = 0; side < 2; side++) for (let j = 0; j < 2; j++) {
-    const sl = SLOTS[side][j], R = ROUTES[sl.route];
-    ctx.strokeStyle = 'rgba(' + SIDES[side].rgb + ',.95)'; ctx.beginPath(); ctx.ellipse(sl.x, sl.y, TERRAIN.slowRadius, TERRAIN.slowRadius * 0.42, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.fillText(sl.id + ' @' + Math.round(sl.at) + ' off ' + sl.off.toFixed(1), sl.x - 60, sl.y + 40);
   }
   ctx.fillStyle = '#ffec6e'; ctx.font = '700 12px sans-serif';
   for (let side = 0; side < 2; side++) for (let i = 0; i < 10; i++) { const [x, y] = mountWorld(side, i); ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillText(MOUNT_LABEL[i], x + 7, y + 4); }
@@ -3951,35 +3899,6 @@ function drawTitles() {
 
 
 /* ---------- ground layer: units and boost pads sorted by depth, with the flyover occluding the blue (under) route ---------- */
-function drawPad(side, j) {
-  const T = S.p[side].terr[j], sl = SLOTS[side][j], rgb = SIDES[side].rgb, hi = SIDES[side].hi, dir = side ? -1 : 1;
-  const pulse = 0.5 + 0.5 * Math.sin(S.t * 3 + j + side * 2), live = S.phase === 'combat' ? 1 : 0.55;
-  ctx.save(); ctx.translate(sl.x, sl.y);
-  // floor pad
-  ctx.save(); ctx.scale(1, 0.42);
-  ctx.fillStyle = 'rgba(' + rgb + ',' + (0.16 + 0.12 * pulse * live) + ')'; ctx.strokeStyle = 'rgba(' + hi + ',.9)'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.stroke();
-  ctx.restore();
-  // hologram column
-  const gy = ctx.createLinearGradient(0, 0, 0, -58); gy.addColorStop(0, 'rgba(' + rgb + ',' + (0.35 * live) + ')'); gy.addColorStop(1, 'rgba(' + rgb + ',0)');
-  ctx.fillStyle = gy; ctx.fillRect(-26, -58, 52, 58);
-  const cy = -34 + Math.sin(S.t * 2 + j) * 3;
-  ctx.scale(1.35, 1.35);
-  ctx.shadowColor = 'rgb(' + hi + ')'; ctx.shadowBlur = 10 + 8 * pulse * live;
-  ctx.strokeStyle = 'rgb(' + hi + ')'; ctx.fillStyle = 'rgb(' + hi + ')'; ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  if (T.k === 1) {          // haste: running chevrons toward the enemy
-    for (let i = 0; i < 3; i++) { const x = dir * ((i * 9 + S.t * 22) % 27 - 13); ctx.globalAlpha = 1 - Math.abs(x) / 16; ctx.beginPath(); ctx.moveTo(x - dir * 6, cy - 10); ctx.lineTo(x + dir * 2, cy); ctx.lineTo(x - dir * 6, cy + 10); ctx.stroke(); }
-  } else if (T.k === 2) {   // drone rotors: a spinning four-blade rotor
-    ctx.translate(0, cy); ctx.rotate(S.t * (S.phase === 'combat' ? 14 : 4));
-    for (let i = 0; i < 4; i++) { ctx.rotate(Math.PI / 2); ctx.beginPath(); ctx.ellipse(10, 0, 9, 3.2, 0, 0, Math.PI * 2); ctx.fill(); }
-    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
-  } else if (T.k === 3) {   // vigor: a heartbeat cross
-    const sc = 1 + 0.12 * Math.sin(S.t * 5);
-    ctx.translate(0, cy); ctx.scale(sc, sc); ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(10, 0); ctx.moveTo(0, -10); ctx.lineTo(0, 10); ctx.stroke();
-  }
-  ctx.restore();
-}
 function inFlyZone(u) {
   const x0 = u.x - u.w / 2, x1 = u.x + u.w / 2, y0 = u.gy - u.h, y1 = u.gy;
   return x1 > FLYB[0] && x0 < FLYB[2] && y1 > FLYB[1] && y0 < FLYB[3];
@@ -3998,12 +3917,8 @@ function drawGround() {
     else if (inFlyZone(u)) B.push(e);
     else A.push(e);
   }
-  for (let side = 0; side < 2; side++) for (let j = 0; j < 2; j++) {
-    const T = S.p[side].terr[j]; if (!T.k) continue;
-    A.push({y: SLOTS[side][j].y, t: T.k, side, j});
-  }
   const byY = (a, b) => a.y - b.y;
-  const paint = e => { if (e.u) drawUnit(e.u); else drawPad(e.side, e.j); };
+  const paint = e => drawUnit(e.u);
   A.sort(byY).forEach(paint);
   if (hidden.length || B.length || DEV.on) drawFlyoverMask();
   if (hidden.length) { ctx.globalAlpha = 0.34; for (const e of hidden) drawUnit(e.u); ctx.globalAlpha = 1; }
@@ -4022,20 +3937,6 @@ function drawKeeps() {
     }
   }
 }
-function drawSlotMarkers() {
-  if (DEV.on) drawDev();
-  if (!canPlan()) return;
-  const side = S.me, hov = S.ui.hs;
-  for (let j = 0; j < 2; j++) {
-    const sl = SLOTS[side][j], T = S.p[side].terr[j], on = hov === j || S.ui.tm === j, pulse = 0.5 + 0.5 * Math.sin(S.t * 4 + j);
-    ctx.save(); ctx.translate(sl.x, sl.y); ctx.scale(1, 0.45);
-    ctx.strokeStyle = on ? '#ffffff' : 'rgba(' + SIDES[side].rgb + ',' + (0.55 + 0.35 * pulse) + ')'; ctx.lineWidth = on ? 4 : 3; ctx.setLineDash([10, 8]); ctx.lineDashOffset = -S.t * 14;
-    ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
-    ctx.font = '800 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c9';
-    otext(BOOST[T.k] ? BOOST[T.k].name.toUpperCase() : 'BOOST PAD', sl.x, sl.y + 38, 4);
-  }
-}
 function render() {
   ctx.setTransform(k, 0, 0, k, 0, 0);
   ctx.save();
@@ -4044,7 +3945,7 @@ function render() {
   drawScene();
   drawGround();
   drawKeeps();
-  drawSlotMarkers();
+  if (DEV.on) drawDev();
   for (let side = 0; side < 2; side++) drawTurrets(side);
   for (const p of S.projs) drawProj(p);
   drawStrikes();
@@ -4086,29 +3987,6 @@ const myP = () => S.me >= 0 ? S.p[S.me] : null;
 const inSetup = () => S.me >= 0 && S.mode !== 'demo' && S.phase === 'setup' && myP();
 const canPlan = () => inSetup() && !myP().ready;
 let barkT = 0;
-function updateTerrMenu() {
-  const el = $('tmenu'); if (!el) return;
-  const j = S.ui ? S.ui.tm : -1;
-  if (!(j === 0 || j === 1) || !canPlan() || S.ui.menu) { if (!el.hidden) el.hidden = true; if (S.ui && j >= 0 && !canPlan()) S.ui.tm = -1; return; }
-  const P = myP(), T = P.terr[j], sl = SLOTS[S.me][j], back = Math.floor(terrCost(T.k) * TERRAIN.refund);
-  const sig = j + '|' + T.k + '|' + P.gold;
-  if (sig !== tmSig || el.hidden) {
-    tmSig = sig;
-    const b = (k, label, cost) => '<button class="btn small' + (T.k === k ? ' on' : '') + '" type="button" data-t="' + k + '"' + (P.gold + back < cost && T.k !== k ? ' disabled' : '') + '>' + label + '<i>' + (cost ? cost + 'g' : back ? '+' + back + 'g' : '') + '</i></button>';
-    el.innerHTML = '<div class="tt">Boost pad</div>' + b(1, 'Haste', BOOST[1].cost) + b(2, 'Drone rotors', BOOST[2].cost) + b(3, 'Vigor', BOOST[3].cost) + (T.k ? b(0, 'Clear', 0) : '') +
-      '<p class="th">Works during the battle. Haste: your army moves ' + Math.round(BOOST[1].v * 100) + '% faster. Drone rotors: your drones fly ' + Math.round(BOOST[2].v * 100) + '% faster. Vigor: new troops spawn with ' + Math.round(BOOST[3].v * 100) + '% more health. Two pads of one kind stack.</p>';
-    el.hidden = false;
-  }
-  const r = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
-  el.style.left = (((sl.x - S.cam.x) * S.cam.z + W / 2) / W * r.width + r.left - sr.left) + 'px';
-  el.style.top = (((sl.y - S.cam.y) * S.cam.z + H / 2) / H * r.height + r.top - sr.top - 44) + 'px';
-}
-let tmSig = '';
-$('tmenu').addEventListener('click', e => {
-  const b = e.target && e.target.closest ? e.target.closest('[data-t]') : null;
-  if (!b || b.disabled) return;
-  audio(); act({t: 'terr', i: S.ui.tm, k: b.getAttribute('data-t') | 0}); S.ui.tm = -1; tmSig = '';
-});
 function showBark(side, st, mount, text) {
   const c = CHIEFS[side] && CHIEFS[side][st], el = $('bark'); if (!c || !el) return;
   el.firstChild.src = PORT[c.img]; const d = el.lastChild;
@@ -4148,9 +4026,7 @@ function onSlot(z, i) {
   if (u) S.ui.sel = {z, i};
 }
 function worldPt(e) { const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H; return [(sx - W / 2) / S.cam.z + S.cam.x, (sy - H / 2) / S.cam.z + S.cam.y]; }
-function slotAt(wx, wy, side) { for (let j = 0; j < 2; j++) { const sl = SLOTS[side][j]; if (Math.hypot(wx - sl.x, (wy - sl.y) / 0.6) < 50) return j; } return -1; }
 cv.addEventListener('pointermove', e => {
-  if (S.ui) { if (S.me >= 0 && canPlan()) { const [wx, wy] = worldPt(e), j = slotAt(wx, wy, S.me); S.ui.hs = j; cv.style.cursor = j >= 0 ? 'pointer' : ''; } else { S.ui.hs = -1; cv.style.cursor = ''; } }
   if (!S.ui || !S.ui.sel || S.me < 0) return;
   const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
   const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
@@ -4166,9 +4042,6 @@ cv.addEventListener('pointerdown', e => {
   const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
   let best = -1, bd = 22;
   for (let i = 0; i < 10; i++) { const [x, y] = mountWorld(S.me, i), d = Math.hypot(wx - x, wy - y); if (d < bd) { bd = d; best = i; } }
-  const sj = best < 0 ? slotAt(wx, wy, S.me) : -1;
-  if (sj >= 0) { S.ui.sel = null; S.ui.tm = S.ui.tm === sj ? -1 : sj; return; }
-  S.ui.tm = -1;
   const P0 = myP(), u0 = best >= 0 && P0 ? P0.board[best] : null;
   if (u0 && u0.items.length && !P0.ready) DRAG = {src: {z: 'm', i: best, k: u0.items.length - 1}, x: e.clientX, y: e.clientY, on: false};
   if (best >= 0) onSlot('m', best);
@@ -4313,13 +4186,6 @@ function canvasTip(e) {
   const sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
   const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
   for (const d of S.drops) if (Math.hypot(wx - d.x, wy - d.y) < 24) return [itemTipHtml(d.kind), 'd' + d.kind];
-  for (let side = 0; side < 2; side++) for (let j = 0; j < 2; j++) {
-    const sl = SLOTS[side][j];
-    if (Math.hypot(wx - sl.x, (wy - sl.y) / 0.6) < 50) {
-      const T = S.p[side].terr[j];
-      return ['<div><b>' + SIDES[side].name + ' · boost pad ' + (j + 1) + '</b></div><div>' + (T.k === 1 ? 'Haste: this army moves ' + Math.round(BOOST[1].v * 100) + '% faster in battle.' : T.k === 2 ? 'Drone rotors: its drones fly ' + Math.round(BOOST[2].v * 100) + '% faster.' : T.k === 3 ? 'Vigor: its new troops spawn with ' + Math.round(BOOST[3].v * 100) + '% more health.' : 'Empty boost pad.') + (side === S.me && canPlan() ? ' Click to build.' : '') + '</div>', 'ts' + side + j + T.k];
-    }
-  }
   for (let side = 0; side < 2; side++) for (let i = 0; i < 10; i++) {
     const u = S.p[side].board[i]; if (!u) continue;
     const [x, y] = mountWorld(side, i);
@@ -4359,7 +4225,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (S.phase === 'combat' && S.me >= 0 && !S.ui.menu && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
-    const ci = 'qwert'.indexOf(e.key.toLowerCase());
+    const ci = 'qwertyui'.indexOf(e.key.toLowerCase());
     if (ci >= 0) { act({t: 'call', i: ci}); return; }
   }
   if (!canPlan() || S.ui.menu) return;
@@ -4494,9 +4360,9 @@ const packUnit = u => u ? [u.r, u.star, u.items.join(''), u.td || 0, u.tk || 0, 
 function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3), td: a[3] | 0, tk: a[4] | 0, ld: a[5] | 0, lk: a[6] | 0, lp: a[7] | 0, nr: a[8] | 0} : null; }
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
-    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), rd: P.ready ? 1 : 0, rr: P.rr | 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
+    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), hs: Math.round(P.haste * 10), ro: Math.round(P.rotor * 10), vg: Math.round(P.vigor * 10), rd: P.ready ? 1 : 0, rr: P.rr | 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
     a: [Math.round(P.aim.ang * 1000), Math.round(P.aim.pow * 1000), Math.round(P.reload * 100), Math.round(P.reloadMax * 100)],
-    tr: P.terr.map(T => [T.k, Math.round(T.hp)])};
+    };
 }
 function snapshot() {
   const r1 = Math.round;
@@ -4583,9 +4449,8 @@ function applySnap(s) {
     P.items = String(a.it || '').split('').filter(c => ITEMS[c]).slice(0, MAX_ITEMS);
     if (typeof a.lk === 'string') P.lock = [0, 1, 2, 3, 4].map(i => +a.lk[i] ? 1 : 0);
     P.up = [0, 0, 0]; P.bet = 0; P.betRes = null;
-    if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4].map(i => (a.cdn[i] | 0) / 10);
-    if (Array.isArray(a.tr)) a.tr.slice(0, 2).forEach((q, i) => { if (Array.isArray(q)) { P.terr[i].k = clamp(q[0] | 0, 0, 3); P.terr[i].hp = +q[1] || 0; } });
-    P.rally = (a.ry | 0) / 10;
+    if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4, 5, 6, 7].map(i => (a.cdn[i] | 0) / 10);
+    P.rally = (a.ry | 0) / 10; P.haste = (a.hs | 0) / 10; P.rotor = (a.ro | 0) / 10; P.vigor = (a.vg | 0) / 10;
     P.rr = a.rr | 0; P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
     if (Array.isArray(a.a)) { P.aim.ang = (a.a[0] | 0) / 1000; P.aim.pow = (a.a[1] | 0) / 1000; P.reload = (a.a[2] | 0) / 100; P.reloadMax = Math.max(0.01, (a.a[3] | 0) / 100); }
     if (side === S.me) {
@@ -4886,11 +4751,10 @@ function wikiHtml() {
       WITNESS.map(w => '<table class="stats wk"><thead><tr><th colspan="2">' + w.t + '</th></tr></thead><tbody>' + w.l.map(ln => '<tr><th style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '"><img class="pt" src="' + (ln[0] === 'R' ? PORT.romeo : PORT.juliette) + '" alt="">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</th><td class="l">“' + ln[1] + '”</td></tr>').join('') + '</tbody></table>').join('');
   } else if (tab === 'basics') {
     b = '<div class="wcards">' +
-      card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Thirty seconds of it are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
-      card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 16 s, overtime Titans march until one side breaks. A round never ends with both untouched: the side that dealt clearly more damage lands a glancing hit.') +
+      card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Buy turrets from the shop, place them on mounts, fit cores. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
+      card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to I) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 16 s, overtime Titans march until one side breaks. A round never ends with both untouched: the side that dealt clearly more damage lands a glancing hit.') +
       card('3 · Win', 'Lose rounds, lose HP. Last one standing wins.', 'Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. From round 5 the mech waves get tougher every round.') +
       card('Mounts', '4 on the roof (R1-R4), 6 on the side (S1-S6).', 'Launchers that lob their shots gain from height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top. Short-range turrets on the roof may never fire; check the after-action report for idle turrets.') +
-      card('Boost pads', 'Two pads: haste, drone rotors or vigor.', 'Your keep owns two boost pads. Each powers your own army while the battle runs: Haste makes your troops and drones ' + Math.round(BOOST[1].v * 100) + '% faster, Drone rotors make your drones ' + Math.round(BOOST[2].v * 100) + '% faster, and Vigor gives new troops ' + Math.round(BOOST[3].v * 100) + '% more health. Two pads of one kind stack. They cost ' + BOOST[1].cost + ', ' + BOOST[2].cost + ' and ' + BOOST[3].cost + ' gold; clearing refunds half. Click a pad in planning to build, swap or clear it. They work alongside your battle calls.') +
       card('Wins pay', 'Gold, interest and streaks.', 'See the Economy tab for income, interest and streaks.') +
       '</div>' + hintTap;
   } else if (tab === 'turrets') {
@@ -5071,7 +4935,6 @@ function showOverlay() {
         '<li>Matching traits unlock bonuses: Kinetic, Sniper, Storm and more</li>' +
         '<li>Cores dropped in combat fit onto turrets, up to 3 each</li>' +
         '<li>Bank gold for interest: +1 from 4 gold, up to +5 at 28. Streaks pay too</li>' +
-        '<li>Each keep owns two boost pads: haste, drone rotors or vigor power your own army during the battle</li>' +
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
@@ -5294,7 +5157,6 @@ function frame(now) {
   const sig = sigNow();
   if (sig !== overlaySig) { overlaySig = sig; showOverlay(); }
   updateWitness();
-  updateTerrMenu();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
