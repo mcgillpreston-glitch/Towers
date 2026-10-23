@@ -534,8 +534,11 @@ html[data-ui=mobile][data-o=l][data-sheet="1"] #sheetBtn{bottom:auto;top:40px}
 // The playfield is a fixed 16:9 logical space; the painted background is stretched over it, so changing the
 // texture or canvas resolution never changes ranges, speeds or hit tests.
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
-// Terrain (barriers and slow fields). PROVISIONAL balance values: the route handoff did not specify any, so they all live here.
-const TERRAIN = {plan: 30, barrierCost: 7, slowCost: 4, refund: 0.5, barrierHp: 240, repair: 0.5, barrierRadius: 16, slowMul: 0.7, slowRadius: 62};
+// Boost pads (haste, drone rotors, vigor). PROVISIONAL balance values: the route handoff did not specify any, so they all live here.
+const TERRAIN = {plan: 30, refund: 0.5, slowRadius: 62};
+// Boost pads: each of your two pads powers your own army during the battle. Two pads of one kind stack.
+const BOOST = {1: {name: 'Haste', cost: 5, v: 0.3}, 2: {name: 'Drone rotors', cost: 4, v: 0.5}, 3: {name: 'Vigor', cost: 6, v: 0.35}};
+const boostN = (side, k) => S.p[side].terr.reduce((a, T) => a + (T.k === k ? 1 : 0), 0);
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
 const PACE = 1.4;
 const setupLen = r => (r >= 7 ? 90 : r >= 4 ? 75 : 60) + TERRAIN.plan;   // planning grows as the board fills up, plus the terrain-building time
@@ -617,8 +620,6 @@ const SLOTS = SLOT_DEFS.map((arr, side) => arr.map(s => {
   return {id: s.id, side, route: side ^ 1, x, y, at: R.cum[best], off: Math.sqrt(bd)};
 }));
 // painted terrain art is replaceable: drop a file at the path (same size, transparent) and it is used; a missing file falls back to the placeholder
-const TERRAIN_ART = {barrier: ['art/terrain/barrier_blue.webp', 'art/terrain/barrier_red.webp'], slow: ['art/terrain/slow_field_blue.webp', 'art/terrain/slow_field_red.webp']};
-const TERRAIN_DRAW = {barrier: {w: 176, px: 0.5, py: 0.80}, slow: {w: 200, px: 0.5, py: 0.62}};   // world width and floor-centre pivot (fractions of the sprite)
 
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d', {alpha: false});
 const stage = document.getElementById('stage');
@@ -957,16 +958,16 @@ function equipItem(P, ii, z, i) {
   u.items.push(it); P.items.splice(ii, 1);
   return '';
 }
-const terrCost = k => k === 1 ? TERRAIN.barrierCost : k === 2 ? TERRAIN.slowCost : 0;
+const terrCost = k => BOOST[k] ? BOOST[k].cost : 0;
 function buildTerrain(P, side, i, k) {
-  if (!(i === 0 || i === 1) || !(k >= 0 && k <= 2)) return '';
+  if (!(i === 0 || i === 1) || !(k >= 0 && k <= 3)) return '';
   const T = P.terr[i];
   if (T.k === k) return '';
   const back = Math.floor(terrCost(T.k) * TERRAIN.refund), cost = terrCost(k);
-  if (P.gold + back < cost) return (k === 1 ? 'A barrier' : 'A slow field') + ' costs ' + cost + ' gold.';
+  if (P.gold + back < cost) return BOOST[k].name + ' costs ' + cost + ' gold.';
   P.gold += back - cost;
   if (cost && S.stats) S.stats.p[side].spent += cost;
-  T.k = k; T.hp = k === 1 ? TERRAIN.barrierHp : 0;
+  T.k = k; T.hp = 0;
   return '';
 }
 function applyAct(side, a) {
@@ -1084,7 +1085,6 @@ function startSetup() {
     addXp(P, PASSIVE_XP);
     rollShop(P);
     P.ready = false; P.keep = KEEP_HP; P.shield = 0; P.rr = 0;
-    for (const T of P.terr) if (T.k === 1) T.hp = Math.min(TERRAIN.barrierHp, T.hp + (TERRAIN.barrierHp - T.hp) * TERRAIN.repair);   // a standing barrier mends only half of its damage between rounds
     if (S.round % 3 === 0 && P.items.length < MAX_ITEMS) P.items.push(randItem());
   }
   if (S.round % 3 === 0) ev(['u']);
@@ -1553,10 +1553,10 @@ function cpuSetup(side, diff) {
   cpuHard(P, side);
   cpuTerrain(P, side, true);
 }
-// the CPU spends spare gold on terrain: a slow field at the far gate, then (hard only) a barrier at the near gate
+// the CPU spends spare gold on boost pads: haste first, then vigor (hard) or rotors
 function cpuTerrain(P, side, hard) {
   if (S.round < 2 && S.mode !== 'demo') return;
-  const want = hard ? [2, 1] : [2, 0];
+  const want = hard ? [1, 3] : [1, 0];
   for (let i = 0; i < 2; i++) {
     const k = want[i], T = P.terr[i];
     if (!k || T.k) continue;
@@ -2156,7 +2156,7 @@ function spawn(type, side) {
   const d = TYPES[type], I = heat(), dir = side ? -1 : 1;
   const u = {id: S.nextId++, type, side, ...d, hp: d.hp * 0.75 * (1 + 0.6 * I + 0.3 * I * I), t: Math.random() * 6, flash: 0, atk: false, slow: 0, burn: null, byShot: false, lastBy: -1};
   const up = S.p[side].up;
-  u.hp *= (1 + 0.15 * up[0]) * (1 + 0.08 * Math.max(0, S.round - 4)); u.max = u.hp;
+  u.hp *= (1 + 0.15 * up[0]) * (1 + 0.08 * Math.max(0, S.round - 4)) * (1 + BOOST[3].v * boostN(side, 3)); u.max = u.hp;
   u.spd = d.spd * (1 + 0.2 * I) * rnd(0.8, 1.25) * (1 + 0.06 * up[2]);
   // leave the keep's main doorway and follow that side's own route; formation offsets stay inside the deck and mirror between sides
   u.route = side; u.d = 0; u.lat = type === 'titan' ? 0 : ((u.id % 5) - 2) * 3; u.fh = d.fly ? rnd(46, 92) : 0; u.bob = 0;
@@ -2564,36 +2564,16 @@ function placeUnit(u) {
   u.x = q.x - q.ty * lat; u.gy = q.y + q.tx * lat;
   u.y = u.fly ? u.gy - (u.fh || 0) + (u.bob || 0) : u.gy;
 }
-const barrierStop = (u, j) => SLOTS[u.route ^ 1][j].at - TERRAIN.barrierRadius - u.w * 0.4;
-// shoves from blasts and gravity wells move a unit along its route, never through a standing barrier
+// shoves from blasts and gravity wells move a unit along its route
 function nudgeUnit(u, dd) {
   if (u.fly || u.type === 'titan' || u.warp > 0) return;
-  const P = S.p[u.route ^ 1];
-  let nd = clamp(u.d + dd, 0, ROUTES[u.route].len);
-  if (dd > 0) for (let j = 0; j < 2; j++) { const T = P.terr[j]; if (T.k === 1 && T.hp > 0) { const stop = barrierStop(u, j); if (u.d <= stop + 0.01 && nd > stop) nd = stop; } }
-  u.d = nd; placeUnit(u);
+  u.d = clamp(u.d + dd, 0, ROUTES[u.route].len); placeUnit(u);
 }
-// Advance by distance in sub-steps of at most 3 units, so a slot can never be skipped even in one huge frame.
-// Slow fields scale the step while the unit is inside; a barrier stops it at its stop line, where the unit attacks it until it falls.
 function advance(u, dist, dt, live) {
-  const R = ROUTES[u.route], P = S.p[u.route ^ 1], n = Math.max(1, Math.ceil(dist / 3));
-  let hit = -1;
+  const R = ROUTES[u.route];
   u.atk = false;
-  for (let k = 0; k < n && hit < 0; k++) {
-    let mul = 1;
-    for (let j = 0; j < 2; j++) if (P.terr[j].k === 2 && Math.abs(u.d - SLOTS[u.route ^ 1][j].at) < TERRAIN.slowRadius) mul = TERRAIN.slowMul;
-    let nd = u.d + dist / n * mul;
-    for (let j = 0; j < 2; j++) {
-      const T = P.terr[j]; if (T.k !== 1 || T.hp <= 0) continue;
-      const stop = barrierStop(u, j);
-      if (u.d <= stop + 0.01 && nd >= stop) { nd = stop; hit = j; break; }
-    }
-    u.d = nd;
-  }
-  if (hit >= 0) {
-    u.atk = true;
-    if (live) { const T = P.terr[hit]; T.hp -= u.dps * dt; T.hit = 0.1; if (T.hp <= 0) { T.hp = 0; T.k = 0; ev(['t', u.route ^ 1, hit, 0]); } }
-  } else if (u.d >= R.len) { u.d = R.len; u.atk = true; if (live) breach(u); }
+  u.d += dist;
+  if (u.d >= R.len) { u.d = R.len; u.atk = true; if (live) breach(u); }
   placeUnit(u);
 }
 function worldStep(dt, live) {
@@ -2602,7 +2582,7 @@ function worldStep(dt, live) {
     u.t += dt * fz; u.flash = Math.max(0, u.flash - dt); u.slow = Math.max(0, u.slow - dt);
     if (u.burn && u.burn.t > 0) { u.burn.t -= dt; rsCredit(u.burn.side, {slot: u.burn.slot}, Math.max(0, Math.min(u.burn.dps * dt, u.hp)), true); u.lastSlot = u.burn.slot == null ? -1 : u.burn.slot; u.hp -= u.burn.dps * dt; u.byShot = true; u.lastBy = u.burn.side; }
     if (u.warp > 0) { u.warp -= dt; continue; }   // titans materialise before they march
-    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
+    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (1 + (u.fly ? BOOST[2].v * boostN(u.side, 2) : 0) + BOOST[1].v * boostN(u.side, 1)) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
     if (u.fly) {
       // drones follow their own route a little above the deck and ignore the terrain
       u.bob = Math.sin(u.t * 3) * 8; u.atk = false;
@@ -2762,7 +2742,6 @@ for (const c of ['b', 'r']) {
 for (const k of ['N', 'O', 'T', 'X']) loadArt('c' + k, 'core_' + k + '.webp');
 // battlefield background and terrain art (replaceable files; the game runs without them)
 function loadImg(path) { if (typeof Image === 'undefined') return null; const im = new Image(); im.onload = () => { im.ok = true; }; im.onerror = () => { im.bad = true; }; im.src = path; return im; }
-const TART = {barrier: TERRAIN_ART.barrier.map(loadImg), slow: TERRAIN_ART.slow.map(loadImg)};
 const BGS = {};
 function bgKey() { const r = effRes(); if (RES[r]) return r; const w = cv.width; return w >= 3000 ? '4k' : w >= 2200 ? '1440' : w >= 1500 ? '1080' : '720'; }
 // the end-of-match painting: the winner's colour is shown with the losing keep wrecked (bg_red_* when red wins, bg_blue_* when blue wins)
@@ -2780,7 +2759,6 @@ function bgImage() {
   BGS.newOn = !!(artOk(BGS.last) && BGS.lastNew);
   return artOk(BGS.last) && (es >= 0 || menu || BGS.lastNew) ? BGS.last : null;   // keep the previous texture on screen while a new one loads (never the menu painting under a match)
 }
-const terrImg = (kind, side) => { const im = TART[kind][side]; return artOk(im) ? im : null; };
 // w = drawn width (art units); fx, fy = the swivel as a fraction of the sprite; nat = the barrel's native angle (blue; red mirrors it)
 const SPR = {
   vulcan: {w: 40, fx: .26, fy: .42}, flak: {w: 36, fx: .28, fy: .40}, cryo: {w: 44, fx: .24, fy: .44}, torch: {w: 38, fx: .26, fy: .42},
@@ -3972,46 +3950,35 @@ function drawTitles() {
 }
 
 
-/* ---------- ground layer: units, barriers and slow fields sorted by depth, with the flyover occluding the blue (under) route ---------- */
-function drawSlowField(side, j) {
-  const sl = SLOTS[side][j], rgb = SIDES[side].rgb, pulse = 0.5 + 0.5 * Math.sin(S.t * 2.4 + j + side * 2), im = terrImg('slow', side), D = TERRAIN_DRAW.slow;
-  ctx.save();
-  if (im) {
-    const w = D.w, h = w * im.height / im.width;
-    ctx.globalAlpha = 0.88 + 0.12 * pulse; ctx.drawImage(im, sl.x - w * D.px, sl.y - h * D.py, w, h);
-  } else {   // placeholder: a translucent floor ring
-    ctx.translate(sl.x, sl.y); ctx.scale(1, 0.42);
-    ctx.fillStyle = 'rgba(' + rgb + ',' + (0.12 + 0.08 * pulse) + ')'; ctx.strokeStyle = 'rgba(' + rgb + ',.9)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(0, 0, TERRAIN.slowRadius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.setLineDash([9, 9]); ctx.lineDashOffset = -S.t * 18; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, TERRAIN.slowRadius * 0.62, 0, Math.PI * 2); ctx.stroke();
+/* ---------- ground layer: units and boost pads sorted by depth, with the flyover occluding the blue (under) route ---------- */
+function drawPad(side, j) {
+  const T = S.p[side].terr[j], sl = SLOTS[side][j], rgb = SIDES[side].rgb, hi = SIDES[side].hi, dir = side ? -1 : 1;
+  const pulse = 0.5 + 0.5 * Math.sin(S.t * 3 + j + side * 2), live = S.phase === 'combat' ? 1 : 0.55;
+  ctx.save(); ctx.translate(sl.x, sl.y);
+  // floor pad
+  ctx.save(); ctx.scale(1, 0.42);
+  ctx.fillStyle = 'rgba(' + rgb + ',' + (0.16 + 0.12 * pulse * live) + ')'; ctx.strokeStyle = 'rgba(' + hi + ',.9)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+  // hologram column
+  const gy = ctx.createLinearGradient(0, 0, 0, -58); gy.addColorStop(0, 'rgba(' + rgb + ',' + (0.35 * live) + ')'); gy.addColorStop(1, 'rgba(' + rgb + ',0)');
+  ctx.fillStyle = gy; ctx.fillRect(-26, -58, 52, 58);
+  const cy = -34 + Math.sin(S.t * 2 + j) * 3;
+  ctx.scale(1.35, 1.35);
+  ctx.shadowColor = 'rgb(' + hi + ')'; ctx.shadowBlur = 10 + 8 * pulse * live;
+  ctx.strokeStyle = 'rgb(' + hi + ')'; ctx.fillStyle = 'rgb(' + hi + ')'; ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  if (T.k === 1) {          // haste: running chevrons toward the enemy
+    for (let i = 0; i < 3; i++) { const x = dir * ((i * 9 + S.t * 22) % 27 - 13); ctx.globalAlpha = 1 - Math.abs(x) / 16; ctx.beginPath(); ctx.moveTo(x - dir * 6, cy - 10); ctx.lineTo(x + dir * 2, cy); ctx.lineTo(x - dir * 6, cy + 10); ctx.stroke(); }
+  } else if (T.k === 2) {   // drone rotors: a spinning four-blade rotor
+    ctx.translate(0, cy); ctx.rotate(S.t * (S.phase === 'combat' ? 14 : 4));
+    for (let i = 0; i < 4; i++) { ctx.rotate(Math.PI / 2); ctx.beginPath(); ctx.ellipse(10, 0, 9, 3.2, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+  } else if (T.k === 3) {   // vigor: a heartbeat cross
+    const sc = 1 + 0.12 * Math.sin(S.t * 5);
+    ctx.translate(0, cy); ctx.scale(sc, sc); ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(10, 0); ctx.moveTo(0, -10); ctx.lineTo(0, 10); ctx.stroke();
   }
   ctx.restore();
-}
-function drawBarrier(side, j) {
-  const T = S.p[side].terr[j], sl = SLOTS[side][j], rgb = SIDES[side].rgb, im = terrImg('barrier', side), D = TERRAIN_DRAW.barrier, f = clamp(T.hp / TERRAIN.barrierHp, 0, 1);
-  ctx.save();
-  let top = sl.y - 70;
-  if (im) {
-    const w = D.w, h = w * im.height / im.width;
-    ctx.globalAlpha = 0.55 + 0.45 * f;   // a battered wall fades toward its end
-    ctx.drawImage(im, sl.x - w * D.px, sl.y - h * D.py, w, h);
-    if (T.hit > 0) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = T.hit * 4; ctx.drawImage(im, sl.x - w * D.px, sl.y - h * D.py, w, h); ctx.globalCompositeOperation = 'source-over'; }
-    top = sl.y - h * D.py;
-  } else {   // placeholder: a low outlined shield block
-    ctx.translate(sl.x, sl.y);
-    ctx.fillStyle = 'rgba(' + rgb + ',' + (0.22 + 0.16 * f) + ')'; ctx.strokeStyle = 'rgba(' + rgb + ',.95)'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
-    ctx.beginPath(); ctx.moveTo(-58, 2); ctx.lineTo(-40, -34); ctx.lineTo(40, -34); ctx.lineTo(58, 2); ctx.lineTo(0, 16); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-40, -34); ctx.lineTo(0, -22); ctx.lineTo(40, -34); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(0, 16); ctx.stroke();
-    if (T.hit > 0) { ctx.fillStyle = 'rgba(255,255,255,' + T.hit * 4 + ')'; ctx.fill(); }
-    top = sl.y - 40;
-  }
-  ctx.restore();
-  if (S.phase === 'combat' || f < 1) {
-    const w = 64;
-    ctx.fillStyle = 'rgba(0,0,0,.75)'; ctx.fillRect(sl.x - w / 2 - 1, top - 9, w + 2, 6);
-    ctx.fillStyle = 'rgb(' + rgb + ')'; ctx.fillRect(sl.x - w / 2, top - 8, w * f, 4);
-  }
 }
 function inFlyZone(u) {
   const x0 = u.x - u.w / 2, x1 = u.x + u.w / 2, y0 = u.gy - u.h, y1 = u.gy;
@@ -4033,10 +4000,10 @@ function drawGround() {
   }
   for (let side = 0; side < 2; side++) for (let j = 0; j < 2; j++) {
     const T = S.p[side].terr[j]; if (!T.k) continue;
-    A.push({y: SLOTS[side][j].y + (T.k === 1 ? 8 : -26), t: T.k, side, j});
+    A.push({y: SLOTS[side][j].y, t: T.k, side, j});
   }
   const byY = (a, b) => a.y - b.y;
-  const paint = e => { if (e.u) drawUnit(e.u); else if (e.t === 1) drawBarrier(e.side, e.j); else drawSlowField(e.side, e.j); };
+  const paint = e => { if (e.u) drawUnit(e.u); else drawPad(e.side, e.j); };
   A.sort(byY).forEach(paint);
   if (hidden.length || B.length || DEV.on) drawFlyoverMask();
   if (hidden.length) { ctx.globalAlpha = 0.34; for (const e of hidden) drawUnit(e.u); ctx.globalAlpha = 1; }
@@ -4066,7 +4033,7 @@ function drawSlotMarkers() {
     ctx.beginPath(); ctx.arc(0, 0, 50, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
     ctx.font = '800 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c9';
-    otext(T.k === 1 ? 'BARRIER' : T.k === 2 ? 'SLOW FIELD' : 'BUILD', sl.x, sl.y + 38, 4);
+    otext(BOOST[T.k] ? BOOST[T.k].name.toUpperCase() : 'BOOST PAD', sl.x, sl.y + 38, 4);
   }
 }
 function render() {
@@ -4128,8 +4095,8 @@ function updateTerrMenu() {
   if (sig !== tmSig || el.hidden) {
     tmSig = sig;
     const b = (k, label, cost) => '<button class="btn small' + (T.k === k ? ' on' : '') + '" type="button" data-t="' + k + '"' + (P.gold + back < cost && T.k !== k ? ' disabled' : '') + '>' + label + '<i>' + (cost ? cost + 'g' : back ? '+' + back + 'g' : '') + '</i></button>';
-    el.innerHTML = '<div class="tt">' + (j ? 'Near' : 'Far') + ' gate</div>' + b(1, 'Barrier', TERRAIN.barrierCost) + b(2, 'Slow field', TERRAIN.slowCost) + (T.k ? b(0, 'Clear', 0) : '') +
-      '<p class="th">Barrier: enemy troops stop and break it before they can pass (' + TERRAIN.barrierHp + ' HP, mends half its damage between rounds). Slow field: enemy ground troops crawl at ' + Math.round(TERRAIN.slowMul * 100) + '% speed inside it. Drones fly over both.</p>';
+    el.innerHTML = '<div class="tt">Boost pad</div>' + b(1, 'Haste', BOOST[1].cost) + b(2, 'Drone rotors', BOOST[2].cost) + b(3, 'Vigor', BOOST[3].cost) + (T.k ? b(0, 'Clear', 0) : '') +
+      '<p class="th">Works during the battle. Haste: your army moves ' + Math.round(BOOST[1].v * 100) + '% faster. Drone rotors: your drones fly ' + Math.round(BOOST[2].v * 100) + '% faster. Vigor: new troops spawn with ' + Math.round(BOOST[3].v * 100) + '% more health. Two pads of one kind stack.</p>';
     el.hidden = false;
   }
   const r = cv.getBoundingClientRect(), sr = stage.getBoundingClientRect();
@@ -4350,7 +4317,7 @@ function canvasTip(e) {
     const sl = SLOTS[side][j];
     if (Math.hypot(wx - sl.x, (wy - sl.y) / 0.6) < 50) {
       const T = S.p[side].terr[j];
-      return ['<div><b>' + SIDES[side].name + ' · ' + (j ? 'near' : 'far') + ' gate</b></div><div>' + (T.k === 1 ? 'Barrier, ' + Math.ceil(T.hp) + ' HP. ' + SIDES[side ^ 1].name + ' troops must break it to pass.' : T.k === 2 ? 'Slow field. Enemy ground troops move at ' + Math.round(TERRAIN.slowMul * 100) + '% speed inside it.' : 'Empty terrain slot.') + (side === S.me && canPlan() ? ' Click to build.' : '') + '</div>', 'ts' + side + j + T.k + Math.ceil(T.hp / 50)];
+      return ['<div><b>' + SIDES[side].name + ' · boost pad ' + (j + 1) + '</b></div><div>' + (T.k === 1 ? 'Haste: this army moves ' + Math.round(BOOST[1].v * 100) + '% faster in battle.' : T.k === 2 ? 'Drone rotors: its drones fly ' + Math.round(BOOST[2].v * 100) + '% faster.' : T.k === 3 ? 'Vigor: its new troops spawn with ' + Math.round(BOOST[3].v * 100) + '% more health.' : 'Empty boost pad.') + (side === S.me && canPlan() ? ' Click to build.' : '') + '</div>', 'ts' + side + j + T.k];
     }
   }
   for (let side = 0; side < 2; side++) for (let i = 0; i < 10; i++) {
@@ -4617,7 +4584,7 @@ function applySnap(s) {
     if (typeof a.lk === 'string') P.lock = [0, 1, 2, 3, 4].map(i => +a.lk[i] ? 1 : 0);
     P.up = [0, 0, 0]; P.bet = 0; P.betRes = null;
     if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4].map(i => (a.cdn[i] | 0) / 10);
-    if (Array.isArray(a.tr)) a.tr.slice(0, 2).forEach((q, i) => { if (Array.isArray(q)) { P.terr[i].k = clamp(q[0] | 0, 0, 2); P.terr[i].hp = +q[1] || 0; } });
+    if (Array.isArray(a.tr)) a.tr.slice(0, 2).forEach((q, i) => { if (Array.isArray(q)) { P.terr[i].k = clamp(q[0] | 0, 0, 3); P.terr[i].hp = +q[1] || 0; } });
     P.rally = (a.ry | 0) / 10;
     P.rr = a.rr | 0; P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
     if (Array.isArray(a.a)) { P.aim.ang = (a.a[0] | 0) / 1000; P.aim.pow = (a.a[1] | 0) / 1000; P.reload = (a.a[2] | 0) / 100; P.reloadMax = Math.max(0.01, (a.a[3] | 0) / 100); }
@@ -4923,7 +4890,7 @@ function wikiHtml() {
       card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 16 s, overtime Titans march until one side breaks. A round never ends with both untouched: the side that dealt clearly more damage lands a glancing hit.') +
       card('3 · Win', 'Lose rounds, lose HP. Last one standing wins.', 'Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. From round 5 the mech waves get tougher every round.') +
       card('Mounts', '4 on the roof (R1-R4), 6 on the side (S1-S6).', 'Launchers that lob their shots gain from height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top. Short-range turrets on the roof may never fire; check the after-action report for idle turrets.') +
-      card('Terrain', 'Two gates: barrier or slow field.', 'Each army walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you. Each can hold a barrier (enemy troops stop and break it before they can pass) or a slow field (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A damaged barrier mends half its damage each round for free, a broken one must be rebuilt, and drones fly over everything.') +
+      card('Boost pads', 'Two pads: haste, drone rotors or vigor.', 'Your keep owns two boost pads. Each powers your own army while the battle runs: Haste makes your troops and drones ' + Math.round(BOOST[1].v * 100) + '% faster, Drone rotors make your drones ' + Math.round(BOOST[2].v * 100) + '% faster, and Vigor gives new troops ' + Math.round(BOOST[3].v * 100) + '% more health. Two pads of one kind stack. They cost ' + BOOST[1].cost + ', ' + BOOST[2].cost + ' and ' + BOOST[3].cost + ' gold; clearing refunds half. Click a pad in planning to build, swap or clear it. They work alongside your battle calls.') +
       card('Wins pay', 'Gold, interest and streaks.', 'See the Economy tab for income, interest and streaks.') +
       '</div>' + hintTap;
   } else if (tab === 'turrets') {
@@ -5104,7 +5071,7 @@ function showOverlay() {
         '<li>Matching traits unlock bonuses: Kinetic, Sniper, Storm and more</li>' +
         '<li>Cores dropped in combat fit onto turrets, up to 3 each</li>' +
         '<li>Bank gold for interest: +1 from 4 gold, up to +5 at 28. Streaks pay too</li>' +
-        '<li>Each keep owns two terrain slots on the bridge its enemy walks: a barrier soaks attacks, a slow field cuts speed. Build them in the 30 extra seconds of planning</li>' +
+        '<li>Each keep owns two boost pads: haste, drone rotors or vigor power your own army during the battle</li>' +
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
