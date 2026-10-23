@@ -1,4 +1,4 @@
-// Cloudflare Worker: receives match runs from Of Blood & Glass and stores them in D1 for analysis.
+// Cloudflare Worker: receives match runs from Glass & Gilt and stores them in D1 for analysis.
 // Deploy: wrangler d1 create bk-runs; wrangler d1 execute bk-runs --file=worker/schema.sql; wrangler deploy
 // Then set RUN_ENDPOINT in index.html to the worker URL.
 const CORS = {'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'content-type'};

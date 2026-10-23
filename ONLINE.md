@@ -1,4 +1,4 @@
-# Ballista Keep: online layer (async PvP, ranked PvP, leaderboard)
+# Glass & Gilt: online layer (async PvP, ranked PvP, leaderboard)
 
 Read this before changing anything that touches saved builds, match logs, names or the leaderboard.
 

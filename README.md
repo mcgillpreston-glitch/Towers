@@ -1,4 +1,4 @@
-# Ballista Keep
+# Glass & Gilt
 
 A glass-and-gold auto-battler set in 2489: two rival keeps, one divided bridge, and a last accord.
 

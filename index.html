@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Of Blood &amp; Glass</title>
+<title>Glass &amp; Gilt</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Chakra+Petch:wght@400;500;600;700&display=swap">
 <style>
@@ -667,7 +667,7 @@ const SIDES = [
   {name: 'Azurecourt', full: 'Azurecourt · Sapphire Keep', c: '#4aa8ff', rgb: '74,168,255', hi: '170,214,255'},
   {name: 'Vermilion', full: 'Vermilion · Crimson Keep', c: '#ff5a3c', rgb: '255,90,60', hi: '255,170,140'}
 ];
-/* ---------- lore: the world of Of Blood & Glass (source: Master Lore Book; see LORE.md) ---------- */
+/* ---------- lore: the world of Glass & Gilt (source: Master Lore Book; see LORE.md) ---------- */
 const LORE_SIDE = [
   {keep: `Sapphire Keep`, town: `Azurecourt`, crown: `Sapphire Crown`, civic: `the Measure`},
   {keep: `Crimson Keep`, town: `Vermilion`, crown: `Crimson Crown`, civic: `the Remembrance`}
@@ -1241,7 +1241,7 @@ async function logDownload(all) {
   try {
     const data = all ? logsLoad() : (S.log ? [S.log] : []);
     if (!data.length) { uiMsg('No match logs saved yet.'); return; }
-    const text = JSON.stringify({game: 'Of Blood & Glass', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1);
+    const text = JSON.stringify({game: 'Glass & Gilt', saved: new Date().toISOString(), note: 'unit arrays = [type, star, cores, totalDmg, totalKills, lastDmg, lastKills, lastPct, rounds]', matches: data}, null, 1);
     const fname = 'ballista-keep-' + (all ? 'logs' : 'match-' + S.log.id) + '.json';
     // inside claude.ai the viewer saves through the downloads capability; elsewhere a normal download link
     let dl = null; try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) {}
@@ -1637,7 +1637,7 @@ function pvpImport(file) {
         for (const sd of sides) { const g = ghostFromLog(m, sd, m.handle || 'Imported'); if (g && !have.some(x => x.id === g.id && x.handle === g.handle)) { have.push(g); n++; } }
       }
       lsSet(GHKEY, have.slice(-30)); PVP.err = n ? 'Imported ' + n + ' build' + (n === 1 ? '' : 's') + '.' : 'No new builds in that file.';
-    } catch (e) { PVP.err = 'That file is not an Of Blood & Glass match log.'; }
+    } catch (e) { PVP.err = 'That file is not a Glass & Gilt match log.'; }
     overlaySig = '';
   };
   r.readAsText(file);
@@ -4778,13 +4778,13 @@ function updateHUD() {
   setText('tag0', t[0]); setText('tag1', t[1]);
   $('tag0').className = t[0] === 'You' ? 'you' : ''; $('tag1').className = t[1] === 'You' ? 'you' : '';
   const timeEl = $('sTime');
-  let tm = '—', hot = false, rl = 'Of Blood & Glass', pl = 'Battle';
+  let tm = '—', hot = false, rl = 'Glass & Gilt', pl = 'Battle';
   if (S.phase === 'setup') { tm = fmtTime(S.phaseT); hot = S.phaseT <= 10; rl = 'Round ' + S.round; pl = 'Planning'; }
   else if (S.phase === 'intro') { tm = fmtTime(COMBAT_LEN); rl = 'Round ' + S.round; pl = 'Combat'; }
   else if (S.phase === 'combat') { tm = fmtTime(S.timeLeft); hot = S.timeLeft <= 5; rl = S.chaos && CHAOS[S.chaos.i] ? CHAOS[S.chaos.i].name : 'Round ' + S.round; pl = 'Combat'; }
   else if (S.phase === 'result') { tm = '0:00'; rl = 'Round ' + S.round; pl = 'Result'; }
   else if (S.phase === 'over') { rl = 'Match over'; pl = 'Final'; }
-  if (S.mode === 'demo') { rl = 'Of Blood & Glass'; pl = 'Demo'; }
+  if (S.mode === 'demo') { rl = 'Glass & Gilt'; pl = 'Demo'; }
   setText('sTime', tm); setText('sRound', rl); setText('sPhase', pl);
   timeEl.classList.toggle('hot', hot);
   const sig = dockSigNow();
@@ -5056,7 +5056,7 @@ function settingsHtml() {
 }
 function aboutHtml() {
   const row = (a, b) => '<tr><th>' + a + '</th><td>' + b + '</td></tr>';
-  return '<div class="kicker">Of Blood &amp; Glass</div><h1>About</h1>' +
+  return '<div class="kicker">Glass &amp; Gilt</div><h1>About</h1>' +
     '<div class="aboutbox">' +
     '<h2>Creation</h2><table class="stats">' +
       row('Game concept and design', 'Original work by the game\'s creator: the world, factions, lore, rules and balance.') +
@@ -5213,7 +5213,7 @@ function showOverlay() {
     return;
   }
   if (S.ui.set && mode === 'demo') {
-    card('<div class="kicker">Of Blood &amp; Glass</div><h1>Settings</h1>' + settingsHtml() + '<div class="btns"><button class="btn prime" data-act="setx" type="button">Back</button></div>', true);
+    card('<div class="kicker">Glass &amp; Gilt</div><h1>Settings</h1>' + settingsHtml() + '<div class="btns"><button class="btn prime" data-act="setx" type="button">Back</button></div>', true);
     bindSettings();
     return;
   }
@@ -5241,7 +5241,7 @@ function showOverlay() {
         '</div>' +
       '</div>' +
       '<div class="kicker">2489 · The Last Accord</div>' +
-      '<h1>Of Blood &amp; Glass</h1>' +
+      '<h1>Glass &amp; Gilt</h1>' +
       '<p>Azurecourt and Vermilion face off across the Concord Span, each behind a glass-armored Keep with ten turret mounts. Two lovers meet only if one Keep falls. Plan for 90 to 120 seconds, then 30 seconds of combat plays out on its own.</p>' +
       '<ul class="rules">' +
         '<li>Buy turrets from a shop of five. Reroll starts at 2 gold and rises by 1 each time, resetting every round</li>' +
@@ -5372,7 +5372,16 @@ newMatch('demo');
   const hint = document.createElement('div');
   hint.textContent = 'Muted · Space for sound · Click or Esc to skip';
   hint.style.cssText = 'position:absolute;right:18px;bottom:14px;font:600 13px "Chakra Petch",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65);text-shadow:0 1px 4px #000;pointer-events:none';
-  box.append(v, hint); document.body.appendChild(box);
+  // the film's last ten seconds carry a baked-in title card; the game covers it with the live title
+  const tcard = document.createElement('div');
+  tcard.setAttribute('aria-hidden', 'true');
+  tcard.style.cssText = 'position:absolute;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .6s;pointer-events:none;font-family:Cinzel,serif;font-weight:900;line-height:.95;text-align:center;letter-spacing:.04em';
+  const tl = (t, g, sz) => '<div style="font-size:' + sz + ';background:' + g + ';-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 .18em rgba(255,220,150,.35)) drop-shadow(0 .04em .05em #000)">' + t + '</div>';
+  tcard.innerHTML = tl('GLASS', 'linear-gradient(180deg,#e9f4ff 0%,#6fb3ff 40%,#2455c8 75%,#a9d2ff 100%)', 'min(17vw,26vh)') +
+    tl('&amp;', 'linear-gradient(180deg,#fff3cf,#e6c06a 50%,#9a6b26)', 'min(8vw,12vh)') +
+    tl('GILT', 'linear-gradient(180deg,#fff3cf 0%,#f0cf7a 40%,#b5832c 75%,#ffe7a3 100%)', 'min(17vw,26vh)');
+  box.append(v, tcard, hint); document.body.appendChild(box);
+  v.addEventListener('timeupdate', () => { if (v.currentTime >= 29.8) tcard.style.opacity = '1'; });
   let done = false;
   const end = () => {
     if (done) return; done = true;
@@ -5457,7 +5466,7 @@ function benchHtml() {
   h += '<table class="bench"><tr><th>Resolution</th><th>Avg fps</th><th>1% low</th><th>Slow frames</th><th></th></tr>' +
     r.out.map(o => '<tr' + (o.res === r.rec ? ' class="rec"' : '') + '><td>' + RES[o.res].name + '</td><td>' + o.fps + '</td><td>' + o.low + '</td><td>' + o.slow + '%</td><td>' + (o.res === r.rec ? 'recommended' : '') + '</td></tr>').join('') + '</table>' +
     '<div class="setrow"><button class="btn small prime" data-act="benchuse:' + r.rec + '" type="button">Use ' + RES[r.rec].name + '</button></div>';
-  const txt = 'Of Blood & Glass graphics test | ' + r.out.map(o => o.res + ' ' + o.fps + 'fps (1% low ' + o.low + ', slow ' + o.slow + '%)').join(' | ') + ' | recommended ' + r.rec + ' | GPU ' + r.gpu + ' | screen ' + r.screen + ' @' + r.dpr + 'x | cores ' + r.cores + (r.mem ? ' | mem ' + r.mem + 'GB' : '');
+  const txt = 'Glass & Gilt graphics test | ' + r.out.map(o => o.res + ' ' + o.fps + 'fps (1% low ' + o.low + ', slow ' + o.slow + '%)').join(' | ') + ' | recommended ' + r.rec + ' | GPU ' + r.gpu + ' | screen ' + r.screen + ' @' + r.dpr + 'x | cores ' + r.cores + (r.mem ? ' | mem ' + r.mem + 'GB' : '');
   return h + '<p class="hint">Copy this line if you want to send the result to someone:</p><textarea class="benchtxt" readonly rows="3" onclick="this.select()">' + escA(txt) + '</textarea>';
 }
 function frame(now) {
