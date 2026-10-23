@@ -1,6 +1,6 @@
-# Of Blood & Glass: how the lore is used in the game
+# Glass & Gilt: how the lore is used in the game
 
-Source of truth: *Of Blood & Glass: Master Lore Book* (kept by the project owner; the game quotes it verbatim for dialogue and summarises it elsewhere).
+Source of truth: *Glass & Gilt: Master Lore Book* (kept by the project owner; the game quotes it verbatim for dialogue and summarises it elsewhere).
 
 ## In the game now
 | Lore element | Where it appears | Code |
