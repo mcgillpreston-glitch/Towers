@@ -310,18 +310,24 @@ select{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px so
 select option{color:#111}
 
 /* ---- Desktop: slimmer top HUD (bigger keep), character lines in the left gutter beside the field ---- */
-html[data-ui=desktop] .app{padding-block:6px;gap:6px}
-html[data-ui=desktop] header.hud{padding:4px clamp(12px,1.4vw,20px);gap:clamp(8px,1vw,16px)}
-html[data-ui=desktop] .team{gap:3px;padding:3px 9px}
-html[data-ui=desktop] .tname b{font-size:clamp(15px,1.3vw,19px)}
-html[data-ui=desktop] .tname span{font-size:10.5px}
-html[data-ui=desktop] .hpbar{height:12px}
-html[data-ui=desktop] .hpnum{min-width:clamp(32px,2.6vw,38px);height:clamp(32px,2.6vw,38px);font-size:clamp(14px,1.2vw,18px)}
-html[data-ui=desktop] .sub{font-size:clamp(11px,.9vw,12.5px)}
-html[data-ui=desktop] .clock{padding:4px 14px 4px}
-html[data-ui=desktop] .time{font-size:clamp(24px,2.2vw,32px);margin:2px 0}
-html[data-ui=desktop] .phase{font-size:clamp(10px,.85vw,12px)}
-html[data-ui=desktop] .rnd{font-size:clamp(9px,.8vw,11.5px)}
+html[data-ui=desktop] .app{padding-block:4px;gap:4px}
+html[data-ui=desktop] header.hud{grid-template-columns:minmax(0,1fr) clamp(120px,11.5vw,168px) minmax(0,1fr);padding:2px clamp(10px,1vw,14px);gap:clamp(6px,.7vw,11px)}
+html[data-ui=desktop] .team{gap:2px;padding:2px 7px}
+html[data-ui=desktop] .tname{gap:8px}
+html[data-ui=desktop] .tname b{font-size:clamp(11px,.92vw,13.5px)}
+html[data-ui=desktop] .tname span{font-size:8.5px}
+html[data-ui=desktop] .hprow{gap:7px}
+html[data-ui=desktop] .hpbar{height:8px;border-width:1.5px}
+html[data-ui=desktop] .hpnum{min-width:clamp(22px,1.8vw,27px);height:clamp(22px,1.8vw,27px);font-size:clamp(10px,.85vw,13px);border-width:2px}
+html[data-ui=desktop] .hplab{font-size:8px}
+html[data-ui=desktop] .sub{font-size:clamp(8px,.62vw,9px);gap:7px}
+html[data-ui=desktop] .clock{padding:2px 10px 3px}
+html[data-ui=desktop] .time{font-size:clamp(17px,1.55vw,22px);margin:1px 0}
+html[data-ui=desktop] .phase{font-size:clamp(7px,.58vw,8.5px)}
+html[data-ui=desktop] .rnd{font-size:clamp(6.5px,.55vw,8px)}
+html[data-ui=desktop] .phase::before,html[data-ui=desktop] .phase::after,html[data-ui=desktop] .rnd::before,html[data-ui=desktop] .rnd::after{width:3px;height:3px;margin:0 4px}
+html[data-ui=desktop] .dock{padding-block:6px;gap:4px}
+html[data-ui=desktop] .sound{right:4px;bottom:4px;transform:scale(.85);transform-origin:right bottom}
 html[data-ui=desktop][data-gut="1"] .witness{left:8px;right:auto;top:8px;width:calc(var(--gut) - 18px);flex-direction:column;justify-content:flex-start;gap:8px}
 html[data-ui=desktop][data-gut="1"] .wp{max-width:none}
 html[data-ui=desktop][data-gut="1"] .wp.r{flex-direction:row-reverse;text-align:right}
@@ -940,12 +946,7 @@ function applyAct(side, a) {
     case 'equip': return equipItem(P, a.ii | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
     case 'strip': return stripCores(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'lock': { const i = a.i | 0; if (i >= 0 && i < 5 && P.shop[i] >= 0) P.lock[i] = P.lock[i] ? 0 : 1; return ''; }
-    case 'bet': {
-      const v = a.v | 0; if (!BETS.includes(v)) return '';
-      const d = v - P.bet; if (d > P.gold) return 'Not enough gold for that wager.';
-      P.gold -= d; P.bet = v; return '';
-    }
-    case 'upg': return buyUpg(P, side, a.i | 0);
+    case 'bet': case 'upg': return '';   // wagers and army upgrades were removed
     case 'terr': return buildTerrain(P, side, a.i | 0, a.k | 0);
     case 'mvitem': return mvItem(P, a.f === 'm' ? 'm' : 'b', a.fi | 0, a.k | 0, a.to === 'm' ? 'm' : a.to === 'i' ? 'i' : 'b', a.ti | 0);
     case 'ready': P.ready = true; return '';
@@ -1398,7 +1399,7 @@ function ghostSetup(side) {
   P.board = Array.from({length: 10}, (_, i) => mk(rec.board[i]));
   P.bench = Array.from({length: BENCH}, (_, i) => mk(rec.bench[i]));
   P.level = clamp(rec.lv | 0 || P.level, 1, 10); P.xp = 0;
-  P.up = [0, 1, 2].map(i => clamp(+String(rec.up)[i] || 0, 0, 3));
+  P.up = [0, 0, 0];
   P.items = []; P.shop = [-1, -1, -1, -1, -1]; P.bet = 0;
   return true;
 }
@@ -1656,16 +1657,6 @@ function cpuHard(P, side) {
     const hunting = all.some(u => u.star < 3 && ownedCopies(P, u.r, u.star) >= 2) || all.some(u => u.star === 2 && CPU_V[ROSTER[u.r].id] >= 60);
     const keep = hunting ? Math.min(reserve, 10) : reserve;
     if (P.gold - rerollCost(P) >= keep && (hunting || P.gold - keep >= 6 || all.length < P.level)) reroll(P, side); else break;
-  }
-  // 3a. a small wager when riding a streak
-  if (rd >= 2 && P.streak >= 1 && P.hp > 40 && P.gold - 5 >= reserveFor() && !P.bet) { P.gold -= 5; P.bet = 5; }
-  // 3b. army upgrades once the keep is staffed
-  if (rd >= 2 && board() >= Math.min(P.level, 10)) {
-    for (let n = 0; n < 4; n++) {
-      const i = [0, 1, 2].sort((a, b) => P.up[a] - P.up[b])[0];
-      if (P.up[i] >= 3 || P.gold - UPG[i].cost[P.up[i]] < reserveFor()) break;
-      buyUpg(P, side, i);
-    }
   }
   // 4. leftover gold buys experience once the shop has nothing to offer
   g = 0;
@@ -2498,7 +2489,7 @@ function simulate(dt) {
 }
 function breach(u) {
   if (u.breached) return;
-  const dmg = BREACH[u.type] * (1 + 0.12 * S.p[u.side].up[1]) * Math.min(u.type === 'drone' ? 2 : 9, 1 + 0.15 * (S.round - 1)) * (1 + 0.5 * Math.max(0, (4 - S.round) / 3)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
+  const dmg = BREACH[u.type] * Math.min(u.type === 'drone' ? 2 : 9, 1 + 0.15 * (S.round - 1)) * (1 + 0.5 * Math.max(0, (4 - S.round) / 3)) * (u.hp / u.max * 0.5 + 0.5) * (1 + 0.6 * Math.max(0, Math.min(1, (10 - S.timeLeft) / 10)));
   u.breached = true; u.hp = 0;
   if (S.rs) S.rs.br[u.side ^ 1].push([u.type, Math.round(dmg), Math.round((COMBAT_LEN - S.timeLeft) * 10) / 10]);
   hitKeep(u.side ^ 1, dmg);
@@ -4334,7 +4325,6 @@ addEventListener('keydown', e => {
   if (dig >= 0 && !e.ctrlKey && !e.metaKey && !e.altKey) { onSlot('m', dig); return; }
   if (e.key === 'd' || e.key === 'D') act({t: 'reroll'});
   else if (e.key === 'f' || e.key === 'F') act({t: 'xp'});
-  else if (e.key === 'b' || e.key === 'B') onAct('bet');
   else if (e.key === 'e' || e.key === 'E') { const sel = S.ui.sel; if (sel && sel.z !== 'i') { act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; } }
 });
 
@@ -4549,9 +4539,8 @@ function applySnap(s) {
     if (Array.isArray(a.b)) P.bench = Array.from({length: BENCH}, (_, i) => unpackUnit(a.b[i]));
     if (Array.isArray(a.m)) P.board = Array.from({length: 10}, (_, i) => unpackUnit(a.m[i]));
     P.items = String(a.it || '').split('').filter(c => ITEMS[c]).slice(0, MAX_ITEMS);
-    P.bet = a.bt | 0; P.betRes = Array.isArray(a.bs) ? [a.bs[0] | 0, a.bs[1] | 0, a.bs[2] | 0] : null;
     if (typeof a.lk === 'string') P.lock = [0, 1, 2, 3, 4].map(i => +a.lk[i] ? 1 : 0);
-    if (typeof a.up === 'string') P.up = [0, 1, 2].map(i => clamp(+a.up[i] || 0, 0, 3));
+    P.up = [0, 0, 0]; P.bet = 0; P.betRes = null;
     if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4].map(i => (a.cdn[i] | 0) / 10);
     if (Array.isArray(a.tr)) a.tr.slice(0, 2).forEach((q, i) => { if (Array.isArray(q)) { P.terr[i].k = clamp(q[0] | 0, 0, 2); P.terr[i].hp = +q[1] || 0; } });
     P.rally = (a.ry | 0) / 10;
@@ -4718,21 +4707,19 @@ function renderDock() {
     return;
   }
   if (S.phase !== 'setup') {
-    const bw = P.betRes && S.phase === 'result' ? (P.betRes[2] ? ' · Wager ' + (P.betRes[2] === 1 ? 'refunded' : 'paid +' + (P.betRes[1] - P.betRes[0]) + 'g' + (P.betRes[2] === 3 ? ' (flawless!)' : '')) : ' · Wager lost −' + P.betRes[0] + 'g') : '';
+    const bw = '';
     const res = S.phase === 'result' ? (S.rw === S.me ? 'Round won' : S.rw < 0 ? 'Round drawn' : 'Round lost · −' + P.lastDmg + ' HP') + bw : S.phase === 'over' ? 'Match over' : 'Combat runs on its own. Watch your build work.';
     d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span><span class="spacer"></span>' + sound + '</div>' + (S.phase === 'combat' && S.me >= 0 ? '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><kbd>' + C.key + '</kbd> ' + C.name + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>' : '');
     return;
   }
   const locked = P.ready, onBoard = boardCount(P), interest = S.me >= 0 ? interestFor(S.me) : interestOf(P.gold), comeback = S.me >= 0 ? comebackFor(S.me) : 0;
   const need = XPNEED[P.level];
-  const upgH = '<span class="upgs">' + UPG.map((U, i) => { const lv = P.up[i], nx = lv < 3 ? U.cost[lv] : 0; return '<button type="button" class="btn small upg" data-act="upg:' + i + '" data-tip="' + U.name + ' · level ' + lv + ' / 3. ' + U.fx + (lv < 3 ? ' Next level: ' + nx + ' gold.' : ' Maxed.') + ' Lasts the whole match."' + (locked || lv >= 3 || P.gold < nx ? ' disabled' : '') + '>' + U.name.replace(/^Army /, '') + ' <span class="pips">' + '●'.repeat(lv) + '○'.repeat(3 - lv) + '</span> <b>' + (lv >= 3 ? 'MAX' : nx + 'g') + '</b></button>'; }).join('') + '</span>';
   let h = '<div class="eco">' +
     '<div class="stat" data-tip="Gold. Each round pays 9 + interest (+1 at 4 gold, then +1 per 6 more, max +5 at 28 gold; it only counts gold up to 10 above the rival pile, and the poorer side gets comeback pay: +1 per 10 gold behind, max +3) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (comeback ? ' · +' + comeback + ' comeback' : '') + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
     '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
-    '<button type="button" class="btn small bet' + (P.bet ? ' on' : '') + '" data-act="bet" data-tip="Wager gold on winning this round (key B cycles 0, 5, 10, 20). Win: stake x' + betOdds(S.me)[0] + ' back. Flawless win (your keep untouched, theirs damaged): x' + betOdds(S.me)[1] + '. Draw: refunded. Loss: stake gone. The odds shrink when you lead on HP or streak and grow when you trail. Wagered gold earns no interest."' + (locked ? ' disabled' : '') + '>Wager <b>' + (P.bet ? P.bet + 'g' : 'off') + ' <em>x' + betOdds(S.me)[0] + '</em></b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
-    sound + upgH +
+    sound +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
     '</div><div class="shop">';
   for (let i = 0; i < 5; i++) {
@@ -4794,7 +4781,7 @@ function statsHtml(final) {
   } else h += '<p class="hint">No rounds fought yet.</p>';
   return h;
 }
-const WIKI_TABS = [['world', 'World'], ['towns', 'The towns'], ['crews', 'The crews'], ['arsenal', 'Arsenal lore'], ['machines', 'Machines & cores'], ['voices', 'Voices'], ['basics', 'Basics'], ['turrets', 'Turrets'], ['traits', 'Traits'], ['cores', 'Cores'], ['economy', 'Economy'], ['army', 'Upgrades & calls'], ['keys', 'Controls']];
+const WIKI_TABS = [['world', 'World'], ['towns', 'The towns'], ['crews', 'The crews'], ['arsenal', 'Arsenal lore'], ['machines', 'Machines & cores'], ['voices', 'Voices'], ['basics', 'Basics'], ['turrets', 'Turrets'], ['traits', 'Traits'], ['cores', 'Cores'], ['economy', 'Economy'], ['army', 'Calls'], ['keys', 'Controls']];
 function wikiHtml() {
   const tab = S.ui.wiki || 'world';
   let b = '';
@@ -4856,12 +4843,12 @@ function wikiHtml() {
       WITNESS.map(w => '<table class="stats wk"><thead><tr><th colspan="2">' + w.t + '</th></tr></thead><tbody>' + w.l.map(ln => '<tr><th style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '"><img class="pt" src="' + (ln[0] === 'R' ? PORT.romeo : PORT.juliette) + '" alt="">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</th><td class="l">“' + ln[1] + '”</td></tr>').join('') + '</tbody></table>').join('');
   } else if (tab === 'basics') {
     b = '<div class="wcards">' +
-      card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Thirty seconds of it are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores, buy army upgrades and place an optional wager. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
+      card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Thirty seconds of it are meant for terrain. Buy turrets from the shop, place them on mounts, fit cores. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
       card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to T) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 16 s, overtime Titans march until one side breaks. A round never ends with both untouched: the side that dealt clearly more damage lands a glancing hit.') +
       card('3 · Win', 'Lose rounds, lose HP. Last one standing wins.', 'Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. From round 5 the mech waves get tougher every round.') +
       card('Mounts', '4 on the roof (R1-R4), 6 on the side (S1-S6).', 'Launchers that lob their shots gain from height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top. Short-range turrets on the roof may never fire; check the after-action report for idle turrets.') +
       card('Terrain', 'Two gates: barrier or slow field.', 'Each army walks its own one-way route: blue goes under the central flyover, red goes over it, and the two never meet. Your keep owns two terrain slots (far gate and near gate) on the bridge your enemy walks toward you. Each can hold a barrier (enemy troops stop and break it before they can pass) or a slow field (enemy ground troops crawl inside it). Click a slot in planning to build, swap or clear it. Barriers cost ' + TERRAIN.barrierCost + ' gold and slow fields ' + TERRAIN.slowCost + '; clearing refunds half. A damaged barrier mends half its damage each round for free, a broken one must be rebuilt, and drones fly over everything.') +
-      card('Wins pay', 'Gold, interest, streaks, wagers.', 'See the Economy tab for income, interest, streaks and wagers.') +
+      card('Wins pay', 'Gold, interest and streaks.', 'See the Economy tab for income, interest and streaks.') +
       '</div>' + hintTap;
   } else if (tab === 'turrets') {
     b = '<table class="stats wk"><thead><tr><th>Turret</th><th>Cost</th><th>Range</th><th>Dmg</th><th>Rate/s</th><th>Hits</th><th>Traits · notes</th></tr></thead><tbody>' +
@@ -4876,22 +4863,20 @@ function wikiHtml() {
   } else if (tab === 'economy') {
     b = '<table class="stats wk"><tbody>' +
       '<tr><th>Round income</th><td class="l">' + BASE_INCOME + ' gold + interest + streak bonus + 1 for winning the last round</td></tr>' +
-      '<tr><th>Interest</th><td class="l">Starts at 4 gold held: +1, then +1 more per 6 gold, up to +5 at 28 gold. To stop snowballing, only gold up to 10 above the rival pile earns interest, and the side with less gold gets comeback pay: +1 per 10 gold behind, up to +3. Gold you have wagered earns none.</td></tr>' +
+      '<tr><th>Interest</th><td class="l">Starts at 4 gold held: +1, then +1 more per 6 gold, up to +5 at 28 gold. To stop snowballing, only gold up to 10 above the rival pile earns interest, and the side with less gold gets comeback pay: +1 per 10 gold behind, up to +3.</td></tr>' +
       '<tr><th>Streaks</th><td class="l">2+ wins or losses in a row pays +1, 4 pays +2, 5 pays +3</td></tr>' +
       '<tr><th>Shop</th><td class="l">Turrets cost their tier. Reroll costs 2 gold, +1 for each reroll you make in the same planning phase (it resets next round). Lock keeps a shop slot through rerolls and rounds.</td></tr>' +
       '<tr><th>Levels</th><td class="l">Level = turrets you can field (3 to 10). +' + PASSIVE_XP + ' XP free per round; buy 4 XP for 4 gold. XP needed: ' + Object.keys(XPNEED).map(k => 'L' + k + '→' + XPNEED[k]).join(', ') + '.</td></tr>' +
       '<tr><th>Selling</th><td class="l">Returns the turret\'s cost (×3 per extra star) and any cores it carried.</td></tr>' +
-      '<tr><th>Wager</th><td class="l">Stake 5, 10 or 20 gold before the round. Odds move with the match: the leader (HP lead, win streak) is paid as little as ×1.2 for a win, the underdog up to ×3.2. A flawless win (your keep untouched, theirs damaged) pays 1.5× the normal multiplier. Draw: refunded. Loss: stake gone. The current odds show on the button.</td></tr>' +
       '<tr><th>Battle pay</th><td class="l">+1 gold every 2.5 s of combat, for call-ins.</td></tr></tbody></table>';
   } else if (tab === 'army') {
-    b = '<p>Army upgrades are bought in planning and last the whole match. Call-ins are used in combat.</p><table class="stats wk"><thead><tr><th>Upgrade</th><th>Cost per level</th><th>Effect</th></tr></thead><tbody>' +
-      UPG.map(U => '<tr><th>' + U.name + '</th><td>' + U.cost.join(' / ') + 'g</td><td class="l">' + U.fx + '</td></tr>').join('') + '</tbody></table>' +
+    b = '<p>Call-ins are used in combat. Gold from battle pay and your bank buys them.</p>' +
       '<table class="stats wk"><thead><tr><th>Call-in</th><th>Key</th><th>Cost</th><th>Recharge</th><th>Effect</th></tr></thead><tbody>' +
       CALLS.map(C => '<tr><th>' + C.name + '</th><td>' + C.key + '</td><td>' + C.cost + 'g</td><td>' + C.cd + ' s</td><td class="l">' + C.fx + '</td></tr>').join('') + '</tbody></table>';
   } else {
     b = '<table class="stats wk"><tbody>' +
       '<tr><th>1 – 0</th><td class="l">Mount 1 to 10. With a turret or core selected, sends it there. With nothing selected, picks up that mount\'s turret.</td></tr>' +
-      '<tr><th>D / F / B</th><td class="l">Reroll / buy XP / cycle your wager</td></tr>' +
+      '<tr><th>D / F</th><td class="l">Reroll / buy XP</td></tr>' +
       '<tr><th>E</th><td class="l">Sell the selected turret</td></tr>' +
       '<tr><th>Right-click</th><td class="l">Send a turret between mount and bench; pull a core off a turret (1 gold)</td></tr>' +
       '<tr><th>Drag</th><td class="l">Drag a core diamond between turrets or back to the rack</td></tr>' +
