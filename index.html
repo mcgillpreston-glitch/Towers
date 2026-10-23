@@ -3,11 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Of Blood &amp; Glass</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Chakra+Petch:wght@400;500;600;700&display=swap">
-<style>
-/* Layout: one-screen auto-battler. Glass HUD with both tacticians' HP and the phase clock, the night-arena canvas, and a planning dock (shop, mounts, bench, cores) that folds to one line while combat runs. Deliberately single dark theme. */
 :root{
   --void:#020107;
   --glass:#0c0918;
@@ -3004,12 +2999,12 @@ function orbPush() {
   }
   return (P[0] - P[1]) / (P[0] + P[1] + 3);
 }
-// the ZPM gem: a tall faceted crystal with chamfered tips
-const GEM = R0 => ({w: R0 * 0.74, h: R0 * 1.3});
+// the ZPM gem: a long horizontal crystal bundle with chamfered ends
+const GEM = R0 => ({w: R0 * 1.5, h: R0 * 0.6});
 function gemPath(cx, cy, w, h) {
   ctx.beginPath();
-  ctx.moveTo(cx - 0.24 * w, cy - h); ctx.lineTo(cx + 0.24 * w, cy - h); ctx.lineTo(cx + w, cy - 0.42 * h); ctx.lineTo(cx + w, cy + 0.42 * h);
-  ctx.lineTo(cx + 0.24 * w, cy + h); ctx.lineTo(cx - 0.24 * w, cy + h); ctx.lineTo(cx - w, cy + 0.42 * h); ctx.lineTo(cx - w, cy - 0.42 * h); ctx.closePath();
+  ctx.moveTo(cx - 0.82 * w, cy - h); ctx.lineTo(cx + 0.82 * w, cy - h); ctx.lineTo(cx + w, cy - 0.4 * h); ctx.lineTo(cx + w, cy + 0.4 * h);
+  ctx.lineTo(cx + 0.82 * w, cy + h); ctx.lineTo(cx - 0.82 * w, cy + h); ctx.lineTo(cx - w, cy + 0.4 * h); ctx.lineTo(cx - w, cy - 0.4 * h); ctx.closePath();
 }
 function drawOrb(hx, hy, R0, t, kk) {
   const G = GEM(R0), rX = G.w - 3, rY = G.h - 3, r = rY, c0 = SIDES[0].rgb, c1 = SIDES[1].rgb, dt = 1 / 60;
@@ -3021,7 +3016,7 @@ function drawOrb(hx, hy, R0, t, kk) {
   ORB.surge[0] *= 0.94; ORB.surge[1] *= 0.94;
   const pos = clamp(ORB.v + ORB.o, -0.95, 0.95), dir = pos >= 0 ? 1 : -1;
   const lead = clamp(Math.abs(pos) * 1.3 + Math.abs(ORB.ov) * 0.5 + Math.max(ORB.surge[0], ORB.surge[1]) * 0.4, 0, 1);
-  const bx = hx + pos * rX * 0.9, A = 2 + rX * 0.17 * lead, B = dir * rX * 0.34 * lead;
+  const bx = hx + pos * rX * 0.9, A = 2 + rY * 0.3 * lead, B = dir * rY * 0.8 * lead;
   const front = y => { const dy = (y - hy) / rY; return bx + B * (1 - dy * dy) + dir * A * Math.pow(1 - Math.abs(Math.sin(y * 0.062 - dir * t * 2.6)), 1.6) + Math.sin(y * 0.11 + t * 3) * 1.2; };
   ctx.save();
   gemPath(hx, hy, rX, rY); ctx.clip();
@@ -3032,8 +3027,8 @@ function drawOrb(hx, hy, R0, t, kk) {
     if (side === 0) { ctx.moveTo(hx - rX - 4, hy - rY - 2); for (let y = hy - rY; y <= hy + rY; y += 4) ctx.lineTo(front(y), y); ctx.lineTo(hx - rX - 4, hy + rY + 2); }
     else { ctx.moveTo(hx + rX + 4, hy - rY - 2); for (let y = hy - rY; y <= hy + rY; y += 4) ctx.lineTo(front(y), y); ctx.lineTo(hx + rX + 4, hy + rY + 2); }
     ctx.closePath();
-    const g = ctx.createRadialGradient(hx + (side ? rX * 0.4 : -rX * 0.4), hy - rY * 0.2, 4, hx, hy, rY * 1.1);
-    g.addColorStop(0, 'rgba(' + hi + ',.95)'); g.addColorStop(0.45, 'rgba(' + rgb + ',' + (pushing ? 0.95 : 0.8) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',.45)');
+    const g = ctx.createRadialGradient(hx + (side ? rX * 0.3 : -rX * 0.3), hy - rY * 0.2, 4, hx, hy, rX * 1.05);
+    g.addColorStop(0, 'rgba(' + hi + ',.95)'); g.addColorStop(0.45, 'rgba(' + rgb + ',' + (pushing ? 0.95 : 0.8) + ')'); g.addColorStop(1, 'rgba(' + rgb + ',.6)');
     ctx.fillStyle = g; ctx.fill();
     ctx.save(); ctx.clip();
     ctx.globalCompositeOperation = 'lighter';
@@ -3075,29 +3070,33 @@ function drawOrb(hx, hy, R0, t, kk) {
   ctx.strokeStyle = 'rgba(255,255,255,' + (0.45 + 0.4 * lead) + ')'; ctx.lineWidth = 1.5 + 2.5 * lead;
   ctx.beginPath(); for (let y = hy - rY; y <= hy + rY; y += 3) { const x = front(y); y === hy - rY ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.stroke();
   ctx.shadowBlur = 0;
-  const ig = ctx.createRadialGradient(hx, hy, rX * 0.5, hx, hy, rY); ig.addColorStop(0, 'rgba(0,0,0,0)'); ig.addColorStop(1, 'rgba(0,0,10,.5)');
+  const ig = ctx.createRadialGradient(hx, hy, rX * 0.55, hx, hy, rX); ig.addColorStop(0, 'rgba(0,0,0,0)'); ig.addColorStop(1, 'rgba(0,0,10,.5)');
   ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = ig; ctx.fillRect(hx - rX - 4, hy - rY - 4, rX * 2 + 8, rY * 2 + 8);
-  // crystal facets: a bright core seam, shoulder cuts and a glass sheen
-  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,.22)';
-  ctx.beginPath(); ctx.moveTo(hx, hy - rY); ctx.lineTo(hx, hy + rY);
-  ctx.moveTo(hx - 0.24 * rX, hy - rY); ctx.lineTo(hx - rX, hy - 0.42 * rY); ctx.moveTo(hx + 0.24 * rX, hy - rY); ctx.lineTo(hx + rX, hy - 0.42 * rY);
-  ctx.moveTo(hx - 0.24 * rX, hy + rY); ctx.lineTo(hx - rX, hy + 0.42 * rY); ctx.moveTo(hx + 0.24 * rX, hy + rY); ctx.lineTo(hx + rX, hy + 0.42 * rY);
-  ctx.moveTo(hx - rX, hy - 0.42 * rY); ctx.lineTo(hx, hy); ctx.lineTo(hx + rX, hy - 0.42 * rY); ctx.moveTo(hx - rX, hy + 0.42 * rY); ctx.lineTo(hx, hy); ctx.lineTo(hx + rX, hy + 0.42 * rY); ctx.stroke();
+  // crystal facets: lengthwise glass seams with black lead lines, as in a Zero Point Module
+  ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255,255,255,.2)';
+  ctx.beginPath();
+  for (const f of [-0.5, 0, 0.5]) { ctx.moveTo(hx - rX, hy + f * rY); ctx.lineTo(hx + rX, hy + f * rY); }
+  ctx.moveTo(hx - 0.82 * rX, hy - rY); ctx.lineTo(hx - rX, hy - 0.4 * rY); ctx.moveTo(hx + 0.82 * rX, hy - rY); ctx.lineTo(hx + rX, hy - 0.4 * rY);
+  ctx.moveTo(hx - 0.82 * rX, hy + rY); ctx.lineTo(hx - rX, hy + 0.4 * rY); ctx.moveTo(hx + 0.82 * rX, hy + rY); ctx.lineTo(hx + rX, hy + 0.4 * rY); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,8,.55)'; ctx.lineWidth = 1.6; ctx.beginPath();
+  for (const f of [-0.75, -0.25, 0.25, 0.75]) { ctx.moveTo(hx - rX, hy + f * rY); ctx.lineTo(hx + rX, hy + f * rY); }
+  ctx.stroke();
   ctx.globalCompositeOperation = 'lighter';
   const cg = ctx.createRadialGradient(hx, hy, 0, hx, hy, rX * 0.9); cg.addColorStop(0, 'rgba(255,255,255,' + (0.28 + 0.18 * Math.sin(t * 2.4) + 0.2 * lead) + ')'); cg.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = cg; ctx.fillRect(hx - rX, hy - rY * 0.6, rX * 2, rY * 1.2);
+  ctx.fillStyle = cg; ctx.fillRect(hx - rX, hy - rY, rX * 2, rY * 2);
   ctx.globalCompositeOperation = 'source-over';
-  ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(hx - rX * 0.7, hy - rY * 0.55); ctx.lineTo(hx - rX * 0.7, hy - rY * 0.15); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(hx - rX * 0.7, hy - rY * 0.62); ctx.lineTo(hx - rX * 0.15, hy - rY * 0.62); ctx.stroke();
   ctx.restore();
   // gilt frame: rim and the two ribbed end caps of a Zero Point Module
   const gg = ctx.createLinearGradient(hx - rX, hy - rY, hx + rX, hy + rY); gg.addColorStop(0, '#fff1c8'); gg.addColorStop(0.35, '#e5bf6a'); gg.addColorStop(0.65, '#9c6f2a'); gg.addColorStop(1, '#f6e2a8');
   gemPath(hx, hy, rX + 2, rY + 2); ctx.strokeStyle = gg; ctx.lineWidth = 4; ctx.stroke();
   gemPath(hx, hy, rX + 5, rY + 5); ctx.strokeStyle = 'rgba(5,3,11,.8)'; ctx.lineWidth = 1.5; ctx.stroke();
   for (const sgn of [-1, 1]) {
-    const y0 = hy + sgn * (rY + 3), cw = 0.34 * rX + 6;
-    ctx.fillStyle = gg; ctx.beginPath(); ctx.moveTo(hx - cw, y0); ctx.lineTo(hx + cw, y0); ctx.lineTo(hx + cw * 0.8, y0 + sgn * 11); ctx.lineTo(hx - cw * 0.8, y0 + sgn * 11); ctx.closePath(); ctx.fill();
+    const x0 = hx + sgn * (rX + 3), ch = rY * 0.95;
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.moveTo(x0, hy - ch); ctx.lineTo(x0, hy + ch); ctx.lineTo(x0 + sgn * 12, hy + ch * 0.8); ctx.lineTo(x0 + sgn * 12, hy - ch * 0.8); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = 'rgba(40,24,6,.75)'; ctx.lineWidth = 1;
-    for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(hx + i * cw * 0.38, y0 + sgn * 1.5); ctx.lineTo(hx + i * cw * 0.34, y0 + sgn * 10); ctx.stroke(); }
+    for (let i = 1; i <= 3; i++) { const x = x0 + sgn * i * 3; ctx.beginPath(); ctx.moveTo(x, hy - ch * 0.8); ctx.lineTo(x, hy + ch * 0.8); ctx.stroke(); }
+    ctx.fillStyle = '#ffd36a'; for (const f of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.arc(x0 + sgn * 6, hy + f * ch * 0.8, 1.6, 0, 7); ctx.fill(); }
   }
 }
 function er0() { return 27; }
