@@ -250,7 +250,10 @@ table.wk th{white-space:nowrap}
 .selbar{display:flex;gap:10px;align-items:center;min-height:30px;font-size:13px;flex-wrap:wrap}
 .selbar .m{color:var(--warn)}
 .selbar .h{color:var(--muted)}
-.odds{font-size:11px;color:var(--muted);letter-spacing:.06em;white-space:nowrap}
+.stat.odds{flex:none}
+.stat .od{display:flex;gap:10px}
+.stat .od b{display:flex;flex-direction:column;align-items:center;font:900 17px var(--f-display);line-height:1.1;min-width:34px;-webkit-text-fill-color:currentColor;background:none;filter:none}
+.stat .od b i{font:700 9px var(--f-ui);letter-spacing:.1em;color:var(--muted);font-style:normal;-webkit-text-fill-color:var(--muted)}
 .cline{display:flex;gap:14px;align-items:center;flex-wrap:wrap;font-size:13px}
 .cline b{font-variant-numeric:tabular-nums}
 #tip{position:fixed;z-index:80;max-width:310px;padding:10px 12px;background:linear-gradient(180deg,rgba(24,18,54,.98),rgba(9,7,20,.97)) padding-box,var(--gild) border-box;border:1.5px solid transparent;box-shadow:0 10px 34px rgba(0,0,0,.7);font:500 12.5px/1.4 var(--f-ui);color:var(--ink);pointer-events:none}
@@ -333,6 +336,23 @@ html[data-ui=desktop][data-gut="1"] .wp{max-width:none}
 html[data-ui=desktop][data-gut="1"] .wp.r{flex-direction:row-reverse;text-align:right}
 html[data-ui=desktop][data-gut="1"] .bark{left:8px;bottom:12px;width:calc(var(--gut) - 18px);max-width:none;box-sizing:border-box;transform:translateY(10px)}
 html[data-ui=desktop][data-gut="1"] .bark.on{transform:none}
+/* planning stats: larger, spread across the row */
+html[data-ui=desktop] .eco{gap:14px 22px;align-items:center}
+html[data-ui=desktop] .eco>.stat:first-child{min-width:130px}
+html[data-ui=desktop] .eco .stat span{font-size:12px;letter-spacing:.18em}
+html[data-ui=desktop] .eco .stat>b:not(:only-child){font-size:34px}
+html[data-ui=desktop] .eco .stat em{font-size:13px}
+html[data-ui=desktop] .eco .stat.grow{flex:1 1 280px;min-width:240px;gap:3px}
+html[data-ui=desktop] .eco .stat.grow .xpbar{height:12px;margin-block:4px}
+html[data-ui=desktop] .eco .stat .od b{font-size:21px;min-width:44px}
+html[data-ui=desktop] .eco .stat .od b i{font-size:10px}
+html[data-ui=desktop] .eco>.btn{padding:11px 18px;font-size:13px}
+html[data-ui=desktop] .eco>.btn.prime{padding:12px 26px;font-size:15px}
+html[data-ui=mobile] .eco>.stat.odds{grid-column:span 2;order:4}
+html[data-ui=mobile] .stat .od{gap:4px}
+html[data-ui=mobile] .stat .od b{font-size:12px;min-width:0;flex:1}
+html[data-ui=mobile] .stat .od b i{font-size:8px}
+html[data-ui=mobile][data-o=l] .eco>.stat.odds{grid-column:span 2}
 /* ---- Mobile layout (data-ui="mobile"): chosen automatically from the device, or forced in Settings ---- */
 html[data-ui=mobile] body{font-size:14px}
 html[data-ui=mobile] .app{height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));max-width:none;gap:5px;padding:6px}
@@ -4716,7 +4736,8 @@ function renderDock() {
   const need = XPNEED[P.level];
   let h = '<div class="eco">' +
     '<div class="stat" data-tip="Gold. Each round pays 9 + interest (+1 at 4 gold, then +1 per 6 more, max +5 at 28 gold; it only counts gold up to 10 above the rival pile, and the poorer side gets comeback pay: +1 per 10 gold behind, max +3) + a win or loss streak bonus. Combat also pays 1 gold every 2.5 s for call-ins. Turrets cost their tier in gold, Reroll 2, XP 4."><span>Gold</span><b>' + P.gold + '</b><em>+' + interest + ' interest' + (comeback ? ' · +' + comeback + ' comeback' : '') + (streakBonus(P.streak) ? ' · +' + streakBonus(P.streak) + ' streak' : '') + '</em></div>' +
-    '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + ' · <span class="odds">Odds ' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '">' + o + '</b>').join('/') + '</span></em></div>' +
+    '<div class="stat grow" data-tip="Level sets how many turrets you can field, and shifts the shop odds toward higher tiers. Fill the bar with XP (2 free each round, or buy 4 gold for it)."><span>Level ' + P.level + ' · ' + onBoard + ' / ' + P.level + ' turrets fielded</span><div class="xpbar"><i style="width:' + (need ? (P.xp / need * 100).toFixed(0) : 100) + '%"></i></div><em>' + (need ? P.xp + ' / ' + need + ' XP' : 'Max level') + '</em></div>' +
+    '<div class="stat odds" data-tip="Shop odds: the chance, in percent, that a shop slot offers a 1, 2, 3, 4 or 5 gold turret at your level."><span>Shop odds</span><div class="od">' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '"><i>' + (i + 1) + 'g</i>' + o + '%</b>').join('') + '</div></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
     sound +
