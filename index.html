@@ -115,6 +115,17 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .mvp{color:#ffd23a;font-size:9px;letter-spacing:.1em}
 .idl{color:#ff8a8a;font-size:9px;letter-spacing:.1em}
 @media(max-width:820px){.pcols{grid-template-columns:1fr}}
+.award{margin:8px 0 10px;padding:10px 14px;border:1px solid rgba(232,201,138,.35);background:rgba(20,14,40,.6);text-align:left}
+.award .at{font:800 12px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.award table{width:100%;margin:6px 0}.award td.l{text-align:left}.award td{padding:3px 6px}.award td.neg{color:var(--loss)}.award tr.tot td{border-top:1px solid rgba(232,201,138,.4);font-weight:800;color:var(--gold)}
+.lvup{font:900 20px var(--f-display);letter-spacing:.18em;text-transform:uppercase;text-align:center;color:#fff1c8;text-shadow:0 0 14px #e5bf6a;margin:6px 0}
+.pf-bar{height:9px;background:rgba(0,0,0,.55);border:1px solid rgba(232,201,138,.45);margin:6px 0 3px}.pf-bar i{display:block;height:100%;background:linear-gradient(90deg,#9c6f2a,#ffe28a)}
+.pf-head{display:flex;gap:16px;align-items:center;margin:2px 0 8px}
+.pf-ring{flex:none;width:84px;height:84px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:4px solid #b08a3e;background:radial-gradient(circle,#1b1438,#0a0716);box-shadow:0 0 14px rgba(229,191,106,.35)}
+.pf-ring span{font:700 10px var(--f-display);letter-spacing:.2em;color:var(--muted)}.pf-ring b{font:900 32px/1 var(--f-display);color:#fff1c8}
+.pf-head.t1 .pf-ring{border-color:#7fd1ff}.pf-head.t2 .pf-ring{border-color:#5bf0b0}.pf-head.t3 .pf-ring{border-color:#c28bff;box-shadow:0 0 18px rgba(194,139,255,.5)}.pf-head.t4 .pf-ring{border-color:#ff9a4a;box-shadow:0 0 20px rgba(255,154,74,.55)}.pf-head.t5 .pf-ring{border-color:#fff1c8;box-shadow:0 0 26px rgba(255,241,200,.7)}
+.pf-id{flex:1;min-width:0}.pf-id h1{margin:0;font-size:clamp(22px,4vw,32px)}.pf-title{font:700 13px var(--f-display);letter-spacing:.26em;text-transform:uppercase;color:var(--gold)}
+.pf-tabs{margin-bottom:8px}
 .endbanner{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 12px;margin:-4px 0 2px;border-bottom:1px solid rgba(232,201,138,.28);text-align:center}
 .endbanner span,.endbanner:not(:has(span)){font:900 clamp(36px,7vw,62px) var(--f-display);letter-spacing:.24em;text-indent:.24em;text-transform:uppercase;line-height:1}
 .endbanner em{font:700 11px var(--f-display);font-style:normal;letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}
@@ -1028,7 +1039,7 @@ function newMatch(mode, diff) {
     chaos: null, chaosAt: [], wind: 0, dropDone: 0,
     cam: {x: W / 2, y: H / 2, z: 1}, letter: 0, keepFlash: [0, 0], timeScale: 1, slowT: 0,
     lastSeq: 0, matchId: Math.random().toString(36).slice(2, 7),
-    ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0, tab: false, menu: false},
+    ui: {sel: null, msg: '', msgT: 0, seenMsgN: 0, tab: false, menu: false}, acts: 0, actR: {}, myCalls: {}, award: null,
     stats: {rounds: [], p: [newStat(), newStat()]},
     wit: mode === 'demo' ? null : WITNESS.map((_, i) => i).sort(() => Math.random() - 0.5),
     log: mode === 'demo' ? null : {id: Math.random().toString(36).slice(2, 7), mode, diff: diff || (old && old.diff) || 'hard', started: new Date().toISOString(), side: 0, handle: typeof HANDLE === 'string' ? HANDLE : '', rounds: [], end: null}
@@ -1196,6 +1207,7 @@ function logEnd() {
   if (!S.log || S.mode === 'demo') return;
   S.log.end = {winner: S.winner, rounds: S.round, hp: S.p.map(P => P.hp), stats: S.stats.p};
   logPersist();
+  try { profAward(); } catch (e) { S.award = null; }
   pvpRecord();
   logFlush();
 }
@@ -1223,6 +1235,7 @@ async function logFlush() {
     }
   } finally { flushing = false; }
 }
+
 /* ---------- async PvP: ghost builds from other players + wins leaderboard ---------- */
 const GHKEY = 'bk-ghosts-v1', LBKEY = 'bk-lb-v1', HKEY = 'bk-handle', MYKEY = 'bk-mybuilds-v1';
 const PVP = {db: null, uid: null, init: false, busy: false, lb: [], lbLoaded: false, lbBusy: false, err: '', n: 0, shared: 0};
@@ -1320,6 +1333,7 @@ async function pvpInit() {
     if (PVP.db) {          // adopt the account's saved tally if this device has played less
       const d = await BK.getLb(PVP.uid), mine = myLb();
       if (d && (d.m | 0) > mine.m) { lsSet(LBKEY, Object.assign(newLb(), d, {handle: mine.handle !== HANDLE ? mine.handle : d.handle || HANDLE})); }
+      if (d) profMerge(d);
     }
   } catch (e) { PVP.db = null; }
   overlaySig = '';
@@ -1331,17 +1345,23 @@ function pvpPushBuilds(list) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.th
 const RKEY = 'bk-reports-v1';
 function pvpPushReports(rep) { if (!PVP.db || !PVP.uid) return; pushQ = pushQ.then(() => BK.putReports(rep)).catch(e => { PVP.err = 'Result upload failed'; }); }
 /* A match counts only when BOTH players filed a report for it, each naming the other as the opponent and agreeing on the winner. */
+const REPKEEP = 150;
 function tally(docs) {
   const by = {};
   for (const d of docs) { const m = d.m || {}; for (const k in m) { const e = m[k]; if (e && typeof e === 'object') (by[k] = by[k] || []).push(Object.assign({u: d.id}, e)); } }
-  const out = {}, pairN = {}, add = (u, k) => { const o = out[u] = out[u] || {w: 0, l: 0, d: 0}; o[k]++; };
+  const out = {}, pairN = {}, lst = {}, add = (u, k) => { const o = out[u] = out[u] || {w: 0, l: 0, d: 0, x: 0}; o[k]++; };
+  // XP comes only from matches both players reported the same way; each player's own entry must pass the activity check
+  const grant = (e, res, other) => { if (e.k !== 1 || (e.rw | 0) + (other.rw | 0) > (e.r | 0)) return; (lst[e.u] = lst[e.u] || []).push([e.t | 0, humanXp(res, e.r | 0, e.rw | 0)]); };
   for (const k in by) {
     const r = by[k]; if (r.length !== 2) continue;
     const [a, b] = r;
     if (a.u === b.u || a.o !== b.u || b.o !== a.u || a.w !== b.w || (a.r | 0) < 3 || (b.r | 0) < 3) continue;
     const pk = [a.u, b.u].sort().join('|'); pairN[pk] = (pairN[pk] || 0) + 1; if (pairN[pk] > 10) continue;     // farming one rival counts ten matches at most
-    if (a.w === 'd') { add(a.u, 'd'); add(b.u, 'd'); } else if (a.w === a.u) { add(a.u, 'w'); add(b.u, 'l'); } else if (a.w === b.u) { add(b.u, 'w'); add(a.u, 'l'); }
+    if (a.w === 'd') { add(a.u, 'd'); add(b.u, 'd'); grant(a, 'd', b); grant(b, 'd', a); }
+    else if (a.w === a.u) { add(a.u, 'w'); add(b.u, 'l'); grant(a, 'w', b); grant(b, 'l', a); }
+    else if (a.w === b.u) { add(b.u, 'w'); add(a.u, 'l'); grant(b, 'w', a); grant(a, 'l', b); }
   }
+  for (const u in lst) { out[u] = out[u] || {w: 0, l: 0, d: 0, x: 0}; out[u].x = capHour(lst[u]); }
   return out;
 }
 const packG = a => a ? [a[0], a[1], a[2] || ''] : 0;
@@ -1369,14 +1389,155 @@ function pvpRecord() {
   const host = S.mode === 'host' ? PVP.uid : S.hostUid, opp = S.mode === 'host' ? (net && net.gu) : S.hostUid;
   if (host && opp && PVP.uid && opp !== PVP.uid) {
     const rep = lsGet(RKEY, {});
-    rep[S.matchId + '-' + host] = {o: opp, w: w < 0 ? 'd' : w === side ? PVP.uid : opp, r: S.round, t: Date.now()};
-    const keep = {}; Object.keys(rep).sort((x, y) => rep[y].t - rep[x].t).slice(0, 40).forEach(k => { keep[k] = rep[k]; });
+    rep[S.matchId + '-' + host] = {o: opp, w: w < 0 ? 'd' : w === side ? PVP.uid : opp, r: S.round, t: Date.now(), k: afkOk() ? 1 : 0, rw: st.wins | 0};
+    const keep = {}; Object.keys(rep).sort((x, y) => rep[y].t - rep[x].t).slice(0, REPKEEP).forEach(k => { keep[k] = rep[k]; });
     lsSet(RKEY, keep); pvpPushReports(keep);
   }
   const g = ghostFromLog(S.log, side, HANDLE);
   if (g) { const mine = lsGet(MYKEY, []).filter(x => x.id !== g.id); mine.push(g); const keep = mine.slice(-4); lsSet(MYKEY, keep); pvpPushBuilds(keep); }
   pvpPushLb();
 }
+/* =========================================================================
+   PROFILE: cosmetic levels earned from finished matches
+   Hard CPU XP stops at level 5. Online (friend) XP is recomputed from the match reports both players filed. Async XP comes from the saved
+   rival's record. Every grant is capped per hour, and a match with no real activity (AFK) earns nothing. Levels unlock nothing in play.
+   ========================================================================= */
+const PKEY = 'bk-prof-v1';
+const PF = {CPU_CAP: 800, HOUR: 450, MAXLV: 50, MINACT: 6, MAXR: 12, ASYNC: 0.6};
+const xpNeed = n => 100 + 40 * n;               // XP from level n to n+1; 800 XP in total reaches level 5
+function levelOf(xp) {
+  let n = 1; xp = Math.max(0, xp | 0);
+  while (n < PF.MAXLV && xp >= xpNeed(n)) { xp -= xpNeed(n); n++; }
+  return n >= PF.MAXLV ? {lv: n, into: 0, need: 0} : {lv: n, into: xp, need: xpNeed(n)};
+}
+const TITLES = [[1, 'Cadet'], [5, 'Gunner'], [10, 'Tactician'], [15, 'Marshal'], [20, 'Warden'], [30, 'Keeper of the Span']];
+const titleOf = lv => TITLES.filter(t => lv >= t[0]).pop()[1];
+const tierOf = lv => TITLES.filter(t => lv >= t[0]).length - 1;
+const newMode = () => ({m: 0, w: 0, l: 0, d: 0, r: 0, rw: 0, k: 0, dm: 0, bdm: 0, fl: 0, fast: 0});
+function newProf() { return {v: 1, since: Date.now(), px: {cx: 0, ax: 0, hx: 0}, led: [], st: {cpu: newMode(), hum: newMode(), asy: newMode()}, rec: [], units: {}, calls: {}, str: 0, bstr: 0}; }
+let PROF = (() => {
+  const v = lsGet(PKEY, null), p = newProf();
+  if (!v || typeof v !== 'object') return p;
+  p.since = +v.since || p.since;
+  for (const k of ['cx', 'ax', 'hx']) p.px[k] = Math.max(0, (v.px && v.px[k]) | 0);
+  p.px.cx = Math.min(p.px.cx, PF.CPU_CAP);
+  for (const m of ['cpu', 'hum', 'asy']) Object.assign(p.st[m], v.st && v.st[m] || {});
+  if (Array.isArray(v.led)) p.led = v.led.filter(a => Array.isArray(a)).slice(-40);
+  if (Array.isArray(v.rec)) p.rec = v.rec.slice(0, 10);
+  if (v.units && typeof v.units === 'object') p.units = v.units;
+  if (v.calls && typeof v.calls === 'object') p.calls = v.calls;
+  p.str = v.str | 0; p.bstr = v.bstr | 0;
+  return p;
+})();
+const profSave = () => lsSet(PKEY, PROF);
+function capHour(list) {      // [[t, xp]]: no more than PF.HOUR XP inside any rolling hour
+  const got = []; let tot = 0;
+  for (const [t, xp] of list.slice().sort((a, b) => a[0] - b[0])) {
+    const used = got.reduce((n, g) => n + (g[0] > t - 3600000 ? g[1] : 0), 0), g = Math.max(0, Math.min(xp, PF.HOUR - used));
+    got.push([t, g]); tot += g;
+  }
+  return tot;
+}
+function humanLines(res, r, rw) {
+  const rr = Math.min(r | 0, PF.MAXR), wr = Math.min(rw | 0, PF.MAXR);
+  const L = [['Full match played', 30], [res === 'w' ? 'Victory' : res === 'd' ? 'Dead even' : 'Defeat', res === 'w' ? 90 : res === 'd' ? 50 : 20], ['Rounds played × ' + rr, 4 * rr]];
+  if (wr) L.push(['Rounds won × ' + wr, 3 * wr]);
+  return L;
+}
+const humanXp = (res, r, rw) => humanLines(res, r, rw).reduce((a, l) => a + l[1], 0);
+function cpuLines(res, r, rw, hp, merges) {
+  const L = [['Full match played', 5]];
+  if (res === 'w') {
+    L.push(['Victory', 40], ['Rounds won × ' + Math.min(rw, PF.MAXR), 3 * Math.min(rw, PF.MAXR)]);
+    if (hp > 0) L.push(['Keep and tactician HP left', Math.min(30, Math.floor(hp * 0.3))]);
+    if (merges) L.push(['Turret merges × ' + Math.min(merges, 10), 2 * Math.min(merges, 10)]);
+    if (rw >= r) L.push(['Flawless: no round lost', 20]);
+  } else if (res === 'd') L.push(['Dead even', 20]);
+  return L;
+}
+function afkOk() {
+  const n = Object.keys(S.actR || {}).length;
+  return S.round >= 3 && (S.acts | 0) >= Math.max(PF.MINACT, 2 * S.round) && n >= Math.ceil(0.6 * S.round);
+}
+const profXpLocal = () => PROF.px.cx + PROF.px.ax + PROF.px.hx;
+function profSync() {
+  const me = myLb(); me.handle = HANDLE;
+  me.px = {cx: PROF.px.cx, ax: PROF.px.ax, hx: PROF.px.hx, since: PROF.since};
+  me.pst = PROF.st;
+  lsSet(LBKEY, me); pvpPushLb();
+}
+function profMerge(d) {            // the account's saved numbers only ever raise this device's
+  let ch = false;
+  if (d.px && typeof d.px === 'object') {
+    for (const k of ['cx', 'ax', 'hx']) { const v = Math.max(0, d.px[k] | 0); if (v > PROF.px[k]) { PROF.px[k] = v; ch = true; } }
+    PROF.px.cx = Math.min(PROF.px.cx, PF.CPU_CAP);
+    if (+d.px.since && d.px.since < PROF.since) { PROF.since = d.px.since; ch = true; }
+  }
+  if (d.pst && typeof d.pst === 'object') for (const m of ['cpu', 'hum', 'asy']) if (d.pst[m] && (d.pst[m].m | 0) > PROF.st[m].m) { Object.assign(PROF.st[m], d.pst[m]); ch = true; }
+  if (ch) profSave();
+}
+function profAward() {
+  S.award = null;
+  if (S.mode === 'demo' || S.me < 0 || !S.log) return;
+  const side = S.me, w = S.winner, res = w === side ? 'w' : w < 0 ? 'd' : 'l', st = S.stats.p[side], P = S.p[side];
+  let kind = null, note = '';
+  if (S.mode === 'cpu' && S.diff === 'hard' && !S.ghost) kind = 'cpu';
+  else if (S.mode === 'cpu' && S.ghost && S.ghost.src === 'shared') kind = 'asy';
+  else if (S.mode === 'cpu' && S.ghost) note = 'This rival is from a local file or your past self, so it earns no XP.';
+  else if (S.mode === 'cpu') note = 'Easy CPU matches earn no XP. Hard CPU does, up to level 5.';
+  else if ((S.mode === 'host' || S.mode === 'guest') && RANK.ok && PVP.db) kind = 'hum';
+  else if (S.mode === 'host' || S.mode === 'guest') note = 'Sign in to play ranked online matches and earn XP.';
+  const before = levelOf(profXpLocal()).lv;
+  if (!kind) { S.award = {t: Date.now(), kind: null, lines: [], total: 0, note, lv0: before, lv1: before}; return; }
+  if (!afkOk()) {
+    S.award = {t: Date.now(), kind, lines: [['No XP: not enough activity', 0]], total: 0, lv0: before, lv1: before,
+      note: 'XP needs real play: at least ' + Math.max(PF.MINACT, 2 * S.round) + ' actions (buying, placing, selling, calls), spread across most rounds.'};
+    return;
+  }
+  const merges = st.stars | 0;
+  let lines = kind === 'cpu' ? cpuLines(res, S.round, st.wins | 0, Math.ceil(Math.max(0, P.hp)), merges) : humanLines(res, S.round, st.wins | 0);
+  let raw = lines.reduce((a, l) => a + l[1], 0);
+  if (kind === 'asy') { const cut = raw - Math.floor(raw * PF.ASYNC); lines = lines.concat([['Async rival: ' + Math.round(PF.ASYNC * 100) + '% rate', -cut]]); raw -= cut; }
+  const slot = kind === 'cpu' ? 'cx' : kind === 'asy' ? 'ax' : 'hx', now = Date.now();
+  let tot = raw;
+  if (kind === 'cpu') {
+    const room = Math.max(0, PF.CPU_CAP - PROF.px.cx);
+    if (tot > room) { lines.push([room ? 'Level 5 cap' : 'Hard CPU XP stops at level 5', room - tot]); tot = room; }
+  }
+  PROF.led = PROF.led.filter(a => a[0] > now - 3600000);
+  const left = Math.max(0, PF.HOUR - PROF.led.reduce((n, a) => n + a[1], 0));
+  if (tot > left) { lines.push(['Hourly XP cap', left - tot]); tot = left; }
+  PROF.px[slot] += tot; if (tot) PROF.led.push([now, tot]);
+  if (kind === 'asy' && S.ghost && S.ghost.id) { /* the same rival twice in an hour is noise, not progress */ }
+  // stats
+  const m = PROF.st[kind === 'cpu' ? 'cpu' : kind === 'asy' ? 'asy' : 'hum'];
+  m.m++; m[res]++; m.r += S.round; m.rw += st.wins | 0; m.k += st.kills | 0; m.dm += st.dealt | 0; m.bdm = Math.max(m.bdm, st.dealt | 0);
+  if (res === 'w') { if ((st.wins | 0) >= S.round) m.fl++; m.fast = m.fast ? Math.min(m.fast, S.round) : S.round; }
+  if (res === 'w') { PROF.str++; PROF.bstr = Math.max(PROF.bstr, PROF.str); } else PROF.str = 0;
+  for (const R of S.log.rounds) { const p = R.p && R.p[side]; if (!p) continue; for (const a of p.board) if (a) PROF.units[a[0]] = (PROF.units[a[0]] | 0) + 1; }
+  for (const id in S.myCalls || {}) PROF.calls[id] = (PROF.calls[id] | 0) + (S.myCalls[id] | 0);
+  const opp = kind === 'cpu' ? 'Hard CPU' : kind === 'asy' ? ((S.ghost && S.ghost.handle) || 'Rival') : S.mode === 'host' ? hostGuestName() : ((S.names && S.names[0]) || 'Rival');
+  PROF.rec.unshift({t: now, k: kind, res, r: S.round, xp: tot, o: cleanHandle(opp) || 'Rival'}); PROF.rec = PROF.rec.slice(0, 10);
+  profSave();
+  const after = levelOf(profXpLocal()).lv;
+  S.award = {t: now, kind, lines, total: tot, lv0: before, lv1: after, note: kind === 'hum' ? 'Counts once your rival files the same result. Both of you must report.' : ''};
+  profSync();
+}
+// the XP a player shows publicly: Hard CPU is capped at level 5; online XP is what both players' reports prove; async is bounded by the hourly cap
+function pubXp(px, id, T, repN, claimed) {
+  px = px || {};
+  const hrs = Math.max(0, (Date.now() - (+px.since || claimed || Date.now())) / 3600000), bound = Math.floor(PF.HOUR * (hrs + 1));
+  const cx = Math.min(px.cx | 0, PF.CPU_CAP), ax = Math.min(px.ax | 0, bound), hxv = (T[id] || {}).x | 0;
+  const hx = repN >= REPKEEP ? Math.max(hxv, Math.min(px.hx | 0, bound)) : hxv;     // old matches fall out of the report window; only then is the saved total trusted
+  return {cx, ax, hx, total: cx + ax + hx};
+}
+function myXp() {
+  const repDocs = (PVP.rep || []).filter(d => d.id !== PVP.uid), mineR = lsGet(RKEY, {});
+  if (PVP.uid) repDocs.push({id: PVP.uid, m: mineR});
+  if (!(PVP.db && PVP.lbLoaded)) return {cx: PROF.px.cx, ax: PROF.px.ax, hx: PROF.px.hx, total: profXpLocal(), local: true};
+  return pubXp(PROF.px, PVP.uid, tally(repDocs), Object.keys(mineR).length, PROF.since);
+}
+
 async function pvpPool() {
   const pool = [];
   if (PVP.db) {
@@ -1449,7 +1610,8 @@ function lbHtml() {
   const repDocs = (PVP.rep || []).filter(d => d.id !== PVP.uid); if (PVP.uid) repDocs.push({id: PVP.uid, m: lsGet(RKEY, {})});
   const T = tally(repDocs);
   if (PVP.uid && mine.pub) rows.push(Object.assign({}, mine, {id: PVP.uid, me: 1}));
-  for (const r of rows) { const t = T[r.id] || {w: 0, l: 0, d: 0}; r.w = t.w; r.l = t.l; r.d = t.d; r.m = t.w + t.l + t.d; }
+  const repN = {}; for (const d of repDocs) repN[d.id] = Object.keys(d.m || {}).length;
+  for (const r of rows) { const t = T[r.id] || {w: 0, l: 0, d: 0}; r.w = t.w; r.l = t.l; r.d = t.d; r.m = t.w + t.l + t.d; r.lv = levelOf(pubXp(r.me ? PROF.px : r.px, r.id, T, repN[r.id] | 0, r.claimed).total).lv; }
   for (let i = rows.length - 1; i >= 0; i--) if (!rows[i].m) rows.splice(i, 1);
   const wr = r => (r.w + r.l) ? r.w / (r.w + r.l) : -1;
   rows.sort((a, b) => (b.w | 0) - (a.w | 0) || wr(b) - wr(a));
@@ -1460,11 +1622,11 @@ function lbHtml() {
   const agg = {u: {}, c: {}};
   for (const r of rows) { for (const k in (r.units || {})) agg.u[k] = (agg.u[k] || 0) + r.units[k]; for (const k in (r.cores || {})) agg.c[k] = (agg.c[k] || 0) + r.cores[k]; }
   const best = (o, f) => Object.entries(o).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => f(e[0])).filter(Boolean).join(', ') || '–';
-  const body = rows.length ? rows.map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(cleanHandle(r.handle) || 'Player') + (r.me ? ' (you)' : '') + '</td><td>' + (r.w | 0) + ' – ' + (r.l | 0) + '</td><td>' + pct(r) + '</td><td>' + (r.m | 0) + '</td><td>' + (r.rounds ? Math.round(r.dmg / r.rounds) : 0) + '</td><td>' + (r.best | 0) + '</td><td class="l">' + tn(r) + '</td><td class="l">' + cn(r) + '</td></tr>').join('')
-    : '<tr><td colspan="9" class="l">No verified matches yet. Finish an online match and you appear here once your rival reports the same result.</td></tr>';
+  const body = rows.length ? rows.map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(cleanHandle(r.handle) || 'Player') + (r.me ? ' (you)' : '') + '</td><td>' + r.lv + '</td><td>' + (r.w | 0) + ' – ' + (r.l | 0) + '</td><td>' + pct(r) + '</td><td>' + (r.m | 0) + '</td><td>' + (r.rounds ? Math.round(r.dmg / r.rounds) : 0) + '</td><td>' + (r.best | 0) + '</td><td class="l">' + tn(r) + '</td><td class="l">' + cn(r) + '</td></tr>').join('')
+    : '<tr><td colspan="10" class="l">No verified matches yet. Finish an online match and you appear here once your rival reports the same result.</td></tr>';
   return '<div class="kicker">Ranked player vs player</div><h1>Leaderboard</h1>' +
     '<div class="wiki"><p class="hint">' + (PVP.db ? 'Ranked by wins in online matches. A match counts once both players have reported the same result. Async and CPU matches are not counted.' : 'Rankings need a signed-in account with access to the shared store, which this page does not have.') + (PVP.err ? ' ' + escA(PVP.err) : '') + '</p>' +
-    '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>PvP W–L</th><th>Win %</th><th>Matches</th><th>Dmg / rd</th><th>Best win (rds)</th><th>Fav turret</th><th>Fav core</th></tr></thead><tbody>' + body + '</tbody></table>' +
+    '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>Lv</th><th>PvP W–L</th><th>Win %</th><th>Matches</th><th>Dmg / rd</th><th>Best win (rds)</th><th>Fav turret</th><th>Fav core</th></tr></thead><tbody>' + body + '</tbody></table>' +
     '<p><b>Most fielded turrets:</b> ' + best(agg.u, k => ROSTER[k] ? ROSTER[k].name : '') + '</p><p><b>Most fitted cores:</b> ' + best(agg.c, k => ITEMS[k] ? ITEMS[k].name : '') + '</p>' +
     '<p class="hint">Your verified record: ' + ((T[PVP.uid] || {}).w | 0) + ' wins, ' + ((T[PVP.uid] || {}).l | 0) + ' losses, ' + ((T[PVP.uid] || {}).d | 0) + ' draws.</p></div>' +
     '<div class="btns"><button class="btn quiet" data-act="lbx" type="button">Back</button><label class="btn filebtn">Import builds from a match file<input id="ghIn" type="file" accept=".json,application/json"></label></div>';
@@ -4000,6 +4162,10 @@ function uiMsg(m) {
 }
 function act(a) {
   if (a && a.t === 'call' ? !(S.phase === 'combat' && S.me >= 0) : a && a.t === 'unready' ? !inSetup() : !canPlan()) return;
+  if (a && a.t !== 'ready' && a.t !== 'unready' && S.me >= 0 && S.mode !== 'demo') {
+    S.acts = (S.acts | 0) + 1; (S.actR = S.actR || {})[S.round] = 1;
+    if (a.t === 'call' && CALLS[a.i | 0]) { const id = CALLS[a.i | 0].id; (S.myCalls = S.myCalls || {})[id] = (S.myCalls[id] | 0) + 1; }
+  }
   if (S.mode === 'guest') {
     if (!net) return;
     net.actN = (net.actN || 0) + 1;
@@ -4655,7 +4821,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [S.ui.set, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [S.ui.set, S.ui.prof, S.ui.pt, S.award && S.award.t, PROF.px.cx + PROF.px.ax + PROF.px.hx, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -4888,6 +5054,53 @@ function endingHtml(w) {
   return '<h2>' + E.head + '</h2><div class="pwhy" style="' + col + '">' + E.p.map(t => '<p>' + t + '</p>').join('') + E.pair.map(line).join('') + '<p class="hint">' + E.close + '</p></div>' +
     '<h2>The crews answer</h2><div class="pwhy" style="' + col + '">' + L.map((c, i) => '<p class="crl"><img class="pt" src="' + PORT[c.img] + '" alt=""><span><b style="color:' + SIDES[loser].c + '">' + c.n + '</b> <span class="hint">' + c.role + ' · ' + (i === 4 ? 'S5/S6' : 'R' + (i + 1) + '/S' + (i + 1)) + '</span> “' + c.lost + '”</span></p>').join('') + winLines + '</div>';
 }
+
+function awardHtml() {
+  const A = S.award; if (!A) return '';
+  if (!A.kind) return '<div class="award"><div class="at">Experience</div><p class="hint">' + A.note + '</p></div>';
+  const rows = A.lines.map(l => '<tr><td class="l">' + escA(l[0]) + '</td><td class="' + (l[1] < 0 ? 'neg' : '') + '">' + (l[1] > 0 ? '+' : '') + l[1] + '</td></tr>').join('');
+  const lv = levelOf(profXpLocal()), pct = lv.need ? Math.round(100 * lv.into / lv.need) : 100;
+  return '<div class="award"><div class="at">Experience · ' + (A.kind === 'cpu' ? 'Hard CPU' : A.kind === 'asy' ? 'Async rival' : 'Online match') + '</div>' +
+    '<table class="stats">' + rows + '<tr class="tot"><td class="l">Total XP</td><td>+' + A.total + '</td></tr></table>' +
+    (A.lv1 > A.lv0 ? '<div class="lvup">Level ' + A.lv1 + ' · ' + titleOf(A.lv1) + '</div>' : '') +
+    '<div class="pf-bar"><i style="width:' + pct + '%"></i></div><small class="hint">Level ' + lv.lv + (lv.need ? ' · ' + lv.into + ' / ' + lv.need + ' XP' : ' · max') + '</small>' +
+    (A.note ? '<p class="hint">' + A.note + '</p>' : '') + '</div>';
+}
+function profModeTable(k) {
+  const m = PROF.st[k], pc = (m.w + m.l) ? Math.round(100 * m.w / (m.w + m.l)) + '%' : '–';
+  const avg = m.m ? (m.r / m.m).toFixed(1) : '–';
+  return '<table class="stats wk"><tbody>' +
+    '<tr><th>Matches</th><td>' + m.m + '</td><th>Win – loss – draw</th><td>' + m.w + ' – ' + m.l + ' – ' + m.d + '</td></tr>' +
+    '<tr><th>Win rate</th><td>' + pc + '</td><th>Average match</th><td>' + avg + ' rounds</td></tr>' +
+    '<tr><th>Rounds won</th><td>' + m.rw + ' of ' + m.r + '</td><th>Kills</th><td>' + m.k + '</td></tr>' +
+    '<tr><th>Keep damage</th><td>' + m.dm + '</td><th>Best match damage</th><td>' + m.bdm + '</td></tr>' +
+    '<tr><th>Flawless wins</th><td>' + m.fl + '</td><th>Fastest win</th><td>' + (m.fast ? m.fast + ' rounds' : '–') + '</td></tr></tbody></table>';
+}
+function profHtml() {
+  const X = myXp(), lv = levelOf(X.total), t = tierOf(lv.lv), pc = lv.need ? Math.round(100 * lv.into / lv.need) : 100;
+  const tab = S.ui.pt || 'ov', cap = X.cx >= PF.CPU_CAP;
+  const tabs = [['ov', 'Overview'], ['cpu', 'Hard CPU'], ['hum', 'Versus'], ['asy', 'Async']].map(a => '<button class="btn small' + (tab === a[0] ? ' prime' : '') + '" data-act="pt:' + a[0] + '" type="button">' + a[1] + '</button>').join('');
+  const topN = (o, f) => Object.entries(o || {}).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => f(e[0])).filter(Boolean).join(', ') || '–';
+  const modeName = {cpu: 'Hard CPU', hum: 'Online', asy: 'Async'}, resName = {w: 'Win', l: 'Loss', d: 'Draw'};
+  const recs = PROF.rec.filter(r => tab === 'ov' || r.k === (tab === 'hum' ? 'hum' : tab));
+  const recTbl = recs.length ? '<table class="stats wk"><thead><tr><th>Mode</th><th>Opponent</th><th>Result</th><th>Rounds</th><th>XP</th></tr></thead><tbody>' + recs.map(r => '<tr><td class="l">' + modeName[r.k] + '</td><td class="l">' + escA(r.o) + '</td><td>' + (resName[r.res] || '') + '</td><td>' + r.r + '</td><td>+' + r.xp + '</td></tr>').join('') + '</tbody></table>' : '<p class="hint">No finished matches yet.</p>';
+  let body;
+  if (tab === 'ov') {
+    const sum = ['cpu', 'hum', 'asy'].map(k => { const m = PROF.st[k]; return '<tr><td class="l">' + modeName[k] + '</td><td>' + m.m + '</td><td>' + m.w + ' – ' + m.l + ' – ' + m.d + '</td><td>' + ((m.w + m.l) ? Math.round(100 * m.w / (m.w + m.l)) + '%' : '–') + '</td><td>' + X[k === 'cpu' ? 'cx' : k === 'asy' ? 'ax' : 'hx'] + '</td></tr>'; }).join('');
+    body = '<table class="stats wk"><thead><tr><th>Mode</th><th>Matches</th><th>W – L – D</th><th>Win %</th><th>XP</th></tr></thead><tbody>' + sum + '</tbody></table>' +
+      '<p><b>Best win streak:</b> ' + PROF.bstr + ' · <b>Current:</b> ' + PROF.str + '</p>' +
+      '<p><b>Most fielded turrets:</b> ' + topN(PROF.units, k => ROSTER[k] ? ROSTER[k].name : '') + '</p>' +
+      '<p><b>Most used calls:</b> ' + topN(PROF.calls, k => { const c = CALLS.find(c => c.id === k); return c ? c.name : ''; }) + '</p>' +
+      '<h2>Recent matches</h2>' + recTbl;
+  } else body = profModeTable(tab) + '<h2>Recent matches</h2>' + recTbl;
+  const how = '<p class="hint">Levels are cosmetic and never change a match. Hard CPU XP stops at level 5 (' + X.cx + ' / ' + PF.CPU_CAP + (cap ? ', reached' : '') + '), so higher levels come from online and async matches. A finished match needs real activity to count, and XP is capped at ' + PF.HOUR + ' an hour. ' +
+    (PVP.db ? (X.local ? 'Loading your verified record…' : 'Online XP counts matches both players reported.') : 'Sign in to the shared store to earn online XP and appear on the leaderboard.') + '</p>';
+  return '<div class="kicker">Tactician profile</div>' +
+    '<div class="pf-head t' + t + '"><div class="pf-ring"><span>Lv</span><b>' + lv.lv + '</b></div><div class="pf-id"><h1>' + escA(HANDLE) + '</h1><div class="pf-title">' + titleOf(lv.lv) + '</div>' +
+    '<div class="pf-bar"><i style="width:' + pc + '%"></i></div><small class="hint">' + (lv.need ? lv.into + ' / ' + lv.need + ' XP to level ' + (lv.lv + 1) : 'Max level') + ' · ' + X.total + ' XP total</small></div></div>' +
+    '<div class="wiki"><div class="btns pf-tabs">' + tabs + '</div>' + body + how + '</div>' +
+    '<div class="btns"><button class="btn quiet" data-act="profx" type="button">Back</button><button class="btn quiet" data-act="lb" type="button">Leaderboard</button></div>';
+}
 function showOverlay() {
   $('overlay').innerHTML = '';
   const ph = S.phase, mode = S.mode;
@@ -4910,10 +5123,11 @@ function showOverlay() {
   }
   if (postOn() && inMatch() && !S.ui.menu && !S.ui.tab) { card(postHtml()).classList.add('post'); return; }
   if (mode === 'demo' && S.ui.lb) { card(lbHtml()).classList.add('wikic'); return; }
+  if (mode === 'demo' && S.ui.prof) { card(profHtml()).classList.add('wikic'); return; }
   if (mode === 'demo') {
     const online = roomChecked && roomNS;
     card(
-      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button><button class="btn small" data-act="settings" type="button" style="align-self:flex-end">Settings</button></div>' +
+      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><button class="btn small prime" data-act="prof" type="button" style="align-self:flex-end" data-tip="Your level, titles and stats from finished matches.">Profile · Lv ' + levelOf(myXp().total).lv + '</button><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button><button class="btn small" data-act="settings" type="button" style="align-self:flex-end">Settings</button></div>' +
       (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Signed-in online matches are ranked, and your build becomes an async rival.</p>') +
       '<div class="modes">' +
         '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU holds the Crimson Keep for Vermilion on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
@@ -4964,7 +5178,8 @@ function showOverlay() {
     else if (mode === 'guest' && me >= 0) btns = net && net.in.r ? '<button class="btn" type="button" disabled>Waiting for rival…</button>' : '<button class="btn prime" data-act="again" type="button">' + (S.hostRematch ? 'Accept rematch' : 'Rematch') + '</button>';
     card(outcomeBanner(w) + '<div class="kicker">Match over · ' + S.round + ' rounds</div>' +
       (P ? '<p>You finished on ' + Math.max(0, Math.ceil(P.hp)) + ' HP at level ' + P.level + ', with ' + P.kills + ' kills across the match.</p>' : '') +
-      '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button></div>' +
+      awardHtml() +
+      '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button><button class="btn quiet" data-act="profgo" type="button">Profile</button></div>' +
       endingHtml(w) + '<h2>Match summary</h2>' + statsHtml(true));
   } else if (ph === 'gone') {
     card('<h1>Rival left</h1><p>The other keep is empty. Head back to choose another match.</p><div class="btns"><button class="btn" data-act="menu" type="button">Main menu</button></div>', true);
@@ -4992,6 +5207,10 @@ function onAct(a, btn) {
   else if (k0 === 'ghost') { PVP.err = ''; startGhost(); }
   else if (k0 === 'lb') { S.ui.lb = true; pvpLoadLb(); }
   else if (k0 === 'lbx') S.ui.lb = false;
+  else if (k0 === 'prof') { S.ui.prof = true; S.ui.pt = 'ov'; pvpLoadLb(); }
+  else if (k0 === 'profx') S.ui.prof = false;
+  else if (k0 === 'profgo') { leaveRoom(); newMatch('demo'); S.ui.prof = true; S.ui.pt = 'ov'; pvpLoadLb(); overlaySig = ''; }
+  else if (k0 === 'pt') S.ui.pt = parts[1];
   else if (k0 === 'host') { rankedGate().then(ok => { if (ok) hostRoom(); else overlaySig = ''; }); }
   else if (k0 === 'join') { const v = $('codeIn') ? $('codeIn').value : ''; rankedGate().then(ok => { if (ok) joinRoom(v); else overlaySig = ''; }); }
   else if (k0 === 'slot') onSlot(parts[1], parts[2] | 0);
