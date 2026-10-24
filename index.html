@@ -3179,7 +3179,8 @@ function orbPush() {
   const P = [ORB.imp[0], ORB.imp[1]];
   for (const u of S.units) {
     if (u.hp <= 0 || u.gone) continue;
-    const prog = clamp(u.d / ROUTES[u.route].len, 0, 1);
+    // the guest only receives positions, so progress falls back to how far across the field the unit is
+    const prog = Number.isFinite(u.d) ? clamp(u.d / ROUTES[u.route].len, 0, 1) : clamp(u.side ? 1 - u.x / W : u.x / W, 0, 1);
     P[u.side] += (ORB_W[u.type] || 1) * (0.12 + prog * prog * 1.9) * (u.atk ? 1.5 : 1);
   }
   return (P[0] - P[1]) / (P[0] + P[1] + 3);
@@ -3193,6 +3194,7 @@ function gemPath(cx, cy, w, h) {
 }
 function drawOrb(hx, hy, R0, t, kk) {
   const G = GEM(R0), rX = G.w - 3, rY = G.h - 3, r = rY, c0 = SIDES[0].rgb, c1 = SIDES[1].rgb, dt = 1 / 60;
+  if (!(Number.isFinite(ORB.v) && Number.isFinite(ORB.o) && Number.isFinite(ORB.ov) && Number.isFinite(ORB.imp[0] + ORB.imp[1] + ORB.f[0] + ORB.f[1] + ORB.surge[0] + ORB.surge[1]))) { ORB.v = ORB.o = ORB.ov = 0; ORB.f = [0, 0]; ORB.imp = [0, 0]; ORB.surge = [0, 0]; }   // never let one bad value stop the picture
   ORB.imp[0] *= 0.992; ORB.imp[1] *= 0.992;
   ORB.v += (orbPush() - ORB.v) * 0.04;
   // spring: hits kick the front, then it settles back toward the sustained pressure
