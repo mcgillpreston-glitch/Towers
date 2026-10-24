@@ -2428,7 +2428,7 @@ function drawTraces() {
 }
 function fireTurret(side, T, u, mx, my, real, extra) {
   const s = T.s, [cx, cy] = ucenter(u), ang = extra ? Math.atan2(cy - my, cx - mx) : T.ang;
-  const tl = isUp(s) ? 0 : tipLen(s, my < 0.12 * H), mzx = mx + Math.cos(ang) * tl * TS, mzy = my + Math.sin(ang) * tl * TS - (isUp(s) ? (artOn() ? 52 : s.kind === 'arc' ? (s.id === 'tesla' ? 40 : 29) : 0) : 0), loud = side === S.me ? 1 : 0.45;
+  const tl = isUp(s) ? 0 : tipLen(s, my < 0.12 * H), mzx = mx + Math.cos(ang) * tl * TS, mzy = my + Math.sin(ang) * tl * TS - (isUp(s) ? (artOn() ? upTipY(s, my < 0.12 * H) : s.kind === 'arc' ? (s.id === 'tesla' ? 40 : 29) : 0) : 0), loud = side === S.me ? 1 : 0.45;
   if ((s.kind === 'hitscan' || s.kind === 'flak') && Math.random() < 0.6) S.parts.push({x: mx, y: my, vx: (side ? 1 : -1) * rnd(40, 100), vy: -rnd(90, 160), c: '#d4a84e', life: 0.7, r: 1.6});
   if ((s.kind === 'mortar' || s.kind === 'rail' || s.kind === 'flak') && Math.random() < 0.5) smoke(mzx, mzy, 1, 5);
   T.flash = 0.07;
@@ -2944,10 +2944,10 @@ function bgImage() {
 }
 // w = drawn width (art units); fx, fy = the swivel as a fraction of the sprite; nat = the barrel's native angle (blue; red mirrors it)
 const SPR = {
-  vulcan: {w: 40, fx: .26, fy: .42}, flak: {w: 36, fx: .28, fy: .40}, cryo: {w: 44, fx: .24, fy: .44}, torch: {w: 38, fx: .26, fy: .42},
-  arc: {w: 36, fx: .26, fy: .42}, swarm: {w: 36, fx: .28, fy: .40}, needle: {w: 46, fx: .22, fy: .46}, mortar: {w: 32, fx: .30, fy: .72, nat: -0.95, tip: 24},
-  rail: {w: 44, fx: .24, fy: .44}, tesla: {w: 26, up: 1, tip: 44}, hellfire: {w: 40, fx: .30, fy: .45}, lancer: {w: 52, fx: .22, fy: .46},
-  glacier: {w: 40, fx: .28, fy: .42}, singularity: {w: 38, fx: .28, fy: .42}, sunlance: {w: 52, fx: .26, fy: .46}
+  vulcan: {w: 40, fx: 0.46, fy: 0.51}, flak: {w: 36, fx: 0.49, fy: 0.49}, cryo: {w: 44, fx: 0.42, fy: 0.50}, torch: {w: 38, fx: 0.50, fy: 0.48},
+  arc: {w: 36, fx: 0.48, fy: 0.47}, swarm: {w: 36, fx: 0.49, fy: 0.49}, needle: {w: 46, fx: 0.40, fy: 0.53}, mortar: {w: 32, fx: 0.50, fy: 0.50, nat: -0.95, tip: 24},
+  rail: {w: 44, fx: 0.46, fy: 0.50}, tesla: {w: 26, up: 1, tip: 44, fx: 0.45, fy: 0.52, ar: 1.516}, hellfire: {w: 40, fx: 0.50, fy: 0.50}, lancer: {w: 52, fx: 0.47, fy: 0.49},
+  glacier: {w: 40, fx: 0.50, fy: 0.48}, singularity: {w: 38, fx: 0.49, fy: 0.49}, sunlance: {w: 52, fx: 0.44, fy: 0.51}
 };
 // the painted barrels are big: the 4K weapon art is drawn 30% larger so each weapon covers its painted barrel
 const ROOFK = 1 / 1.3;   // the roof barrels are close together, so roof weapons keep their original size
@@ -3080,7 +3080,7 @@ function drawScene() {
   }
 
   // the stage halo with its equaliser (the pressure orb), hung over the water between the two cities
-  const hx = W / 2, hy = 0.86 * H, R0 = 52 * (1 + 0.04 * kk);
+  const hx = W / 2, hy = 0.925 * H, R0 = 52 * (1 + 0.04 * kk);
   if (bgOn) { const dg = ctx.createRadialGradient(hx, hy, R0 * 0.5, hx, hy, R0 * 2.3); dg.addColorStop(0, 'rgba(2,2,14,.62)'); dg.addColorStop(1, 'rgba(2,2,14,0)'); ctx.fillStyle = dg; ctx.fillRect(hx - R0 * 2.3, hy - R0 * 2.3, R0 * 4.6, R0 * 4.6); }
   ctx.globalCompositeOperation = 'lighter';
   const hg = ctx.createRadialGradient(hx, hy, 7, hx, hy, 130);
@@ -3457,6 +3457,7 @@ function shard(x, y, len, w, rgb, lit) {
 }
 const UPRIGHT = {arc: 1, frost: 1, void: 1};
 const isUp = s => artOn() ? s.id === 'tesla' : !!UPRIGHT[s.kind];
+function upTipY(s, roof) { const P = SPR[s.id]; return P ? P.w * (roof ? ROOFK : 1) * (P.ar || 1.5) * P.fy * TS : 52; }
 function tipLen(s, roof) { const P = artOn() && SPR[s.id]; if (P) return (P.tip || P.w * (1 - P.fx)) * (roof ? ROOFK : 1); return {hitscan: s.id === 'needle' ? 30 : 23, rail: s.id === 'lancer' ? 33 : 27, flak: 23, mortar: 19, swarm: 12, torch: 17, cryo: 16, beam: 20}[s.kind] || 12; }
 function drawTurretHead(s, charge, kick) {
   const id = s.id, rgb = s.rgb, t = S.t;
@@ -3575,10 +3576,10 @@ function drawWeapon(st, side, up, ang, charge, kick, roof) {
   const w = P.w * (roof ? ROOFK : 1), h = w * im.height / im.width;
   ctx.save();
   if (up) {
-    ctx.translate(0, 4);
-    ctx.drawImage(im, -w / 2, -h, w, h);
-    if (kick > 0.05) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = kick * 0.5; ctx.drawImage(im, -w / 2, -h, w, h); }
-    if (charge > 0.85 && !reduced) glowDot(0, -h + 3, 10, st.rgb, 0.35 + 0.25 * Math.sin(S.t * 9));
+    const ox = P.fx * w, oy = P.fy * h;   // the coil is centred on its mount circle
+    ctx.drawImage(im, -ox, -oy, w, h);
+    if (kick > 0.05) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = kick * 0.5; ctx.drawImage(im, -ox, -oy, w, h); }
+    if (charge > 0.85 && !reduced) glowDot(w * (0.5 - P.fx), -oy + 3, 10, st.rgb, 0.35 + 0.25 * Math.sin(S.t * 9));
   } else {
     const nat = side ? Math.PI - (P.nat || 0) : (P.nat || 0), px = (side ? 1 - P.fx : P.fx) * w, py = P.fy * h;
     ctx.rotate(ang - nat);
