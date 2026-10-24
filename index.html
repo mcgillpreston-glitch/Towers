@@ -3080,7 +3080,7 @@ function drawScene() {
   }
 
   // the stage halo with its equaliser (the pressure orb), hung over the water between the two cities
-  const hx = W / 2, hy = 0.15 * H, R0 = 52 * (1 + 0.04 * kk);
+  const hx = W / 2, hy = 0.86 * H, R0 = 52 * (1 + 0.04 * kk);
   if (bgOn) { const dg = ctx.createRadialGradient(hx, hy, R0 * 0.5, hx, hy, R0 * 2.3); dg.addColorStop(0, 'rgba(2,2,14,.62)'); dg.addColorStop(1, 'rgba(2,2,14,0)'); ctx.fillStyle = dg; ctx.fillRect(hx - R0 * 2.3, hy - R0 * 2.3, R0 * 4.6, R0 * 4.6); }
   ctx.globalCompositeOperation = 'lighter';
   const hg = ctx.createRadialGradient(hx, hy, 7, hx, hy, 130);
@@ -3104,7 +3104,7 @@ function drawScene() {
   if (E > 0.9 && !chaosIs('blackout')) {
     ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 10; i++) {
-      const a = Math.PI / 2 + Math.sin(t * 1.3 + i * 0.7) * 1.1, rgb = i % 2 ? SIDES[0].rgb : SIDES[1].rgb;
+      const a = -Math.PI / 2 + Math.sin(t * 1.3 + i * 0.7) * 1.1, rgb = i % 2 ? SIDES[0].rgb : SIDES[1].rgb;
       ctx.strokeStyle = 'rgba(' + rgb + ',' + (0.05 + 0.12 * kk) + ')'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx + Math.cos(a) * 700, hy + Math.sin(a) * 700); ctx.stroke();
     }
@@ -4180,6 +4180,30 @@ function drawGround() {
   flyers.sort((a, b) => a.y - b.y);
   for (const u of flyers) drawUnit(u);
 }
+// the cloth banners on the outer side of each keep carry the tactician's name, set vertically from top to bottom
+const BANNER = {cx: [0.0266 * W, 0.9713 * W], top: 0.205 * H, bot: 0.555 * H, w: 0.030 * W};
+function bannerName(i) { return String(tags()[i] || '').split(' · ')[0].trim().toUpperCase().slice(0, 16); }
+function drawBanners() {
+  if (!BGS.newOn || endSide() >= 0) return;
+  for (let side = 0; side < 2; side++) {
+    const nm = bannerName(side); if (!nm) continue;
+    const len = BANNER.bot - BANNER.top, cy = (BANNER.top + BANNER.bot) / 2;
+    let fs = Math.min(BANNER.w * 0.56, 30);
+    ctx.save(); ctx.translate(BANNER.cx[side], cy); ctx.rotate(Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    const sp = 0.12;
+    ctx.font = '700 ' + fs + 'px Cinzel, "Chakra Petch", serif';
+    const wid = ctx.measureText(nm).width + nm.length * fs * sp;
+    if (wid > len * 0.94) { fs *= len * 0.94 / wid; ctx.font = '700 ' + fs + 'px Cinzel, "Chakra Petch", serif'; }
+    try { ctx.letterSpacing = (fs * sp).toFixed(1) + 'px'; } catch (e) {}
+    ctx.lineWidth = Math.max(2, fs * 0.16); ctx.strokeStyle = 'rgba(6,4,16,.85)'; ctx.strokeText(nm, 0, 0);
+    const g = ctx.createLinearGradient(0, -fs / 2, 0, fs / 2); g.addColorStop(0, '#fff3cf'); g.addColorStop(0.5, '#e6c06a'); g.addColorStop(1, '#a8782a');
+    ctx.shadowColor = 'rgba(' + SIDES[side].rgb + ',.75)'; ctx.shadowBlur = fs * 0.5;
+    ctx.fillStyle = g; ctx.fillText(nm, 0, 0);
+    try { ctx.letterSpacing = '0px'; } catch (e) {}
+    ctx.restore();
+  }
+}
 function drawKeeps() {
   const bgOn = !!bgImage();
   for (let side = 0; side < 2; side++) {
@@ -4200,6 +4224,7 @@ function render() {
   drawGround();
   drawImpacts();
   drawKeeps();
+  drawBanners();
   if (DEV.on) drawDev();
   for (let side = 0; side < 2; side++) drawTurrets(side);
   for (const p of S.projs) drawProj(p);
