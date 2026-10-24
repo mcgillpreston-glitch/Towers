@@ -586,7 +586,7 @@ html[data-ui=desktop][data-side="1"] .eco .stat .od b{font-size:15px;min-width:3
 // texture or canvas resolution never changes ranges, speeds or hit tests.
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
-const PACE = 1.4;
+const PACE = 1.5;   // 1.4 on the old 1269-unit route; scaled to the new 1359-unit route so crossing time is unchanged
 const setupLen = r => r >= 7 ? 120 : r >= 4 ? 105 : 90;   // planning grows as the board fills up
 const BATTLE_ZOOM = 1, SETUP_LEN = 90, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
@@ -600,9 +600,9 @@ const CANNON = {px: TCX, py: 0.3 * H, arm: 40, vmax: 1000, minA: -0.25, maxA: 1.
 // The ten gameplay mounts (four roof, six side) as fractions of the background. The painted keep now shows exactly four roof barrels and
 // six side barrels, so every mount sits on its own painted barrel (measured from bg art: roof mouths y=59, side mouths y=160-505 of 941).
 const MOUNTS_L = [[57, 190], [80, 190], [104, 190], [122, 190], [152, 235], [152, 269], [152, 305], [152, 341], [152, 380], [152, 420]];   // vector fallback tower only
-const MOUNTS_N = [[0.0672, 0.0605], [0.0957, 0.0605], [0.1223, 0.0605], [0.1499, 0.0605], [0.1768, 0.1686], [0.1768, 0.2463], [0.1768, 0.3209], [0.1768, 0.3949], [0.1768, 0.4669], [0.1768, 0.5353]];
+const MOUNTS_N = [[0.0665, 0.0770], [0.0906, 0.0770], [0.1146, 0.0770], [0.1387, 0.0770], [0.1644, 0.1751], [0.1644, 0.2399], [0.1644, 0.3046], [0.1644, 0.3701], [0.1644, 0.4349], [0.1644, 0.4981]];
 // the red keep is painted slightly differently from the blue one, so its holes (measured on the 1080p backdrop) are listed separately
-const MOUNTS_NR = [[0.9376, 0.0608], [0.9097, 0.0608], [0.8826, 0.0607], [0.8546, 0.0604], [0.8221, 0.1696], [0.8221, 0.2465], [0.8221, 0.3216], [0.8221, 0.3949], [0.8221, 0.4672], [0.8221, 0.5349]];
+const MOUNTS_NR = [[0.9335, 0.0770], [0.9091, 0.0770], [0.8846, 0.0770], [0.8602, 0.0770], [0.8338, 0.1751], [0.8338, 0.2399], [0.8338, 0.3046], [0.8338, 0.3701], [0.8338, 0.4349], [0.8338, 0.4981]];
 const MOUNTS = MOUNTS_N.map(([u, v]) => [u * W, v * H]);
 const MOUNTS_R = MOUNTS_NR.map(([u, v]) => [u * W, v * H]);
 const MOUNT_LABEL = ['R1', 'R2', 'R3', 'R4', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'];   // four roof mounts, six on the inward-facing side
@@ -614,11 +614,26 @@ const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
    Normalised cubic segments for blue_to_red; red_to_blue is the left/right mirror (u -> 1 - u), never a flip or rotation.
    Units advance by distance along an arc-length table, so speed is constant through the bends. */
 const ROUTE_SEGS = [
-  [[0.097, 0.678], [0.115, 0.735], [0.190, 0.830], [0.295, 0.831]],
-  [[0.295, 0.831], [0.355, 0.835], [0.410, 0.755], [0.450, 0.720]],
-  [[0.450, 0.720], [0.520, 0.658], [0.585, 0.553], [0.652, 0.542]],
-  [[0.652, 0.542], [0.685, 0.532], [0.711, 0.563], [0.740, 0.583]],
-  [[0.740, 0.583], [0.775, 0.610], [0.800, 0.630], [0.815, 0.635]]
+  [[0.095, 0.740], [0.096, 0.747], [0.095, 0.772], [0.103, 0.781]],
+  [[0.103, 0.781], [0.111, 0.790], [0.124, 0.789], [0.140, 0.796]],
+  [[0.140, 0.796], [0.156, 0.803], [0.180, 0.815], [0.200, 0.822]],
+  [[0.200, 0.822], [0.220, 0.829], [0.243, 0.838], [0.260, 0.837]],
+  [[0.260, 0.837], [0.277, 0.836], [0.287, 0.824], [0.300, 0.816]],
+  [[0.300, 0.816], [0.313, 0.808], [0.327, 0.798], [0.340, 0.790]],
+  [[0.340, 0.790], [0.353, 0.782], [0.367, 0.778], [0.380, 0.768]],
+  [[0.380, 0.768], [0.393, 0.758], [0.407, 0.745], [0.420, 0.733]],
+  [[0.420, 0.733], [0.433, 0.721], [0.447, 0.712], [0.460, 0.696]],
+  [[0.460, 0.696], [0.473, 0.680], [0.490, 0.651], [0.500, 0.635]],
+  [[0.500, 0.635], [0.510, 0.619], [0.510, 0.613], [0.520, 0.602]],
+  [[0.520, 0.602], [0.530, 0.591], [0.547, 0.580], [0.560, 0.567]],
+  [[0.560, 0.567], [0.573, 0.554], [0.587, 0.535], [0.600, 0.524]],
+  [[0.600, 0.524], [0.613, 0.513], [0.627, 0.505], [0.640, 0.500]],
+  [[0.640, 0.500], [0.653, 0.495], [0.667, 0.494], [0.680, 0.495]],
+  [[0.680, 0.495], [0.693, 0.496], [0.707, 0.498], [0.720, 0.505]],
+  [[0.720, 0.505], [0.733, 0.512], [0.747, 0.527], [0.760, 0.536]],
+  [[0.760, 0.536], [0.773, 0.545], [0.787, 0.548], [0.800, 0.558]],
+  [[0.800, 0.558], [0.813, 0.568], [0.830, 0.586], [0.840, 0.595]],
+  [[0.840, 0.595], [0.850, 0.604], [0.857, 0.609], [0.860, 0.612]]
 ];
 const ROUTE_ID = ['blue_to_red', 'red_to_blue'];
 const ROUTES = [0, 1].map(side => {
@@ -1882,10 +1897,10 @@ function cpuHard(P, side) {
 let k = 1;
 // render resolution of the canvas. 4K is the default; lower settings also load a smaller background texture
 const RES = {
-  '4k': {w: 3840, h: 2160, name: '4K · 3840 × 2160', bg: 'art/battlefield/bg_4k.webp?v=3'},
-  '1440': {w: 2560, h: 1440, name: '1440p · 2560 × 1440', bg: 'art/battlefield/bg_1440.webp?v=3'},
-  '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp?v=3'},
-  '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp?v=3'}
+  '4k': {w: 3840, h: 2160, name: '4K · 3840 × 2160', bg: 'art/battlefield/bg_4k.webp?v=4'},
+  '1440': {w: 2560, h: 1440, name: '1440p · 2560 × 1440', bg: 'art/battlefield/bg_1440.webp?v=4'},
+  '1080': {w: 1920, h: 1080, name: '1080p · 1920 × 1080', bg: 'art/battlefield/bg_1080.webp?v=4'},
+  '720': {w: 1280, h: 720, name: '720p · 1280 × 720', bg: 'art/battlefield/bg_720.webp?v=4'}
 };
 const VIDEO = {shake: true, low: false, res: '4k', adapt: true};
 try { const v = JSON.parse(localStorage.getItem('bk-video') || 'null'); if (v && typeof v === 'object') { VIDEO.shake = v.shake !== false; VIDEO.low = !!v.low; VIDEO.adapt = v.adapt !== false; if (v.res === 'auto' || RES[v.res]) VIDEO.res = v.res; } } catch (e) {}
@@ -2713,7 +2728,7 @@ function breach(u) {
 // upper three quarters of the opposing tower, where they breach. Spawn spread and target height are random per drone.
 function launchDrone(u) {
   const s = u.side, mir = x => s ? W - x : x;
-  u.dx0 = mir(0.103 * W + rnd(-0.034, 0.034) * W); u.dy0 = 0.05 * H + rnd(-0.012, 0.012) * H;
+  u.dx0 = mir(0.103 * W + rnd(-0.034, 0.034) * W); u.dy0 = 0.077 * H + rnd(-0.012, 0.012) * H;
   u.dx1 = s ? 0.172 * W : W - 0.172 * W; u.dy1 = H * (0.06 + 0.52 * Math.random());
   u.dlen = Math.hypot(u.dx1 - u.dx0, u.dy1 - u.dy0); u.len = u.dlen; u.arc = rnd(50, 90); u.lat = 0; u.fh = 0;
 }
@@ -2943,7 +2958,7 @@ const stars = Array.from({length: 70}, (_, i) => [((i * 197) % W), ((i * 89) % 1
 
 // The flyover deck: the part of the painted bridge where the red route passes OVER the blue route. The blue (under) units are drawn first,
 // this patch of the same painting is laid back over them, then the red units are drawn on top. Normalised to the background.
-const FLY_MASK = [[0.452, 0.545], [0.520, 0.611], [0.586, 0.676], [0.586, 0.832], [0.520, 0.769], [0.452, 0.704]];
+const FLY_MASK = [[0.460, 0.533], [0.540, 0.646], [0.540, 0.750], [0.460, 0.637]];
 const FLYP = FLY_MASK.map(([u, v]) => [u * W, v * H]);
 function inFlyPoly(x, y) { let c = false; for (let i = 0, j = FLYP.length - 1; i < FLYP.length; j = i++) { const [xi, yi] = FLYP[i], [xj, yj] = FLYP[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
 const FLYB = (() => { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; for (const [u, v] of FLY_MASK) { a = Math.min(a, u * W); b = Math.min(b, v * H); c = Math.max(c, u * W); d = Math.max(d, v * H); } return [a, b, c, d]; })();
@@ -2985,7 +3000,7 @@ function drawFlyoverMask() {
 }
 
 /* ---------- keep health windows: the painted keeps have transparent pointed-arch windows; glowing glass liquid behind them is the keep's HP meter ---------- */
-const KW = {top: 399.4048884165781, bottom: 1170.6695005313497, rects: [[271, 399, 221, 772], [3348, 399, 221, 772]], art: 3840};
+const KW = {top: 380, bottom: 1136, rects: [[275, 380, 177, 757], [3382, 380, 175, 757]], art: 3840};
 const KW_COL = [
   {deep: '#072c8a', mid: '#37b9ff', hi: '#d9f9ff', glint: '190,240,255', back: '#03071a', tint: '30,90,200'},
   {deep: '#6e0a1a', mid: '#ff5642', hi: '#ffe0c8', glint: '255,214,190', back: '#14030a', tint: '200,40,40'}];
