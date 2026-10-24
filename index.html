@@ -217,6 +217,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .wp.on{opacity:.95}.wp b{display:block;font:700 9px var(--f-display);letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px}
 .wp.l b{color:#8cc6ff}.wp.r{text-align:right;border-top-color:rgba(255,140,120,.35);text-shadow:0 0 8px rgba(255,150,130,.45)}.wp.r b{color:#ff9a84}.wp i{font-style:italic}
 @keyframes wshim{0%,100%{filter:none}48%{filter:none}50%{filter:brightness(1.25) blur(.3px)}52%{filter:none}}
+.buildv{margin:10px 0 0;text-align:center;font:600 11px var(--f-ui);letter-spacing:.18em;text-transform:uppercase;color:rgba(230,215,170,.55)}
 .aboutbox{max-height:min(60vh,520px);overflow:auto;padding-right:6px}.aboutbox .stats th{width:30%;text-align:left;vertical-align:top}.aboutbox .stats td{text-align:left}
 .card.wikic{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(900px,calc(100vw - 24px));max-height:88vh;overflow:hidden;z-index:70}
 .wtabs{display:flex;gap:6px;flex-wrap:wrap}
@@ -1339,6 +1340,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
+const BUILD = 'v108 · 24 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -5296,7 +5298,8 @@ function showOverlay() {
         '<li>Lose a round and you lose HP. Last tactician standing wins</li>' +
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
-      '<p class="hint">Turn up the music with the volume controls at the bottom right. ' + (peerMode() ? 'To play a friend, send them this page’s link and your room code.' : 'A friend needs access to this page (Share menu) and must be signed in.') + '</p>'
+      '<p class="hint">Turn up the music with the volume controls at the bottom right. ' + (peerMode() ? 'To play a friend, send them this page’s link and your room code.' : 'A friend needs access to this page (Share menu) and must be signed in.') + '</p>' +
+      '<p class="buildv">Build ' + BUILD + '</p>'
     );
     return;
   }
