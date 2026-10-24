@@ -1340,7 +1340,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v108 · 24 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v109 · 24 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -4756,7 +4756,8 @@ function applySnap(s) {
     let u = old.get(id);
     if (!u) u = {id, type, side, route: side, ...TYPES[type], x: +x, y: +y, t: Math.random() * 6, flash: 0, hp: 100, slow: 0};   // route = the attacking side
     if (u.hp > hp) u.flash = 0.1;
-    u.sx = +x; u.sy = +y; u.hp = +hp; u.max = 100; u.atk = !!(fl & 1); u.slow = fl & 2 ? 0.3 : 0; u.burning = !!(fl & 4); u.warp = fl & 8 ? 1 : 0;
+    u.sx = +x; u.sy = +y; u.hp = +hp; u.max = 100;
+    { const RL = ROUTES[side].len; u.d = clamp(side ? 1 - (+x) / W : (+x) / W, 0, 1) * RL; if (u.fly) u.len = RL; }   // guests only receive positions; target ranking needs distance travelled u.atk = !!(fl & 1); u.slow = fl & 2 ? 0.3 : 0; u.burning = !!(fl & 4); u.warp = fl & 8 ? 1 : 0;
     seen.add(id);
     return u;
   }).filter(Boolean);
