@@ -872,7 +872,7 @@ const CHAOS = [
   {id: 'orbital',  name: 'Orbital Strike',  fx: 'Satellite lasers hit both armies',  dur: 5, color: '#ffb020'},
   {id: 'swarm',    name: 'Drone Swarm',     fx: 'Drones pour from both keeps',       dur: 2, color: '#b46bff'},
   {id: 'bikes',    name: 'Bike Rush',       fx: 'Razor bikes burst from both gates', dur: 2, color: '#ff8a2a'},
-  {id: 'blackout', name: 'Blackout',        fx: 'The arena lights die',              dur: 6, color: '#eae6ff'}
+  {id: 'turbo',    name: 'Turbo Bikes',     fx: 'Every Razor Bike floors it',        dur: 6, color: '#ffd23a'}
 ];
 const DIFF = {easy: {label: 'Easy'}, hard: {label: 'Hard'}};
 
@@ -1382,7 +1382,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v121 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v122 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -2693,6 +2693,7 @@ function startChaos() {
   S.chaos = {id: C.id, i, t: C.dur};
   if (C.id === 'swarm') for (let n = 0; n < 5; n++) { spawn('drone', 0); spawn('drone', 1); }
   if (C.id === 'bikes') for (let n = 0; n < 4; n++) { spawn('bike', 0); spawn('bike', 1); }
+  if (C.id === 'turbo') for (let n = 0; n < 3; n++) { spawn('bike', 0); spawn('bike', 1); }   // a few fresh bikes join, and every bike runs at double speed while it lasts
   ev(['c', i]);
 }
 function simulate(dt) {
@@ -2813,7 +2814,7 @@ function worldStep(dt, live) {
     u.t += dt * fz; u.flash = Math.max(0, u.flash - dt); u.slow = Math.max(0, u.slow - dt);
     if (u.burn && u.burn.t > 0) { u.burn.t -= dt; rsCredit(u.burn.side, {slot: u.burn.slot}, Math.max(0, Math.min(u.burn.dps * dt, u.hp)), true); u.lastSlot = u.burn.slot == null ? -1 : u.burn.slot; u.hp -= u.burn.dps * dt; u.byShot = true; u.lastBy = u.burn.side; }
     if (u.warp > 0) { u.warp -= dt; continue; }   // titans materialise before they march
-    const R = ROUTES[u.side], sp = u.spd * fz * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (1 + (u.fly && S.p[u.side].rotor > 0 ? 0.5 : 0) + (S.p[u.side].haste > 0 ? 0.3 : 0)) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
+    const R = ROUTES[u.side], sp = u.spd * fz * (u.type === 'bike' && chaosIs('turbo') ? 2.2 : 1) * (u.slow > 0 ? 0.5 : 1) * (S.p[u.side].rally > 0 ? 1.1 : 1) * (1 + (u.fly && S.p[u.side].rotor > 0 ? 0.5 : 0) + (S.p[u.side].haste > 0 ? 0.3 : 0)) * (0.85 + 0.15 * clamp((COMBAT_LEN - S.timeLeft) / 10, 0, 1));
     if (u.fly) {
       // drones follow their own route a little above the deck and ignore the terrain
       u.bob = Math.sin(u.t * 3) * 8; u.atk = false;
@@ -3150,7 +3151,7 @@ function drawScene() {
   drawOrb(hx, hy, R0, t, kk);
 
   // drop lasers fanning from the halo
-  if (E > 0.9 && !chaosIs('blackout')) {
+  if (E > 0.9) {
     ctx.globalCompositeOperation = 'lighter';
     for (let i = 0; i < 10; i++) {
       const a = -Math.PI / 2 + Math.sin(t * 1.3 + i * 0.7) * 1.1, rgb = i % 2 ? SIDES[0].rgb : SIDES[1].rgb;
@@ -4348,7 +4349,6 @@ function render() {
   for (let side = 0; side < 2; side++) drawTurrets(side);
   for (const p of S.projs) drawProj(p);
   drawStrikes();
-  if (chaosIs('blackout')) { ctx.fillStyle = 'rgba(0,0,0,.78)'; ctx.fillRect(-W, -H, W * 3, H * 3); }
   drawRingsFields();
   drawFires();
   drawTraces();
@@ -4363,6 +4363,7 @@ function render() {
   }
   ctx.globalAlpha = 1;
   ctx.restore();
+  if (chaosIs('turbo')) { ctx.fillStyle = 'rgba(255,190,40,' + (0.05 + 0.04 * Math.sin(S.t * 14)) + ')'; ctx.fillRect(0, 0, W, H); }
   if (chaosIs('frenzy')) { ctx.fillStyle = 'rgba(255,40,70,' + (0.06 + 0.08 * S.kick) + ')'; ctx.fillRect(0, 0, W, H); }
   ctx.drawImage(vignette(), 0, 0, W, H);
   if (S.flash > 0) { ctx.fillStyle = 'rgba(' + S.flashC + ',' + S.flash * 0.5 + ')'; ctx.fillRect(0, 0, W, H); }
