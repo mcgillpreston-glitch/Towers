@@ -1042,12 +1042,15 @@ function equipItem(P, ii, z, i) {
   u.items.push(it); P.items.splice(ii, 1);
   return '';
 }
-function greedUp(P, side, i) {   // Greed: twice per game, lift one mounted turret a star for free
+const GREED_LV = 3, greedCost = P => Math.max(BASE_INCOME, P.lastIncome | 0);   // a whole round's pay
+function greedUp(P, side, i) {   // Greed: twice per game, lift one mounted turret a star for a round's worth of gold, from level 3
   if (!(P.gr > 0)) return 'No Greed upgrades left this game.';
+  if (P.level < GREED_LV) return 'Greed unlocks at level ' + GREED_LV + '.';
+  if (P.gold < greedCost(P)) return 'Greed costs ' + greedCost(P) + ' gold (a full round of income).';
   const u = P.board[i];
   if (!u) return 'Greed upgrades a turret that sits on a keep mount.';
   if (u.star >= 3) return ROSTER[u.r].name + ' is already three stars.';
-  u.star++; P.gr--; ev(['s', side, i, u.star, u.r]);
+  P.gold -= greedCost(P); if (S.stats) S.stats.p[side].spent += greedCost(P); u.star++; P.gr--; ev(['s', side, i, u.star, u.r]);
   return '';
 }
 function applyAct(side, a) {
@@ -1376,7 +1379,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v111 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v112 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -4980,7 +4983,7 @@ function renderDock() {
     '<div class="stat odds" data-tip="Shop odds: the chance, in percent, that a shop slot offers a 1, 2, 3, 4 or 5 gold turret at your level."><span>Shop odds</span><div class="od">' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '"><i>' + (i + 1) + 'g</i>' + o + '%</b>').join('') + '</div></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
-    '<button type="button" class="btn small greed' + (S.ui.greed ? ' armed' : '') + '" data-act="greed" data-tip="Greed: lift one turret on a keep mount up a star, free. You get two per game (' + (P.gr | 0) + ' left). Select a mounted turret first, or press this and then tap one."' + (locked || !(P.gr > 0) ? ' disabled' : '') + '>Greed <b>' + (P.gr | 0) + '</b></button>' +
+    '<button type="button" class="btn small greed' + (S.ui.greed ? ' armed' : '') + '" data-act="greed" data-tip="Greed: lift one turret on a keep mount up a star. Costs a whole round of income (' + greedCost(P) + ' gold), unlocks at level ' + GREED_LV + ', two per game (' + (P.gr | 0) + ' left). Select a mounted turret first, or press this and then tap one."' + (locked || !(P.gr > 0) || P.level < GREED_LV || P.gold < greedCost(P) ? ' disabled' : '') + '>Greed <b>' + (P.level < GREED_LV ? 'Lv' + GREED_LV : greedCost(P)) + '</b></button>' +
     sound +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
     '</div><div class="shop">';
