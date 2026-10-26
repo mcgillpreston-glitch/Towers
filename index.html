@@ -1380,7 +1380,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v117 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v118 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -2969,7 +2969,7 @@ for (const c of ['b', 'r']) {
   for (const R of ROSTER) { loadArt('w' + c + R.id, 'w_' + c + '_' + R.id + '.webp'); loadArt('p' + c + R.id, 'p_' + c + '_' + R.id + '.webp'); }
   for (const k of ['trooper', 'bike', 'bulwark', 'drone', 'titan']) { loadArt('m' + c + k, 'm_' + c + '_' + k + '.webp'); loadArt('xi' + c + k, 'xi_' + c + '_' + k + '.webp'); loadArt('xp' + c + k, 'xp_' + c + '_' + k + '.webp'); }
 }
-for (const k of ['N', 'O', 'T', 'X']) loadArt('c' + k, 'core_' + k + '.webp');
+for (const k of ['N', 'O', 'T', 'X', 'L']) loadArt('c' + k, 'core_' + k + '.webp');
 // battlefield background and terrain art (replaceable files; the game runs without them)
 function loadImg(path) { if (typeof Image === 'undefined') return null; const im = new Image(); im.onload = () => { im.ok = true; }; im.onerror = () => { im.bad = true; }; im.src = path; return im; }
 const BGS = {};
