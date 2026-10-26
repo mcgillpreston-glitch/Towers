@@ -1379,7 +1379,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v114 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v115 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -3789,12 +3789,13 @@ function teamRing(e, rgb, w, h, fly) {
 }
 // Prism crossover: where the two lanes cross, glass bodies pick up violet light (blue to violet, ruby to amethyst) and fade back out.
 // Cosmetic only: the purple twin is made from each sprite's own pixels (same pose, alpha and size), gold and white highlights stay, and it blends by ground position.
-const PRISM = {x: 0.5 * W, y: 0.63 * H, rx: 78, ry: 50, inner: 0.25, strength: 0.62, tint: new WeakMap(), off: false, field: null};
+const PRISM = {x: 0.5 * W, y: 0.63 * H, rx: 30, ry: 24, inner: 0.05, strength: 0.9, tint: new WeakMap(), off: false, field: null};
 function prismWeight(x, y) {
   const d = Math.hypot((x - PRISM.x) / PRISM.rx, (y - PRISM.y) / PRISM.ry);
   if (d >= 1) return 0;
   const t = clamp((d - PRISM.inner) / (1 - PRISM.inner), 0, 1);
-  return 1 - t * t * (3 - 2 * t);
+  const f = 1 - t * t * (3 - 2 * t);
+  return f * f;   // narrow and peaked: a flash as the minion crosses the light, not a stretch of colour
 }
 function prismTwin(im) {
   let c = PRISM.tint.get(im);
@@ -3829,7 +3830,7 @@ function drawPrismField() {
   if (!PRISM.field) { PRISM.field = new Image(); PRISM.field.src = 'assets/prism_field.png'; }
   if (!PRISM.field.complete || !PRISM.field.naturalWidth || (S.phase !== 'combat' && S.phase !== 'intro')) return;
   ctx.save(); ctx.globalAlpha = 0.07;
-  ctx.drawImage(PRISM.field, PRISM.x - PRISM.rx * 1.5, PRISM.y - PRISM.ry * 1.8, PRISM.rx * 3, PRISM.ry * 3.6);
+  ctx.drawImage(PRISM.field, PRISM.x - 110, PRISM.y - 80, 220, 160);
   ctx.restore();
 }
 function drawUnitArt(e, im, rgb, fl) {
@@ -3848,7 +3849,7 @@ function drawUnitArt(e, im, rgb, fl) {
   ctx.drawImage(im, -w / 2, oy, w, h);
   if (!PRISM.off && (S.phase === 'combat' || S.phase === 'intro')) {
     const pw = prismWeight(e.x, e.gy !== undefined ? e.gy : e.y);
-    if (pw > 0) { const tw = prismTwin(im); if (tw) { const pa = ctx.globalAlpha; ctx.globalAlpha = pa * pw * PRISM.strength; ctx.drawImage(tw, -w / 2, oy, w, h); ctx.globalAlpha = pa; } }
+    if (pw > 0) { const tw = prismTwin(im); if (tw) { const pa = ctx.globalAlpha; ctx.globalAlpha = pa * pw * PRISM.strength; ctx.drawImage(tw, -w / 2, oy, w, h); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = pa * pw * pw * 0.22; ctx.drawImage(tw, -w / 2, oy, w, h); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = pa; } }
   }
   if (fl) { ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.6; ctx.drawImage(im, -w / 2, oy, w, h); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
   if (e.atk && !fly && Math.sin(e.t * 18) > 0.6) glowDot(e.side ? -w * 0.5 : w * 0.5, -h * 0.55, 8, '255,220,120', 0.8);
