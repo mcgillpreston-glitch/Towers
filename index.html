@@ -585,7 +585,7 @@ html[data-ui=desktop][data-side="1"] .eco .stat .od b{font-size:15px;min-width:3
 <div class="app">
   <header class="hud panel">
     <div class="team l"><div class="tname"><b>AZURECOURT</b><span id="tag0">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><div class="hpbar"><i id="hp0"></i></div><span class="hpnum" id="hpt0">100</span><span class="hplab">HP</span></div><div class="sub"><span id="lv0" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd0" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st0" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
-    <div class="clock" data-tip="Phase clock. Planning lasts 90 s (rounds 1-3), 105 s (rounds 4-6) or 120 s (round 7+), then 30 s of automatic combat."><div class="phase" id="sPhase">Planning</div><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Round 1</div></div>
+    <div class="clock" data-tip="Phase clock. Planning lasts 45 s. Anyone who is not ready then gets one automatic 15 s extension, then 30 s of automatic combat."><div class="phase" id="sPhase">Planning</div><div class="time" id="sTime">1:00</div><div class="rnd" id="sRound">Round 1</div></div>
     <div class="team r"><div class="tname"><b>VERMILION</b><span id="tag1">CPU</span></div><div class="hprow" data-tip="Tactician HP. Whoever loses a round loses HP, and bigger wins hurt more. At 0 HP that side is out."><span class="hpnum" id="hpt1">100</span><span class="hplab">HP</span><div class="hpbar"><i id="hp1"></i></div></div><div class="sub"><span id="lv1" data-tip="Level = how many turrets you can field at once.">LV 3</span><i></i><span class="gd" id="gd1" data-tip="Gold buys turrets, rerolls and XP.">0 G</span><i></i><span class="st" id="st1" data-tip="Win or loss streak: longer streaks pay bonus gold."></span></div></div>
   </header>
 
@@ -615,8 +615,8 @@ html[data-ui=desktop][data-side="1"] .eco .stat .od b{font-size:15px;min-width:3
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
 const PACE = 1.5;   // 1.4 on the old 1269-unit route; scaled to the new 1359-unit route so crossing time is unchanged
-const setupLen = r => r >= 7 ? 120 : r >= 4 ? 105 : 90;   // planning grows as the board fills up
-const BATTLE_ZOOM = 1, SETUP_LEN = 90, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
+const setupLen = r => 45, EXT_LEN = 15;   // 45 s of planning; anyone not yet ready then gets one automatic 15 s extension
+const BATTLE_ZOOM = 1, SETUP_LEN = 45, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 14, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 240;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
 const TS = 1.4, US = 0.92, LG = 480;
 // the keeps are painted into the background now; TW is the blue keep's footprint on it (the red keep is its mirror)
@@ -1158,7 +1158,7 @@ function clearField() { TRACES = []; S.units = []; S.piles = []; S.projs = []; S
 const streakBonus = st => { const a = Math.abs(st); return a >= 5 ? 3 : a >= 4 ? 2 : a >= 2 ? 1 : 0; };
 function setPhase(ph, t) { S.phase = ph; S.phaseT = t || 0; phaseFx(ph); }
 function startSetup() {
-  S.round++;
+  S.round++; S.ext = 0;
   clearField();
   const ib = [interestFor(0) + comebackFor(0), interestFor(1) + comebackFor(1)];   // both read before anyone is paid
   for (let s = 0; s < 2; s++) {
@@ -1379,7 +1379,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v115 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v116 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -2696,7 +2696,11 @@ function simulate(dt) {
   if (S.phase === 'setup') {
     S.phaseT -= dt;
     if (S.mode === 'host') hostReadGuest();
-    if ((S.p[0].ready && S.p[1].ready) || S.phaseT <= 0) startCombat();
+    const both = S.p[0].ready && S.p[1].ready;
+    if (!both && S.phaseT <= 0 && !S.ext && S.mode !== 'demo') {   // automatic extension for whoever is still planning
+      S.ext = 1; S.phaseT = EXT_LEN;
+      S.texts.push({x: W / 2, y: H * 0.5, s: '+' + EXT_LEN + ' s extra planning time', life: 2.2, c: '#ffe08a', sz: 18});
+    } else if (both || S.phaseT <= 0) startCombat();
     return;
   }
   if (S.phase === 'intro') { S.phaseT -= dt; if (S.phaseT <= 0) setPhase('combat'); return; }
@@ -4765,7 +4769,7 @@ function packP(P) {
 function snapshot() {
   const r1 = Math.round;
   const s = {
-    ph: S.phase, m: S.matchId, rd: S.round, tl: r1(S.timeLeft * 10), pt: r1(S.phaseT * 10), rw: S.rw, ls: S.loser, win: S.winner,
+    ph: S.phase, m: S.matchId, rd: S.round, tl: r1(S.timeLeft * 10), pt: r1(S.phaseT * 10), ex: S.ext | 0, rw: S.rw, ls: S.loser, win: S.winner,
     nm: [HANDLE, hostGuestName()], hu: PVP.uid || '', ch: S.chaos ? [S.chaos.i, r1(S.chaos.t * 10)] : 0, ts: r1(S.timeScale * 100), gp: net.guestPeer, hr: net.rematch ? 1 : 0,
     P: [packP(S.p[0]), packP(S.p[1])],
     u: S.units.slice(0, 100).map(u => [u.id, u.side * 10 + TYPE_KEYS.indexOf(u.type), r1(u.x), r1(u.y), Math.max(0, r1(u.hp / u.max * 100)), (u.atk ? 1 : 0) | (u.slow > 0 ? 2 : 0) | (u.burn && u.burn.t > 0 ? 4 : 0) | (u.warp > 0 ? 8 : 0)]),
@@ -4828,7 +4832,7 @@ function applySnap(s) {
     if (ph === 'setup') { clearField(); S.ui.sel = null; }
     phaseFx(ph);
   }
-  S.timeLeft = (s.tl | 0) / 10; S.phaseT = (s.pt | 0) / 10;
+  S.timeLeft = (s.tl | 0) / 10; S.phaseT = (s.pt | 0) / 10; S.ext = s.ex | 0;
   S.rw = Number.isInteger(s.rw) ? s.rw : -1; S.loser = Number.isInteger(s.ls) ? s.ls : -1; S.winner = Number.isInteger(s.win) ? s.win : -1;
   S.hostRematch = !!s.hr;
   S.hostUid = String(s.hu || '').slice(0, 80);
@@ -4958,7 +4962,7 @@ function updateHUD() {
   $('tag0').className = t[0] === 'You' ? 'you' : ''; $('tag1').className = t[1] === 'You' ? 'you' : '';
   const timeEl = $('sTime');
   let tm = '—', hot = false, rl = 'Glass & Gilt', pl = 'Battle';
-  if (S.phase === 'setup') { tm = fmtTime(S.phaseT); hot = S.phaseT <= 10; rl = 'Round ' + S.round; pl = 'Planning'; }
+  if (S.phase === 'setup') { tm = fmtTime(S.phaseT); hot = S.phaseT <= 10; rl = 'Round ' + S.round; pl = S.ext ? 'Extra time' : 'Planning'; }
   else if (S.phase === 'intro') { tm = fmtTime(COMBAT_LEN); rl = 'Round ' + S.round; pl = 'Combat'; }
   else if (S.phase === 'combat') { tm = fmtTime(S.timeLeft); hot = S.timeLeft <= 5; rl = S.chaos && CHAOS[S.chaos.i] ? CHAOS[S.chaos.i].name : 'Round ' + S.round; pl = 'Combat'; }
   else if (S.phase === 'result') { tm = '0:00'; rl = 'Round ' + S.round; pl = 'Result'; }
@@ -5175,7 +5179,7 @@ function wikiHtml() {
       WITNESS.map(w => '<table class="stats wk"><thead><tr><th colspan="2">' + w.t + '</th></tr></thead><tbody>' + w.l.map(ln => '<tr><th style="color:' + (ln[0] === 'R' ? SIDES[0].c : SIDES[1].c) + '"><img class="pt" src="' + (ln[0] === 'R' ? PORT.romeo : PORT.juliette) + '" alt="">' + (ln[0] === 'R' ? 'Romeo' : 'Juliette') + '</th><td class="l">“' + ln[1] + '”</td></tr>').join('') + '</tbody></table>').join('');
   } else if (tab === 'basics') {
     b = '<div class="wcards">' +
-      card('1 · Plan', '90 to 120 s. Buy, place, fit cores, press Ready.', 'Planning is 90 s, 105 s from round 4 and 120 s from round 7. Buy turrets from the shop, place them on mounts, fit cores. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
+      card('1 · Plan', '45 s (+15 s extra if you are not ready). Buy, place, fit cores, press Ready.', 'Planning is 45 s, and anyone not ready when it ends gets one automatic 15 s extension. Buy turrets from the shop, place them on mounts, fit cores. Three copies of the same turret merge into a stronger star. Your level sets how many turrets you can field. When both sides press Ready, combat starts early.') +
       card('2 · Fight', '30 s. Mechs march on their own.', 'Your turrets shoot enemy mechs, and any mech that reaches your keep damages it. Spend gold on call-ins (Q to I) to send help. The side whose keep falls loses the round; at time-out the higher keep HP wins, then the higher damage dealt (a gap under 3% is a draw). If both keeps are untouched at 16 s, overtime Titans march until one side breaks. A round never ends with both untouched: the side that dealt clearly more damage lands a glancing hit.') +
       card('3 · Win', 'Lose rounds, lose HP. Last one standing wins.', 'Losing a round costs Tactician HP (more if the winner won big). The last Tactician standing wins the match. From round 5 the mech waves get tougher every round.') +
       card('Mounts', '4 on the roof (R1-R4), 6 on the side (S1-S6).', 'Launchers that lob their shots gain from height: on R1 to R4 the Plasma Mortar and Hellfire Rack get +30% range and +130% damage, the Swarm Pod +30% range and +90% damage, and the Flak Nest +30% range. Guns, beams and lightning are the same on every mount, so keep them on the side and put the launchers up top. Short-range turrets on the roof may never fire; check the after-action report for idle turrets.') +
@@ -5422,7 +5426,7 @@ function showOverlay() {
       '</div>' +
       '<div class="kicker">2489 · The Last Accord</div>' +
       '<h1>Glass &amp; Gilt</h1>' +
-      '<p>Azurecourt and Vermilion face off across the Concord Span, each behind a glass-armored Keep with ten turret mounts. Two lovers meet only if one Keep falls. Plan for 90 to 120 seconds, then 30 seconds of combat plays out on its own.</p>' +
+      '<p>Azurecourt and Vermilion face off across the Concord Span, each behind a glass-armored Keep with ten turret mounts. Two lovers meet only if one Keep falls. Plan for 45 seconds (plus a 15 second extension if you are not ready), then 30 seconds of combat plays out on its own.</p>' +
       '<ul class="rules">' +
         '<li>Buy turrets from a shop of five. Reroll starts at 2 gold and rises by 1 each time, resetting every round</li>' +
         '<li>Three copies merge into 2 stars, three 2-stars into 3</li>' +
