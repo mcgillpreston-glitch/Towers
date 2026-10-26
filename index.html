@@ -977,6 +977,7 @@ function moveUnit(P, f, fi, t, ti) {
   return '';
 }
 function sellUnit(P, z, i) {
+  if (z === 'i') { if (!P.items[i]) return ''; P.items.splice(i, 1); P.gold += 1; return ''; }   // a spare core sells for 1 gold
   const arr = z === 'm' ? P.board : P.bench, u = arr[i];
   if (!u) return '';
   P.gold += sellValue(u);
@@ -1072,7 +1073,7 @@ function applyAct(side, a) {
       if (!m && t === 'm' && moved && P.board[ti] === moved && S.mode !== 'demo') return chiefBark(P, side, ti);
       return m;
     }
-    case 'sell': return sellUnit(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
+    case 'sell': return sellUnit(P, a.f === 'm' || a.f === 'i' ? a.f : 'b', a.i | 0);
     case 'equip': return equipItem(P, a.ii | 0, a.to === 'm' ? 'm' : 'b', a.ti | 0);
     case 'strip': return stripCores(P, a.f === 'm' ? 'm' : 'b', a.i | 0);
     case 'lock': { const i = a.i | 0; if (i >= 0 && i < 5 && P.shop[i] >= 0) P.lock[i] = P.lock[i] ? 0 : 1; return ''; }
@@ -1379,7 +1380,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v116 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v117 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -4635,7 +4636,7 @@ addEventListener('keydown', e => {
   if (dig >= 0 && !e.ctrlKey && !e.metaKey && !e.altKey) { onSlot('m', dig); return; }
   if (e.key === 'd' || e.key === 'D') act({t: 'reroll'});
   else if (e.key === 'f' || e.key === 'F') act({t: 'xp'});
-  else if (e.key === 'e' || e.key === 'E') { const sel = S.ui.sel; if (sel && sel.z !== 'i') { act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; } }
+  else if (e.key === 'e' || e.key === 'E') { const sel = S.ui.sel; if (sel) { act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; } }
 });
 
 /* =========================================================================
@@ -4997,7 +4998,7 @@ function chipHtml(u, z, i, label, locked) {
 function selInfo(P) {
   const sel = S.ui.sel;
   if (!sel) return '';
-  if (sel.z === 'i') { const it = ITEMS[P.items[sel.i]]; return it ? '<span><b style="color:' + it.color + '">' + it.name + '</b> · ' + it.fx + '</span><span class="h">Tap a turret to fit it. Up to 3 cores each.</span>' : ''; }
+  if (sel.z === 'i') { const it = ITEMS[P.items[sel.i]]; return it ? '<span><b style="color:' + it.color + '">' + it.name + '</b> · ' + it.fx + '</span><button type="button" class="btn small" data-act="sell" data-tip="Sell this spare core for 1 gold (key E).">Sell for <b>1</b></button><span class="h">Tap a turret to fit it. Up to 3 cores each.</span>' : ''; }
   const u = (sel.z === 'm' ? P.board : P.bench)[sel.i];
   if (!u) return '';
   const R = ROSTER[u.r], s = statsFor(u, traitLevels(P.board).lv);
@@ -5513,7 +5514,7 @@ function onAct(a, btn) {
   else if (k0 === 'greed') { const P = myP(), sel = S.ui.sel; if (!P || !canPlan()) return; if (sel && sel.z === 'm' && P.board[sel.i]) { act({t: 'greed', i: sel.i}); S.ui.sel = null; S.ui.greed = false; } else { S.ui.greed = !S.ui.greed; if (S.ui.greed) uiMsg('Greed: tap the mounted turret to upgrade.'); } }
   else if (k0 === 'ready') { act({t: 'ready'}); S.ui.sel = null; S.ui.greed = false; }
   else if (k0 === 'unready') act({t: 'unready'});
-  else if (k0 === 'sell') { const sel = S.ui.sel; if (sel && sel.z !== 'i') act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; }
+  else if (k0 === 'sell') { const sel = S.ui.sel; if (sel) act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; }
   else if (k0 === 'mute') setMute(!muted);
   else if (k0 === 'copy') { try { navigator.clipboard.writeText(net.code).then(() => { if (btn) btn.textContent = 'Copied'; }, selectCode); } catch (e) { selectCode(); } }
   else if (k0 === 'again') {
