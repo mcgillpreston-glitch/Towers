@@ -318,6 +318,31 @@ table.stats thead th{font:900 12px var(--f-display);letter-spacing:.1em}
 select{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:4px 6px}
 select option{color:#111}
 
+
+/* ---- Battle on desktop: no bottom bar, the field takes its height; each keep gets a stat column in the gutters ---- */
+.sidep{display:none}
+html[data-ui=desktop] .app.battle #dock{display:none}
+html[data-ui=desktop] .app.battle .sidep:not([hidden]){display:flex;flex-direction:column;gap:5px;position:absolute;top:6px;width:calc(var(--gut,120px) - 14px);max-height:calc(100% - 150px);overflow-y:auto;scrollbar-width:none;padding:8px 7px;box-sizing:border-box;z-index:21;font-size:11px}
+html[data-ui=desktop] .app.battle .sidep.l{left:6px}
+html[data-ui=desktop] .app.battle .sidep.r{right:6px}
+.sidep::-webkit-scrollbar{display:none}
+.sidep h4{margin:0 0 2px;font:700 11px var(--f-ui);letter-spacing:.12em;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sidep h4 i{display:block;font:normal 9px var(--f-ui);letter-spacing:.08em;color:var(--muted)}
+.sidep .row{display:flex;justify-content:space-between;align-items:baseline;gap:4px}
+.sidep .row span{color:var(--muted);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase}
+.sidep .row b{font-variant-numeric:tabular-nums;font-size:15px}
+.sidep .kbar{height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.sidep .kbar i{display:block;height:100%}
+.sidep.l .kbar i{background:#58b8ff}.sidep.r .kbar i{background:#ff6a50}
+.sidep .calls{flex-direction:column;flex-wrap:nowrap;gap:4px;margin-top:6px}
+.sidep .calls .btn{width:100%;justify-content:space-between;display:flex;padding:4px 5px;font-size:9.5px;letter-spacing:0;gap:3px;min-height:0;text-align:left;white-space:nowrap}
+.sidep .calls .btn kbd{font-size:9px;padding:0 3px}
+.sidep .calls .btn b{font-size:9.5px}
+html[data-ui=desktop] .app.battle .sound{left:6px;right:auto;bottom:6px;width:calc(var(--gut,120px) - 14px);box-sizing:border-box;transform:none;flex-wrap:wrap;gap:4px 6px;padding:6px;z-index:21}
+html[data-ui=desktop] .app.battle .sound label{width:100%;justify-content:space-between;font-size:10px}
+html[data-ui=desktop] .app.battle .sound input[type=range]{flex:1;width:auto;min-width:0}
+html[data-ui=desktop] .app.battle .sound .btn.small{flex:1 1 auto}
+
 /* ---- Desktop: slimmer top HUD (bigger keep), character lines in the left gutter beside the field ---- */
 html[data-ui=desktop] .app{padding-block:4px;gap:4px}
 html[data-ui=desktop] header.hud{grid-template-columns:minmax(0,1fr) clamp(120px,11.5vw,168px) minmax(0,1fr);padding:2px clamp(10px,1vw,14px);gap:clamp(6px,.7vw,11px)}
@@ -568,6 +593,7 @@ html[data-ui=desktop][data-side="1"] .eco .stat .od b{font-size:15px;min-width:3
     <div class="overlay" id="overlay"></div>
     <div class="witness" id="witness"><div class="wp l"><img alt=""><div><b>Romeo Montavere</b><i></i></div></div><div class="wp r"><div><b>Juliette Capravell</b><i></i></div><img alt=""></div><div class="bark" id="bark"><img alt=""><div><b></b><span class="hint"></span><i></i></div></div></div>
     <div id="cdown" aria-hidden="true"></div>
+    <aside class="sidep panel l" id="sideL" hidden></aside><aside class="sidep panel r" id="sideR" hidden></aside>
     <div class="sound panel" id="sound">
       <button class="btn small quiet" id="statsBtn" type="button" data-tip="Match stats: kills, damage, spending and every round so far (Tab)." hidden>Stats · Tab</button>
       <button class="btn small quiet" id="menuBtn" type="button" data-tip="Menu: audio and video settings, leave game, main menu (Esc)." hidden>Menu · Esc</button>
@@ -1340,7 +1366,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v109 · 24 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v110 · 26 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -1925,7 +1951,8 @@ function perfGov(raw) {
 }
 function fit() {
   const r = stage.getBoundingClientRect();
-  const scale = Math.min((r.width - 4) / W, (r.height - 4) / H);
+  const bpad = document.documentElement.dataset.ui === 'desktop' && document.querySelector('.app').classList.contains('battle') ? 144 : 0;   // battle: reserve a stat column each side
+  const scale = Math.min((r.width - 4 - 2 * bpad) / W, (r.height - 4) / H);
   const w = Math.max(1, Math.floor(W * scale)), h = Math.max(1, Math.floor(H * scale));
   cv.style.width = w + 'px'; cv.style.height = h + 'px';
   { const g = (r.width - w) / 2, rt = document.documentElement; rt.style.setProperty('--gut', Math.max(0, Math.floor(g)) + 'px'); rt.dataset.gut = g >= 190 ? '1' : '0';
@@ -4807,6 +4834,29 @@ function tags() {
   if (S.mode === 'guest') { const n = S.names || []; return [n[0] || 'Player 1', n[1] || 'Player 2']; }
   return ['', ''];
 }
+let sideSig = '';
+function sideHtml(s) {
+  const P = S.p[s], t = tags()[s], mine = s === S.me && S.mode !== 'demo';
+  const nm = s === 0 ? 'Azurecourt' : 'Vermilion';
+  const kp = Math.max(0, Math.min(100, 100 * (P.keep || 0) / KEEP_HP));
+  const R = (a, b) => '<div class="row"><span>' + a + '</span><b>' + b + '</b></div>';
+  let h = '<h4 style="color:' + (s === 0 ? '#8fd0ff' : '#ff9a85') + '">' + (t || nm) + '<i>' + nm + '</i></h4>' +
+    R('Gold', '<em style="font-style:normal;color:var(--warn)">' + P.gold + '</em>') + R('Level', P.level) + R('Cores', P.items.length) + R('Streak', streakTxt(P.streak) || '—') + R('Kills', P.roundKills | 0) +
+    '<div class="row"><span>Keep</span><b>' + Math.ceil(Math.max(0, P.keep || 0)) + '</b></div><div class="kbar"><i style="width:' + kp + '%"></i></div>';
+  if (S.phase === 'result' && mine) h += '<div class="row"><span>' + (S.rw === S.me ? 'Won' : S.rw < 0 ? 'Drawn' : 'Lost') + '</span><b>' + (S.rw === S.me || S.rw < 0 ? '' : '−' + P.lastDmg) + '</b></div>';
+  if (mine && S.phase === 'combat') h += '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><span><kbd>' + C.key + '</kbd> ' + C.name + '</span> <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>';
+  return h;
+}
+function updateSides(battle) {
+  const L = $('sideL'), Rr = $('sideR');
+  if (!battle) { if (!L.hidden) { L.hidden = Rr.hidden = true; sideSig = ''; } return; }
+  const sg = [S.phase, S.me, S.rw, tags().join('/')];
+  for (let s = 0; s < 2; s++) { const P = S.p[s]; sg.push(P.gold, P.level, P.items.length, P.streak, P.roundKills | 0, Math.ceil(P.keep || 0), P.lastDmg | 0); if (s === S.me) sg.push(P.cd.map(x => Math.ceil(x)).join('.')); }
+  const sig = sg.join('|');
+  if (sig === sideSig && !L.hidden) return;
+  sideSig = sig; L.hidden = Rr.hidden = false;
+  L.innerHTML = sideHtml(0); Rr.innerHTML = sideHtml(1);
+}
 function updateHUD() {
   for (let s = 0; s < 2; s++) {
     const P = S.p[s];
@@ -4820,7 +4870,8 @@ function updateHUD() {
   const battle = S.mode !== 'demo' && (S.phase === 'intro' || S.phase === 'combat' || S.phase === 'result');
   const im = inMatch();
   if (hudCache.im !== im) { hudCache.im = im; $('statsBtn').hidden = !im; $('menuBtn').hidden = !im; }
-  if (hudCache.battle !== battle) { hudCache.battle = battle; document.querySelector('.app').classList.toggle('battle', battle); }
+  if (hudCache.battle !== battle) { hudCache.battle = battle; document.querySelector('.app').classList.toggle('battle', battle); fit(); }
+  updateSides(battle);
   setText('tag0', t[0]); setText('tag1', t[1]);
   $('tag0').className = t[0] === 'You' ? 'you' : ''; $('tag1').className = t[1] === 'You' ? 'you' : '';
   const timeEl = $('sTime');
@@ -5385,7 +5436,7 @@ function onAct(a, btn) {
   if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute' && k0 !== 'wiki' && k0 !== 'wikix' && k0 !== 'about' && k0 !== 'aboutx' && k0 !== 'logdl') S.ui.menu = false; if (k0 === 'resume') S.ui.wiki = null; if (k0 !== 'stats') S.ui.tab = false; }
   dockSig = ''; overlaySig = '';
 }
-for (const id of ['overlay', 'dock']) {
+for (const id of ['overlay', 'dock', 'sideL', 'sideR']) {
   $(id).addEventListener('click', e => {
     const b = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
     if (performance.now() < dragSup) return;
