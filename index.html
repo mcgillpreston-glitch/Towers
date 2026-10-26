@@ -1371,7 +1371,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v124 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v125 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -3825,6 +3825,7 @@ function prismTwin(im) {
   return c;
 }
 function drawPrismField() {
+  if (typeof Image === 'undefined') return;
   if (!PRISM.field) { PRISM.field = new Image(); PRISM.field.src = 'assets/prism_field.png'; }
   if (!PRISM.field.complete || !PRISM.field.naturalWidth || (S.phase !== 'combat' && S.phase !== 'intro')) return;
   ctx.save(); ctx.globalAlpha = 0.07;
