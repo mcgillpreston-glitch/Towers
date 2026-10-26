@@ -321,6 +321,7 @@ select option{color:#111}
 
 /* ---- Battle on desktop: no bottom bar, the field takes its height; each keep gets a stat column in the gutters ---- */
 .sidep{display:none}
+.btn.greed{color:#ffd76a}.btn.greed.armed{box-shadow:0 0 0 2px #ffd76a,0 0 14px #ffb300;animation:gpulse 1s ease-in-out infinite alternate}@keyframes gpulse{to{filter:brightness(1.35)}}
 html[data-ui=desktop] .app.battle #dock{display:none}
 html[data-ui=desktop] .app.battle .sidep:not([hidden]){display:flex;flex-direction:column;gap:5px;position:absolute;top:6px;width:calc(var(--gut,120px) - 14px);max-height:calc(100% - 150px);overflow-y:auto;scrollbar-width:none;padding:8px 7px;box-sizing:border-box;z-index:21;font-size:11px}
 html[data-ui=desktop] .app.battle .sidep.l{left:6px}
@@ -884,7 +885,7 @@ function randomOfTier(t) { const pool = ROSTER.map((R, i) => R.tier === t ? i : 
 function newStat() { return {kills: 0, breach: 0, spent: 0, rerolls: 0, xp: 0, stars: 0, dealt: 0, wins: 0}; }
 function newPlayer() {
   return {
-    bet: 0, betRes: null, lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: Array(8).fill(0), rally: 0, haste: 0, rotor: 0, vigor: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
+    bet: 0, betRes: null, lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: Array(8).fill(0), gr: 2, rally: 0, haste: 0, rotor: 0, vigor: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
     shop: [-1, -1, -1, -1, -1], bench: Array(BENCH).fill(null), board: Array(10).fill(null), items: [],
     ready: false, kills: 0, roundKills: 0, lastDmg: 0, lastIncome: 0, msg: '', msgN: 0, actSeen: 0,
     turrets: [], traitLv: {}, boardSig: '',
@@ -1041,6 +1042,14 @@ function equipItem(P, ii, z, i) {
   u.items.push(it); P.items.splice(ii, 1);
   return '';
 }
+function greedUp(P, side, i) {   // Greed: twice per game, lift one mounted turret a star for free
+  if (!(P.gr > 0)) return 'No Greed upgrades left this game.';
+  const u = P.board[i];
+  if (!u) return 'Greed upgrades a turret that sits on a keep mount.';
+  if (u.star >= 3) return ROSTER[u.r].name + ' is already three stars.';
+  u.star++; P.gr--; ev(['s', side, i, u.star, u.r]);
+  return '';
+}
 function applyAct(side, a) {
   const P = S.p[side];
   if (!a || typeof a !== 'object') return '';
@@ -1051,6 +1060,7 @@ function applyAct(side, a) {
   switch (a.t) {
     case 'buy': return buyShop(P, a.i | 0, side);
     case 'reroll': return reroll(P, side);
+    case 'greed': return greedUp(P, side, a.i | 0);
     case 'xp': return buyXp(P, side);
     case 'move': {
       const f = a.f === 'm' ? 'm' : 'b', t = a.to === 'm' ? 'm' : 'b', fi = a.fi | 0, ti = a.ti | 0;
@@ -1366,7 +1376,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v110 · 26 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v111 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -4326,10 +4336,12 @@ function act(a) {
   const m = applyAct(S.me, a);
   if (m) uiMsg(m);
 }
+const u0 = (P, z, i) => (z === 'm' ? P.board : P.bench)[i];
 function onSlot(z, i) {
   const P = myP();
   if (!P || !canPlan()) return;
   const sel = S.ui.sel;
+  if (S.ui.greed) { S.ui.greed = false; if (z === 'm' && u0(P, z, i)) act({t: 'greed', i}); else uiMsg('Greed needs a turret on a keep mount. Tap Greed again to retry.'); return; }
   if (z === 'i') { S.ui.sel = !P.items[i] || (sel && sel.z === 'i' && sel.i === i) ? null : {z: 'i', i}; return; }
   const arr = z === 'm' ? P.board : P.bench, u = arr[i];
   if (sel && sel.z === 'i') { if (u) act({t: 'equip', ii: sel.i, to: z, ti: i}); S.ui.sel = null; return; }
@@ -4676,7 +4688,7 @@ const packUnit = u => u ? [u.r, u.star, u.items.join(''), u.td || 0, u.tk || 0, 
 function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0, star: clamp(a[1] | 0, 1, 3), items: String(a[2] || '').split('').filter(c => ITEMS[c]).slice(0, 3), td: a[3] | 0, tk: a[4] | 0, ld: a[5] | 0, lk: a[6] | 0, lp: a[7] | 0, nr: a[8] | 0} : null; }
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
-    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), hs: Math.round(P.haste * 10), ro: Math.round(P.rotor * 10), vg: Math.round(P.vigor * 10), rd: P.ready ? 1 : 0, rr: P.rr | 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
+    it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), hs: Math.round(P.haste * 10), ro: Math.round(P.rotor * 10), vg: Math.round(P.vigor * 10), rd: P.ready ? 1 : 0, rr: P.rr | 0, gr: P.gr | 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
     a: [Math.round(P.aim.ang * 1000), Math.round(P.aim.pow * 1000), Math.round(P.reload * 100), Math.round(P.reloadMax * 100)],
     };
 }
@@ -4767,7 +4779,7 @@ function applySnap(s) {
     P.up = [0, 0, 0]; P.bet = 0; P.betRes = null;
     if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4, 5, 6, 7].map(i => (a.cdn[i] | 0) / 10);
     P.rally = (a.ry | 0) / 10; P.haste = (a.hs | 0) / 10; P.rotor = (a.ro | 0) / 10; P.vigor = (a.vg | 0) / 10;
-    P.rr = a.rr | 0; P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
+    P.rr = a.rr | 0; P.gr = a.gr | 0; P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
     if (Array.isArray(a.a)) { P.aim.ang = (a.a[0] | 0) / 1000; P.aim.pow = (a.a[1] | 0) / 1000; P.reload = (a.a[2] | 0) / 100; P.reloadMax = Math.max(0.01, (a.a[3] | 0) / 100); }
     if (side === S.me) {
       if (net) net.in.acts = net.in.acts.filter(x => x.n > (a.as | 0));
@@ -4890,7 +4902,7 @@ function updateHUD() {
 function dockSigNow() {
   const P = myP();
   const base = [S.mode, S.phase, S.me, S.round, S.ui.msg, JSON.stringify(S.ui.sel)];
-  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.rr, P.up.join(''), P.lock.join(''), P.bet, P.betRes ? P.betRes.join('') : '');
+  if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.rr, P.gr, S.ui.greed, P.up.join(''), P.lock.join(''), P.bet, P.betRes ? P.betRes.join('') : '');
   if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5), P ? P.cd.map(x => Math.ceil(x)).join('.') + P.gold : '');
   return base.join('|');
 }
@@ -4968,6 +4980,7 @@ function renderDock() {
     '<div class="stat odds" data-tip="Shop odds: the chance, in percent, that a shop slot offers a 1, 2, 3, 4 or 5 gold turret at your level."><span>Shop odds</span><div class="od">' + ODDS[P.level].map((o, i) => '<b style="color:' + TIER_C[i + 1] + '"><i>' + (i + 1) + 'g</i>' + o + '%</b>').join('') + '</div></div>' +
     '<button type="button" class="btn small" data-act="xp" data-tip="Buy 4 XP for 4 gold (key F). Levelling up fields another turret and improves shop odds."' + (locked || P.gold < 4 || P.level >= 10 ? ' disabled' : '') + '>Buy XP <b>4</b></button>' +
     '<button type="button" class="btn small" data-act="reroll" data-tip="Refresh the shop (key D). Costs 2 gold, then 1 more for every reroll this round. The price resets next round."' + (locked || P.gold < rerollCost(P) ? ' disabled' : '') + '>Reroll <b>' + rerollCost(P) + '</b></button>' +
+    '<button type="button" class="btn small greed' + (S.ui.greed ? ' armed' : '') + '" data-act="greed" data-tip="Greed: lift one turret on a keep mount up a star, free. You get two per game (' + (P.gr | 0) + ' left). Select a mounted turret first, or press this and then tap one."' + (locked || !(P.gr > 0) ? ' disabled' : '') + '>Greed <b>' + (P.gr | 0) + '</b></button>' +
     sound +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
     '</div><div class="shop">';
@@ -5423,7 +5436,8 @@ function onAct(a, btn) {
   else if (k0 === 'call') act({t: 'call', i: parts[1] | 0});
   else if (k0 === 'reroll') act({t: 'reroll'});
   else if (k0 === 'xp') act({t: 'xp'});
-  else if (k0 === 'ready') { act({t: 'ready'}); S.ui.sel = null; }
+  else if (k0 === 'greed') { const P = myP(), sel = S.ui.sel; if (!P || !canPlan()) return; if (sel && sel.z === 'm' && P.board[sel.i]) { act({t: 'greed', i: sel.i}); S.ui.sel = null; S.ui.greed = false; } else { S.ui.greed = !S.ui.greed; if (S.ui.greed) uiMsg('Greed: tap the mounted turret to upgrade.'); } }
+  else if (k0 === 'ready') { act({t: 'ready'}); S.ui.sel = null; S.ui.greed = false; }
   else if (k0 === 'unready') act({t: 'unready'});
   else if (k0 === 'sell') { const sel = S.ui.sel; if (sel && sel.z !== 'i') act({t: 'sell', f: sel.z, i: sel.i}); S.ui.sel = null; }
   else if (k0 === 'mute') setMute(!muted);
