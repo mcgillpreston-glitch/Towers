@@ -1379,7 +1379,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v112 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v113 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -3738,6 +3738,22 @@ function drawTurrets(side) {
     }
     ctx.restore();
   }
+  if (planning) {   // planning: every mount gets a clear ring with its hotkey number in a bubble
+    const pulse = 0.5 + 0.5 * Math.sin(S.t * 3);
+    for (let i = 0; i < 10; i++) {
+      const [x, y] = mountWorld(side, i), has = !!P.board[i], on = i === selM, lab = String(i < 9 ? i + 1 : 0);
+      ctx.save(); ctx.translate(x, y);
+      ctx.lineWidth = on ? 5 : 4; ctx.strokeStyle = on ? '#fff' : has ? 'rgba(255,230,150,.95)' : 'rgba(255,255,255,' + (0.7 + 0.3 * pulse) + ')';
+      ctx.shadowColor = 'rgba(' + F.rgb + ',1)'; ctx.shadowBlur = on ? 22 : 16; ctx.setLineDash(has ? [] : [6, 4]);
+      ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      const bx = side ? 15 : -15, by = -17;
+      ctx.shadowBlur = 10; ctx.fillStyle = on ? '#fff' : '#ffd76a';
+      ctx.beginPath(); ctx.arc(bx, by, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0; ctx.lineWidth = 2.6; ctx.strokeStyle = '#2a1608'; ctx.stroke();
+      ctx.fillStyle = '#2a1608'; ctx.font = '900 19px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(lab, bx, by + 1);
+      ctx.restore();
+    }
+  }
 }
 /* units face -x in their own frame; HEX units are mirrored to face right */
 // glows are drawn from small cached sprites (one per colour and size) instead of building a gradient every time
@@ -5453,7 +5469,13 @@ function onAct(a, btn) {
   if (S.ui) { if (k0 !== 'stats' && k0 !== 'resume' && k0 !== 'mute' && k0 !== 'wiki' && k0 !== 'wikix' && k0 !== 'about' && k0 !== 'aboutx' && k0 !== 'logdl') S.ui.menu = false; if (k0 === 'resume') S.ui.wiki = null; if (k0 !== 'stats') S.ui.tab = false; }
   dockSig = ''; overlaySig = '';
 }
-for (const id of ['overlay', 'dock', 'sideL', 'sideR']) {
+for (const id of ['sideL', 'sideR']) {   // battle calls fire on press, so a panel refresh between press and release can never swallow the click
+  $(id).addEventListener('pointerdown', e => {
+    const b = e.target && e.target.closest ? e.target.closest('[data-act^="call:"]') : null;
+    if (b && e.button === 0 && !b.disabled) { e.preventDefault(); onAct(b.getAttribute('data-act'), b); sideSig = ''; }
+  });
+}
+for (const id of ['overlay', 'dock']) {
   $(id).addEventListener('click', e => {
     const b = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
     if (performance.now() < dragSup) return;
