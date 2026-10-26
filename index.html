@@ -990,10 +990,10 @@ function stripCores(P, f, fi) {   // pull every core off a turret into the core 
   const u = (f === 'm' ? P.board : P.bench)[fi];
   if (!u || !u.items.length) return 'No cores to remove.';
   if (P.gold < STRIP_COST) return 'Removing cores costs ' + STRIP_COST + ' gold.';
-  if (P.items.length + u.items.length > MAX_ITEMS) return 'The core rack needs room for ' + u.items.length + ' more.';
-  while (u.items.length) P.items.push(u.items.pop());
+  let lost = 0;
+  while (u.items.length) { const c = u.items.pop(); if (P.items.length < MAX_ITEMS) P.items.push(c); else lost++; }   // a full rack: the extra cores are simply discarded
   P.gold -= STRIP_COST;
-  return '';
+  return lost ? lost + (lost === 1 ? ' core was' : ' cores were') + ' lost: the rack is full.' : '';
 }
 function buyUpg(P, side, i) {
   const U = UPG[i]; if (!U) return '';
@@ -1382,7 +1382,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v120 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v121 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -5006,7 +5006,7 @@ function selInfo(P) {
   const R = ROSTER[u.r], s = statsFor(u, traitLevels(P.board).lv);
   const perShot = Math.round(s.dmg * (s.count || 1) * (s.kind === 'beam' ? 10 : 1));
   return '<span><b style="color:' + TIER_C[R.tier] + '">' + R.name + '</b> <span style="color:' + STAR_C[u.star] + '">' + '★'.repeat(u.star) + '</span> · ' + R.traits.map(t => TRAITS[t].name).join(' · ') + ' · ' + perShot + (s.kind === 'beam' ? ' dps' : ' dmg') + ' · ' + Math.round(s.range / PX_PER_M) + '&nbsp;m' + (roofNote(R) ? ' · ' + roofNote(R) : '') + '</span>' +
-    (u.items.length ? '<button type="button" class="btn small" data-act="strip" data-tip="Take every core off this turret and back into the core rack. Costs 10 gold, and the rack needs room.">Remove cores <b>10g</b></button>' : '') + '<button type="button" class="btn small" data-act="sell">Sell for <b>' + sellValue(u) + '</b></button><span class="h">Tap a mount or bench slot to move it.</span>';
+    (u.items.length ? '<button type="button" class="btn small" data-act="strip" data-tip="Take every core off this turret and back into the core rack. Costs 10 gold. Cores that do not fit in a full rack are discarded.">Remove cores <b>10g</b></button>' : '') + '<button type="button" class="btn small" data-act="sell">Sell for <b>' + sellValue(u) + '</b></button><span class="h">Tap a mount or bench slot to move it.</span>';
 }
 function applyMergeHl() {
   const d = $('dock'), m = S.ui && S.ui.mhl, P = myP();
