@@ -771,19 +771,19 @@ const STAR_C = ['', '#d08a4a', '#dfe3f2', '#ffd23a'];
 const ROSTER = [
   {id: 'vulcan',      name: 'Vulcan',        tier: 1, kind: 'hitscan', range: 360, rate: 20,   dmg: 4.0, air: 1, ground: 1, traits: ['kinetic', 'rapid'],     rgb: '255,210,58',  short: 'Rotary cannon, shreds light units'},
   {id: 'flak',        name: 'Flak Nest',     tier: 1, kind: 'flak',    range: 520, rate: 3.8,  dmg: 34,  air: 1, ground: 0, splash: 52, traits: ['skyguard', 'explosive'], rgb: '255,154,58', short: 'Bursting shells, drones only'},
-  {id: 'cryo',        name: 'Cryo Lance',    tier: 1, kind: 'cryo',    range: 320, rate: 6,    dmg: 3.6,   air: 1, ground: 1, traits: ['cryo', 'energy'],       rgb: '127,230,255', short: 'Slows targets by half'},
+  {id: 'cryo',        name: 'Cryo Lance',    tier: 1, kind: 'cryo',    range: 320, rate: 6,    dmg: 7.2,   air: 1, ground: 1, traits: ['cryo', 'energy'],       rgb: '127,230,255', short: 'Slows targets by half'},
   {id: 'torch',       name: 'Plasma Torch',  tier: 1, kind: 'torch',   range: 240, rate: 14,   dmg: 3.0, air: 1, ground: 1, cone: 0.42, traits: ['plasma', 'rapid'], rgb: '255,106,42', short: 'Cone of fire at the gate'},
   {id: 'arc',         name: 'Arc Coil',      tier: 2, kind: 'arc',     range: 270, rate: 2.4,  dmg: 19,  air: 1, ground: 1, chain: 4, traits: ['energy', 'storm'],  rgb: '160,140,255', short: 'Lightning jumps four targets'},
-  {id: 'swarm',       name: 'Swarm Pod',     tier: 2, kind: 'swarm',   range: 550, rate: 0.9,  dmg: 8.8,  air: 1, ground: 1, count: 4, splash: 22, traits: ['explosive', 'skyguard'], rgb: '125,255,176', short: 'Four homing micro-missiles'},
+  {id: 'swarm',       name: 'Swarm Pod',     tier: 2, kind: 'swarm',   range: 550, rate: 1,    dmg: 10.5, air: 1, ground: 1, count: 4, splash: 26, traits: ['explosive', 'skyguard'], rgb: '125,255,176', short: 'Four homing micro-missiles'},
   {id: 'needle',      name: 'Needle Gun',    tier: 2, kind: 'hitscan', range: 460, rate: 4.4,  dmg: 8,  air: 1, ground: 1, traits: ['kinetic', 'sniper'],    rgb: '220,230,255', short: 'Long-range precision shots'},
-  {id: 'mortar',      name: 'Plasma Mortar', tier: 3, kind: 'mortar',  range: 740, rate: 1,    dmg: 34,  air: 0, ground: 1, min: 130, splash: 56, count: 1, traits: ['plasma', 'explosive'], rgb: '255,63,174', short: 'Lobbed plasma, wide splash'},
+  {id: 'mortar',      name: 'Plasma Mortar', tier: 3, kind: 'mortar',  range: 740, rate: 1.1,  dmg: 54,  air: 0, ground: 1, min: 130, splash: 56, count: 1, traits: ['plasma', 'explosive'], rgb: '255,63,174', short: 'Lobbed plasma, wide splash'},
   {id: 'rail',        name: 'Railgun',       tier: 3, kind: 'rail',    range: 560, rate: 0.9,  dmg: 28,  air: 1, ground: 1, traits: ['kinetic', 'sniper'],    rgb: '220,244,255', short: 'Pierces up to 3 targets, weakens per hit'},
   {id: 'tesla',       name: 'Tesla Spire',   tier: 3, kind: 'arc',     range: 300, rate: 1.7,  dmg: 21,  air: 1, ground: 1, chain: 7, traits: ['storm', 'heavy'],   rgb: '190,160,255', short: 'Lightning jumps seven targets'},
-  {id: 'hellfire',    name: 'Hellfire Rack', tier: 4, kind: 'mortar',  range: 760, rate: 0.9,  dmg: 32,  air: 0, ground: 1, min: 130, splash: 52, count: 3, traits: ['explosive', 'heavy'], rgb: '255,90,60', short: 'Three plasma shells per volley'},
-  {id: 'lancer',      name: 'Photon Lancer', tier: 4, kind: 'rail',    range: 640, rate: 0.55, dmg: 40, air: 1, ground: 1, traits: ['sniper', 'energy'],     rgb: '255,240,170', short: 'Piercing beam, up to 5 targets, weakens per hit'},
+  {id: 'hellfire',    name: 'Hellfire Rack', tier: 4, kind: 'mortar',  range: 760, rate: 1,    dmg: 46,  air: 0, ground: 1, min: 130, splash: 56, count: 3, traits: ['explosive', 'heavy'], rgb: '255,90,60', short: 'Three plasma shells per volley'},
+  {id: 'lancer',      name: 'Photon Lancer', tier: 4, kind: 'rail',    range: 640, rate: 0.62, dmg: 64, air: 1, ground: 1, traits: ['sniper', 'energy'],     rgb: '255,240,170', short: 'Piercing beam, up to 5 targets, weakens per hit'},
   {id: 'glacier',     name: 'Glacier Core',  tier: 4, kind: 'frost',   range: 310, rate: 0.9,  dmg: 33,  air: 1, ground: 1, traits: ['cryo', 'heavy'],        rgb: '170,240,255', short: 'Freezing pulse hits all nearby'},
-  {id: 'singularity', name: 'Singularity',   tier: 5, kind: 'void',    range: 620, rate: 0.36, dmg: 32,  air: 1, ground: 1, radius: 80, traits: ['storm', 'heavy'], rgb: '200,120,255', short: 'Black hole that drags and crushes'},
-  {id: 'sunlance',    name: 'Sunlance',      tier: 5, kind: 'beam',    range: 720, rate: 10,   dmg: 6.4,   air: 1, ground: 1, traits: ['plasma', 'sniper'],     rgb: '255,220,120', short: 'Beam that burns hotter on one target'}
+  {id: 'singularity', name: 'Singularity',   tier: 5, kind: 'void',    range: 620, rate: 0.42, dmg: 50,  air: 1, ground: 1, radius: 92, traits: ['storm', 'heavy'], rgb: '200,120,255', short: 'Black hole that drags and crushes'},
+  {id: 'sunlance',    name: 'Sunlance',      tier: 5, kind: 'beam',    range: 720, rate: 10,   dmg: 5.2,   air: 1, ground: 1, traits: ['plasma', 'sniper'],     rgb: '255,220,120', short: 'Beam that burns hotter on one target'}
 ];
 const TRAITS = {
   kinetic:   {name: 'Kinetic',   tiers: [2, 3], desc: ['Kinetic +25% damage', 'Kinetic +60% damage']},
@@ -1371,7 +1371,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v125 · 25 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v126 · 28 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
