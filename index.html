@@ -143,7 +143,7 @@ canvas{display:block;touch-action:manipulation;max-width:100%;border:1px solid r
 .rules{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:14px}
 .rules li{padding-left:14px;position:relative;line-height:1.4}
 .rules li::before{content:"";position:absolute;left:0;top:.5em;width:6px;height:6px;transform:rotate(45deg);background:var(--gild);box-shadow:0 0 6px rgba(var(--sd-rgb),.6)}
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.modes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .mode{display:flex;flex-direction:column;gap:8px;padding:12px;background:rgba(0,0,0,.35);border:1px solid rgba(246,226,168,.4);box-shadow:inset 0 0 0 1px rgba(5,3,11,.8),inset 0 1px 0 rgba(255,255,255,.05);min-width:0}
 .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .btn{font:700 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:#f7ecd0;background:linear-gradient(180deg,var(--bt0) 0%,var(--bt1) 48%,var(--bt2) 100%) padding-box,var(--gild) border-box;border:2px solid transparent;padding:10px 14px;cursor:var(--cur-hot);clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,8px 100%,0 50%);white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 0 rgba(0,0,0,.6);text-shadow:0 1px 2px rgba(0,0,0,.8)}
@@ -583,6 +583,32 @@ html[data-ui=desktop][data-side="1"] .eco .stat.grow{gap:1px}
 html[data-ui=desktop][data-side="1"] .eco .stat.grow .xpbar{margin-block:2px}
 html[data-ui=desktop][data-side="1"] .eco .stat .od b{font-size:15px;min-width:30px}
 
+
+/* live features */
+.wavebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 12px;margin:2px 0;border:1px solid rgba(var(--ec),.45);background:linear-gradient(90deg,rgba(var(--ec),.14),rgba(0,0,0,.25) 60%);font:700 12px var(--f-display);letter-spacing:.06em;cursor:var(--cur-hot)}
+.wavebar .wl,.relicrow .wl{font:700 10px var(--f-display);letter-spacing:.2em;text-transform:uppercase;color:var(--sd-lt,#f0d79a)}
+.wavebar .sil{height:28px;width:auto;filter:brightness(0) drop-shadow(0 0 1.5px rgba(var(--ec),1)) drop-shadow(0 0 6px rgba(var(--ec),.75))}
+.wavebar b{color:#fff2cf;font-size:13px}.wavebar i{font-style:normal;color:var(--muted)}
+.wavebar .wt{margin-left:auto;font:600 11.5px var(--f-ui);letter-spacing:.02em;color:var(--muted)}
+.relicrow{display:flex;align-items:center;gap:8px;padding:0 12px}
+.rchips{display:inline-flex;gap:6px}.rchips i{font-style:normal;font-size:15px;line-height:1;text-shadow:0 0 8px currentColor;cursor:var(--cur-hot)}
+.card.relicc{width:min(600px,calc(100% - 16px));padding:16px 18px}.card.relicc .relic{padding:12px 8px}.card.relicc h1{font-size:26px}
+.relics3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.relic{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;padding:16px 12px;background:var(--fil) center/56px 56px repeat padding-box,linear-gradient(180deg,var(--pn0,#1b1544),var(--pn2,#0a0716)) padding-box,var(--gild) border-box;border:2px solid transparent;color:var(--ink);font-family:var(--f-ui);cursor:var(--cur-hot);transition:transform .15s,box-shadow .15s}
+.relic:hover{transform:translateY(-3px);box-shadow:0 0 24px -4px var(--rc)}
+.relic i{font-style:normal;font-size:36px;line-height:1;color:var(--rc);text-shadow:0 0 16px var(--rc)}
+.relic b{font:700 14px var(--f-display);letter-spacing:.06em;color:#fff2cf}
+.relic span{font-size:12.5px;line-height:1.4;color:var(--muted)}
+@media(max-width:620px){.relics3{grid-template-columns:1fr}}
+html[data-ui=mobile] .relics3{grid-template-columns:1fr}
+.crowns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:2px}
+.crowns .cr{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid rgba(200,190,230,.25);font:700 11px var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:rgba(200,190,230,.55)}
+.crowns .cr i{font-style:normal;font-size:16px}
+.crowns .cr.on{color:#ffe9a8;border-color:rgba(255,214,120,.7);background:rgba(255,200,90,.12);text-shadow:0 0 8px rgba(255,200,90,.6)}
+.crowns .crt{margin-left:auto;font:700 11px var(--f-display);letter-spacing:.12em;color:var(--warn)}
+.skins{flex-wrap:wrap;gap:8px}.skins .skw{display:inline-block;width:14px;height:14px;margin-right:7px;vertical-align:-2px;background:var(--sk);border:1px solid #000;transform:rotate(45deg)}
+.taunt{font-style:italic;color:#ffc9bd;margin:0}p.taunt{font-style:italic}.namebar .tpop{justify-content:flex-end;text-transform:none;letter-spacing:0;font:600 12px var(--f-ui);color:var(--ink)}.namebar .tpop .hint{font-size:10.5px}.namebar .tpop input{width:auto;margin:0 5px 0 0;vertical-align:-2px}.btn.call.tauntb b{color:#ffc9bd}.taunt b{font-style:normal;color:#ff9a85}
+.mode.siege{background:linear-gradient(180deg,rgba(255,200,90,.1),rgba(0,0,0,.35))}
 /* side theme: the whole chrome takes the player's colour */
 html[data-team="0"]{--void:#02040c;--lq0:#10204a;--lq1:#0a1532;--lq2:#060c1e;--pn0:#122552;--pn1:#0b1530;--pn2:#070e1f;--ch0:#0f1f44;--ch1:#070e1f;--bt0:#1f3a6e;--bt1:#102046;--bt2:#081226;--cd0:rgba(14,30,66,.97);--cd1:rgba(6,11,26,.98);--ck0:#0d1b3c}
 html[data-team="1"]{--void:#0a0205;--sd:#FF7969;--sd-rgb:255,121,105;--sd-dk:#b42b22;--sd-md:#d23a2c;--sd-lt:#ffd3cb;--lq0:#3c1020;--lq1:#250a13;--lq2:#15050a;--pn0:#3f1322;--pn1:#240a12;--pn2:#15060a;--ch0:#34101b;--ch1:#1a060b;--bt0:#5c1e2b;--bt1:#34101a;--bt2:#1a070b;--cd0:rgba(54,14,26,.97);--cd1:rgba(22,6,10,.98);--ck0:#2c0b16}
@@ -630,7 +656,7 @@ html[data-team] .chip .kb{border-color:rgba(var(--sd-rgb),.6)}
 const W = 1600, H = 900, GY = H, G = 1130, STEP = 1 / 120, PX_PER_M = 10;
 // Every unit class keeps its own speed; this one global factor offsets the longer winding route (about 1290 units against the old 1000-unit lane).
 const PACE = 1.5;   // 1.4 on the old 1269-unit route; scaled to the new 1359-unit route so crossing time is unchanged
-const setupLen = r => r <= 2 ? 30 : 45, EXT_LEN = 15;   // 30 s of planning in the first two rounds (little to buy yet), 45 s after; anyone not yet ready then gets one automatic 15 s extension
+const setupLen = r => S && S.siege ? SIEGE_PLAN : r <= 2 ? 30 : 45, EXT_LEN = 15;   // 30 s of planning in the first two rounds (little to buy yet), 45 s after; anyone not yet ready then gets one automatic 15 s extension
 const BATTLE_ZOOM = 1, SETUP_LEN = 45, COMBAT_LEN = 30, INTRO_LEN = 2.4, RESULT_LEN = 11, KEEP_HP = 1000, BPM = 128, WALL_MUL = 1.2, UNIT_CAP = 170;
 // keeps are drawn at art scale around an art ground line, then scaled up into the world
 const TS = 1.4, US = 0.92, LG = 480;
@@ -891,6 +917,7 @@ function newPlayer() {
   return {
     bet: 0, betRes: null, lock: [0, 0, 0, 0, 0], up: [0, 0, 0], cd: Array(8).fill(0), gr: 2, rally: 0, haste: 0, rotor: 0, vigor: 0, hp: 100, keep: KEEP_HP, shield: 0, gold: 10, level: 3, xp: 0, streak: 0,
     shop: [-1, -1, -1, -1, -1], bench: Array(BENCH).fill(null), board: Array(10).fill(null), items: [],
+    relics: [], relicOffer: null, shardN: 0, shardGot: 0, prismN: 0, cascBest: 0,
     ready: false, kills: 0, roundKills: 0, lastDmg: 0, lastIncome: 0, msg: '', msgN: 0, actSeen: 0,
     turrets: [], traitLv: {}, boardSig: '',
     aim: {ang: 0.5, pow: 0.8}, reload: 1.5, reloadMax: CANNON.reload, recoil: 0, odT: 0, stormT: 4
@@ -1064,10 +1091,14 @@ function applyAct(side, a) {
   const P = S.p[side];
   if (!a || typeof a !== 'object') return '';
   if (a.t === 'call') return callIn(side, a.i | 0);
+  if (a.t === 'shard') return S.phase === 'combat' ? shardCollect(side, a.id | 0) : '';
+  if (a.t === 'taunt') return S.phase === 'combat' ? tauntPop(side, a.s) : '';
   if (S.phase !== 'setup') return 'Planning is over for this round.';
   if (a.t === 'unready') { P.ready = false; return ''; }
   if (P.ready) return 'You are locked in for this round.';
+  if (S.siege && ['buy', 'reroll', 'greed', 'xp', 'sell', 'strip'].indexOf(a.t) >= 0) return 'Not in the Daily Siege: place the turrets and cores you were given.';
   switch (a.t) {
+    case 'relic': return relicPick(side, a.i | 0);
     case 'buy': return buyShop(P, a.i | 0, side);
     case 'reroll': return reroll(P, side);
     case 'greed': return greedUp(P, side, a.i | 0);
@@ -1143,7 +1174,7 @@ function newMatch(mode, diff) {
     mode, diff: diff || (old && old.diff) || 'hard',
     phase: 'setup', phaseT: mode === 'demo' ? 1.5 : setupLen(1), round: 1, timeLeft: COMBAT_LEN,
     p: [newPlayer(), newPlayer()],
-    units: [], piles: [], projs: [], drops: [], strikes: [], fields: [], rings: [], fires: [], parts: [], texts: [], decals: [], beams: [], blasts: [], titles: [], events: [],
+    units: [], piles: [], projs: [], drops: [], shards: [], pfl: [], wave: null, crowns: null, crownFx: null, strikes: [], fields: [], rings: [], fires: [], parts: [], texts: [], decals: [], beams: [], blasts: [], titles: [], events: [],
     spawnT: 1, nextId: 1, shake: 0, flash: 0, flashC: '255,255,255', t: 0, kick: 0, energy: 0.3,
     me: mode === 'host' || mode === 'cpu' ? 0 : -1, winner: -1, rw: -1, loser: -1,
     chaos: null, chaosAt: [], wind: 0, dropDone: 0,
@@ -1158,10 +1189,11 @@ function newMatch(mode, diff) {
     for (const P of S.p) { P.board[4] = unitOf(randomOfTier(1)); rollShop(P); }
     if (mode === 'demo') { S.p[0].hp = S.p[1].hp = 60; cpuSetup(0, 'hard'); cpuSetup(1, 'hard'); }
     if (mode === 'cpu') cpuSetup(1, S.diff);
+    if (mode !== 'demo') S.wave = pickWave(1);
   }
   for (const P of S.p) buildTurrets(P);
 }
-function clearField() { TRACES = []; S.units = []; S.piles = []; S.projs = []; S.drops = []; S.strikes = []; S.fields = []; S.beams = []; S.rings = []; S.fires = []; S.chaos = null; ORB.imp = [0, 0]; ORB.f = [0, 0]; ORB.o = ORB.ov = 0; ORB.rings = []; ORB.sp = []; }
+function clearField() { TRACES = []; S.units = []; S.piles = []; S.projs = []; S.drops = []; S.shards = []; S.pfl = []; S.strikes = []; S.fields = []; S.beams = []; S.rings = []; S.fires = []; S.chaos = null; ORB.imp = [0, 0]; ORB.f = [0, 0]; ORB.o = ORB.ov = 0; ORB.rings = []; ORB.sp = []; }
 const streakBonus = st => { const a = Math.abs(st); return a >= 5 ? 3 : a >= 4 ? 2 : a >= 2 ? 1 : 0; };
 function setPhase(ph, t) { S.phase = ph; S.phaseT = t || 0; phaseFx(ph); }
 function startSetup() {
@@ -1178,6 +1210,7 @@ function startSetup() {
     if (S.round % 3 === 0 && P.items.length < MAX_ITEMS) P.items.push(randItem());
   }
   if (S.round % 3 === 0) ev(['u']);
+  if (S.mode !== 'demo') { S.wave = pickWave(S.round); if (S.round % 3 === 0) for (let s2 = 0; s2 < 2; s2++) offerRelics(s2); }
   setPhase('setup', S.mode === 'demo' ? 1.5 : setupLen(S.round));
   if (S.mode === 'demo') { cpuSetup(0, 'hard'); cpuSetup(1, 'hard'); }
   if (S.mode === 'cpu') cpuSetup(1, S.diff);
@@ -1196,10 +1229,12 @@ function startCombat() {
   clearField();
   S.ot = 0; for (const P of S.p) { P.cd = Array(8).fill(0); P.rally = 0; P.haste = 0; P.rotor = 0; P.vigor = 0; }
   S.timeLeft = COMBAT_LEN; S.spawnT = 0.5; S.dropDone = 0; S.rw = -1; S.loser = -1;
-  S.chaosAt = S.round >= 2 ? [rnd(5, 9)].concat(S.round >= 5 ? [rnd(17, 21)] : []) : [];
+  S.chaosAt = S.round >= 2 && !S.siege ? [rnd(5, 9)].concat(S.round >= 5 ? [rnd(17, 21)] : []) : [];
+  liveCombatStart();
   if (S.mode === 'demo') setPhase('combat'); else setPhase('intro', INTRO_LEN);
 }
 function hitKeep(side, amt) {
+  if (S.siege && side === 1) return;   // the Daily Siege scores your defence only: the Crimson Keep cannot fall
   const P = S.p[side];
   if (P.shield > 0) { const a = Math.min(P.shield, amt); P.shield -= a; amt -= a; }
   P.keep -= amt;
@@ -1237,6 +1272,7 @@ function endCombat(fallen) {
     P.gold += ret; P.betRes = [P.bet, ret, mult]; P.bet = 0;
   });
   S.rw = w; S.loser = fallen; S.slowT = 1.6;
+  liveRoundEnd();
   if (w >= 0) { S.stats.p[w].wins++; S.stats.p[w].dealt += dmg; }
   S.stats.rounds.push({r: S.round, w, keep: [Math.ceil(Math.max(0, P0.keep)), Math.ceil(Math.max(0, P1.keep))], kills: [P0.roundKills, P1.roundKills], dmg, lv: [P0.level, P1.level]});
   setPhase('result', S.mode === 'demo' ? 1.5 : RESULT_LEN);
@@ -1386,7 +1422,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v128 · 30 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v129 · 30 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -1402,7 +1438,7 @@ const BK_CLAUDE = {
   async listLb() { const s = await this.db.collection('lb').limit(500).get(); return s.docs.map(d => Object.assign({id: d.id}, d.data())); },
   async putLb(doc) { await this.db.doc('lb/' + this.uid).set(Object.assign({}, doc, {uid: this.uid, v: SCHEMA})); },
   async listBuilds() { const s = await this.db.collection('ghosts').limit(300).get(); return s.docs.map(d => Object.assign({id: d.id}, d.data())); },
-  async putBuilds(handle, builds) { await this.db.doc('ghosts/' + this.uid).set({handle, t: Date.now(), builds, v: SCHEMA}); },
+  async putBuilds(handle, builds) { await this.db.doc('ghosts/' + this.uid).set({handle, taunt: TAUNT, tp: TPOP ? 1 : 0, t: Date.now(), builds, v: SCHEMA}); },
   async listReports() { const s = await this.db.collection('reports').limit(500).get(); return s.docs.map(d => ({id: d.id, m: (d.data() || {}).m})); },
   async putRun(id, doc) { await this.db.doc('runs/' + this.uid + '/m/' + id).set(doc); },
   async putReports(m) { await this.db.doc('reports/' + this.uid).set({m, t: Date.now(), v: SCHEMA}); }
@@ -1657,25 +1693,21 @@ async function pvpPool() {
       PVP.shared = 0;
       for (const v of snap) {
         if (v.id === PVP.uid) continue;
-        for (const b of (Array.isArray(v.builds) ? v.builds : [])) if (b && Array.isArray(b.rounds) && b.rounds.length >= 2 && (b.gv || 1) === GAME_VER) { pool.push({id: b.id, handle: cleanHandle(v.handle) || 'Player', rounds: b.rounds, src: 'shared', n: b.n || b.rounds.length}); PVP.shared++; }
+        for (const b of (Array.isArray(v.builds) ? v.builds : [])) if (b && Array.isArray(b.rounds) && b.rounds.length >= 2 && (b.gv || 1) === GAME_VER) { pool.push({id: b.id, handle: cleanHandle(v.handle) || 'Player', taunt: cleanTaunt(v.taunt), tp: !!v.tp, rounds: b.rounds, src: 'shared', n: b.n || b.rounds.length}); PVP.shared++; }
       }
     } catch (e) { PVP.err = 'Could not reach the shared builds'; }
   }
   for (const g of lsGet(GHKEY, [])) if (g && Array.isArray(g.rounds)) pool.push(Object.assign({src: 'file'}, g));
-  if (!pool.length) for (const g of lsGet(MYKEY, [])) if (g && Array.isArray(g.rounds)) pool.push(Object.assign({}, g, {handle: 'Your past self', src: 'self'}));
+  if (!pool.length) for (const g of lsGet(MYKEY, [])) if (g && Array.isArray(g.rounds)) pool.push(Object.assign({}, g, {handle: 'Your past self', taunt: TAUNT, tp: TPOP, src: 'self'}));
   return pool;
 }
 async function startGhost() {
   if (PVP.busy) return; PVP.busy = true; overlaySig = '';
   let pool = []; try { pool = await pvpPool(); } catch (e) {}
   PVP.busy = false;
+  if (pool.length) { useGhost(pool[Math.floor(Math.random() * pool.length)]); return; }
   leaveRoom(); newMatch('cpu', 'hard');
-  if (pool.length) {
-    S.ghost = pool[Math.floor(Math.random() * pool.length)];
-    if (S.log) { S.log.mode = 'ghost'; S.log.ghost = {id: S.ghost.id, handle: S.ghost.handle, src: S.ghost.src}; }
-    ghostSetup(1); buildTurrets(S.p[1]);
-    S.ui.msg = 'Rival found: ' + S.ghost.handle; S.ui.msgT = 4;
-  } else { S.ui.msg = 'No ranked builds are saved yet, so this one is against the Hard CPU. Ranked online matches become async rivals.'; S.ui.msgT = 6; }
+  { S.ui.msg = 'No ranked builds are saved yet, so this one is against the Hard CPU. Ranked online matches become async rivals.'; S.ui.msgT = 6; }
   overlaySig = ''; dockSig = '';
 }
 function ghostSetup(side) {
@@ -1743,6 +1775,7 @@ function lbHtml() {
     '<div class="btns"><button class="btn quiet" data-act="lbx" type="button">Back</button><label class="btn filebtn">Import builds from a match file<input id="ghIn" type="file" accept=".json,application/json"></label></div>';
 }
 function afterResult() {
+  if (S.siege) { siegeFinish(); setPhase('over'); overlaySig = ''; return; }
   if (S.p[0].hp <= 0 || S.p[1].hp <= 0) {
     S.winner = S.p[0].hp === S.p[1].hp ? -1 : S.p[0].hp > S.p[1].hp ? 0 : 1;
     if (S.mode === 'demo') { newMatch('demo'); return; }
@@ -2253,6 +2286,7 @@ function ev(d) {
   applyEvent(d);
 }
 function applyEvent(d) {
+  if (liveEvent(d)) return;
   const type = d[0], demo = S.mode === 'demo';
   if (type === 'f') {
     const side = d[1], P = S.p[side]; if (!P) return;
@@ -2380,6 +2414,7 @@ const EARLY_EASE = {1: 1.5, 2: 1.1};   // the first rounds have only a few turre
 function pickType(I) {
   // ground about 75% of spawns at the start of a round's first fights, about 60% late; the rest is air (Wasp Drones, Lancer Dragonflies, rare Scarab Bombers)
   const w = [['trooper', 5], ['bike', 1 + 2.2 * I], ['bulwark', 0.6 + 1.8 * I], ['drone', 1.2 + 2.0 * I], ['lancer', 0.5 + 1.5 * I], ['scarab', 0.15 + 0.9 * I]];
+  if (S.wave) for (const e of w) if (e[0] === S.wave.f) e[1] *= e[0] === 'trooper' ? 1.5 : 2.4;
   let tot = 0; for (const [, x] of w) tot += x;
   let r = Math.random() * tot;
   for (const [t, x] of w) { r -= x; if (r <= 0) return t; }
@@ -2397,6 +2432,7 @@ function spawn(type, side) {
   if (d.fly) launchDrone(u);
   placeUnit(u);
   S.units.push(u);
+  if (S.wave && type === S.wave.f && S.phase === 'combat') { const D = S.p[side ^ 1]; D.featSeen = (D.featSeen | 0) + 1; }
   if (type === 'titan' && S.phase === 'combat') { u.warp = 1.2; ev(['w', Math.round(u.x), Math.round(u.y), side]); if (!S.quiet) ev(['n', 0, side]); }
 }
 function rsCredit(side, s, eff, pure) {
@@ -2409,6 +2445,7 @@ function hurt(u, d, side, real, s, num, pure) {
   u.flash = 0.07;
   if (!real) return;
   if (S.p[u.side].rally > 0) d *= 0.9;
+  d *= liveHurtMul(u, side, s);
   if (s) { if (u.fly) d *= s.sky; if (u.slow > 0) d *= s.cryoBonus; if (s.burn) u.burn = {dps: s.burn, t: 2, side, slot: s.slot}; }
   if (!pure) d = Math.max(d * 0.5, d - u.armor);
   rsCredit(side, s, Math.max(0, Math.min(d, u.hp)), pure); u.lastSlot = s && s.slot != null ? s.slot : -1;
@@ -2424,8 +2461,9 @@ function splash(x, y, R, dmg, side, real, mode, num, cap, s) {
     if (mode === 'ground' && u.fly) continue;
     const [cx, cy] = ucenter(u), dist = Math.hypot(cx - x, cy - y);
     if (dist < R + u.w / 2) {
-      n++;
+      n++; if (real) u.spl = S.t;
       hurt(u, dmg * (1 - 0.5 * Math.min(1, dist / R)), side, real, s, num);
+      if (real) u.lastSpl = u.hp <= 0;
       if (real && !u.fly && u.type !== 'titan') nudgeUnit(u, Math.sign((cx - x) * u.tx + (cy - y) * u.ty || 1) * rnd(4, 12) * R / 50);
     }
   }
@@ -2448,7 +2486,7 @@ function turretsUpdate(side, dt, real) {
     const T = P.turrets[i];
     if (!T) continue;
     const s = T.s;
-    T.flash = Math.max(0, T.flash - dt); T.cd -= dt; T.scanT -= dt;
+    T.flash = Math.max(0, T.flash - dt); T.cd -= dt * (P.relics && P.relics.indexOf('overclock') >= 0 && COMBAT_LEN - S.timeLeft < 10 ? 1.25 : 1); T.scanT -= dt;
     const [mx, my] = mountWorld(side, i);
     if (T.tgt && (T.tgt.gone || T.tgt.hp <= 0)) T.tgt = null;
     if (T.tgt) { const [cx, cy] = ucenter(T.tgt), d = Math.hypot(cx - mx, cy - my); if (d > s.range * 1.05 || (s.min && d < s.min * 0.9)) T.tgt = null; }
@@ -2724,9 +2762,9 @@ function simulate(dt) {
   S.timeLeft -= dt;
   if (S.mode === 'host') hostReadGuest();
   // battle pay: 1 gold every 2.5 s of combat, so call-ins are affordable even after a full shop
-  for (const P of S.p) { P.pay = (P.pay || 0) + dt; if (P.pay >= 2.5) { P.pay -= 2.5; P.gold += 1; } }
+  liveTick(dt);
   for (const P of S.p) { P.rally = Math.max(0, P.rally - dt); P.haste = Math.max(0, P.haste - dt); P.rotor = Math.max(0, P.rotor - dt); P.vigor = Math.max(0, P.vigor - dt); for (let j = 0; j < NCALL; j++) P.cd[j] = Math.max(0, P.cd[j] - dt); }
-  if (S.mode === 'cpu' && S.diff === 'hard' && !S.ghost) cpuCalls(1, dt);
+  if (S.mode === 'cpu' && S.diff === 'hard' && !S.ghost && !S.siege) cpuCalls(1, dt);
   // overtime: if both keeps are still untouched after 20 s, titans keep marching until somebody leaks
   if (COMBAT_LEN - S.timeLeft >= 16 && S.p[0].keep >= KEEP_HP - 0.5 && S.p[1].keep >= KEEP_HP - 0.5) {
     if (!S.ot) { S.ot = 1; S.otT = 0; ev(['n', 2, 0]); }
@@ -2758,7 +2796,8 @@ function simulate(dt) {
   }
   S.strikes = S.strikes.filter(s => !s.dead);
   S.spawnT -= dt;
-  if (S.spawnT <= 0 && S.units.length < UNIT_CAP) {
+  if (S.siege) siegeSpawn(el);
+  else if (S.spawnT <= 0 && S.units.length < UNIT_CAP) {
     let t = pickType(I); if (TYPES[t].fly && S.round <= 3 && S.units.reduce((a, u) => a + (u.fly && u.side === 0 && u.hp > 0 ? 1 : 0), 0) >= 12) t = 'trooper';   // early rounds: at most 12 drones in the air per side
     const n = (t === 'scarab' ? 1 : 1 + (t === 'lancer' ? 1 : 0)) + (t === 'scarab' ? 0 : (Math.random() < 0.3 * I ? 1 : 0) + (Math.random() < 0.15 * I ? 1 : 0));   // Dragonflies come in pairs, Scarabs singly
     for (let j = 0; j < n; j++) { spawn(t, 0); spawn(t, 1); }
@@ -2777,6 +2816,7 @@ function breach(u) {
   u.breached = true; u.hp = 0;
   if (S.rs) S.rs.br[u.side ^ 1].push([u.type, Math.round(dmg), Math.round((COMBAT_LEN - S.timeLeft) * 10) / 10]);
   hitKeep(u.side ^ 1, dmg);
+  if (S.wave && u.type === S.wave.f) S.p[u.side ^ 1].featLeak = (S.p[u.side ^ 1].featLeak || 0) + dmg;
   const [x, y] = ucenter(u);
   ev(['b', u.side ^ 1, Math.round(x), Math.round(y), Math.round(dmg), u.type === 'titan' ? 1 : 0]);
 }
@@ -2836,6 +2876,7 @@ function worldStep(dt, live) {
   for (let s = 0; s < 2; s++) turretsUpdate(s, dt, true);
   stepProjs(dt, true);
   stepFields(dt, true);
+  shatN = 0;
   for (const u of S.units) {
     if (u.hp > 0 || u.gone) continue;
     u.gone = true;
@@ -2844,6 +2885,7 @@ function worldStep(dt, live) {
     if (byW && live) { KP.kills++; KP.roundKills++; S.stats.p[killer].kills++; if (S.rs) { const c = u.lastSlot >= 0 && S.rs.sl[killer][u.lastSlot]; if (c) c.k++; else S.rs.stormK[killer]++; } }
     const cy = ucenter(u)[1];
     ev(['k', Math.round(u.x), Math.round(cy), u.side, TYPE_KEYS.indexOf(u.type), killer, byW ? 1 : 0, Math.round(u.gy === undefined ? u.y : u.gy)]);
+    liveDeath(u, killer, cy, byW, live);
     const pending = S.drops.filter(d => d.side === killer).length;
     if (byW && live && KP.items.length + pending < MAX_ITEMS && Math.random() < (DROP_CH[u.type] || 0)) S.drops.push({id: S.nextId++, kind: randItem(), side: killer, x: u.x, y: cy, gy: u.gy, vx: (killer ? 1 : -1) * rnd(30, 60), vy: -200, t: 0, st: 'fall'});
   }
@@ -2869,6 +2911,517 @@ function worldStep(dt, live) {
   S.drops = S.drops.filter(d => !d.dead);
 }
 
+/* =========================================================================
+   LIVE FEATURES: gilt shards, glass shatter cascades, prism combos, wave preview,
+   three-crown rating and gilt skins, relic draft, Daily Siege, rival taunts
+   ========================================================================= */
+const isCpuSide = s => S.mode === 'demo' || (S.mode === 'cpu' && s === 1);
+const hasRelic = (side, id) => { const P = S.p[side]; return !!(P && P.relics && P.relics.indexOf(id) >= 0); };
+const combatEl = () => COMBAT_LEN - S.timeLeft;
+const RIDX = {}; ROSTER.forEach((R, i) => { RIDX[R.id] = i; });
+
+/* ---- 1. gilt shards: kills drop gold you tap to collect ---- */
+const SHARD_GAP = 1.9, SHARD_MAX = 15, SHARD_LIFE = 6;
+function shardDrop(side, x, y) {
+  const P = S.p[side];
+  if (S.phase !== 'combat') return;
+  const el = combatEl();
+  if ((P.shardN | 0) >= SHARD_MAX || el - (P.shardLast == null ? -9 : P.shardLast) < SHARD_GAP) return;
+  P.shardLast = el; P.shardN = (P.shardN | 0) + 1;
+  let at = 99;
+  if (isCpuSide(side)) at = Math.random() < (S.diff === 'easy' ? 0.55 : 0.85) ? rnd(0.5, 1.8) : 99;
+  else if (hasRelic(side, 'magnet')) at = 1.5;
+  S.shards.push({id: S.nextId++, side, x: clamp(x + rnd(-10, 10), 40, W - 40), y: clamp(y - rnd(26, 44), 70, H - 40), vy: -rnd(70, 120), t: 0, life: SHARD_LIFE, v: hasRelic(side, 'gilded') ? 2 : 1, at});
+}
+function shardStep(dt) {
+  for (const g of S.shards) {
+    g.t += dt; g.life -= dt;
+    if (g.t < 0.55) { g.y = Math.max(78, g.y + g.vy * dt); g.vy += 260 * dt; }
+    if (g.t >= g.at) shardTake(g, false);
+    if (g.life <= 0) g.dead = true;
+  }
+  S.shards = S.shards.filter(g => !g.dead);
+}
+function shardTake(g, tapped) {
+  if (g.dead) return;
+  g.dead = true;
+  const P = S.p[g.side];
+  if (S.siege && g.side === 0) S.siege.sh++; else P.gold += g.v;
+  P.shardGot = (P.shardGot | 0) + 1;
+  ev(['$', g.side, Math.round(g.x), Math.round(g.y), g.v, tapped ? 1 : 0, g.id]);
+}
+function shardCollect(side, id) { const g = S.shards.find(x => x.id === id && x.side === side && !x.dead); if (g) shardTake(g, true); return ''; }
+const shardScale = () => { const w = cv && cv.clientWidth; return w ? clamp(W / w / 1.6, 1, 2.4) : 1; };   // small screens get bigger shards and a finger-sized tap area
+function shardTapAt(wx, wy) {
+  if (S.phase !== 'combat' || S.me < 0 || S.mode === 'demo') return false;
+  let hit = false;
+  const hr = 46 * shardScale();
+  for (const g of S.shards) {
+    if (g.side !== S.me || g.dead || g.gone) continue;
+    if (Math.hypot(wx - g.x, wy - g.y) < hr) {
+      g.gone = true; hit = true;
+      (S.ui.picked = S.ui.picked || new Set()).add(g.id);
+      act({t: 'shard', id: g.id});
+    }
+  }
+  return hit;
+}
+function drawShards() {
+  const big = shardScale();
+  for (const g of S.shards) {
+    if (g.gone || g.dead) continue;
+    const mine = g.side === S.me || (S.me < 0 && g.side === 0), fade = Math.min(1, g.life / 1.1), bob = Math.sin(S.t * 4 + g.id) * 3, x = g.x, y = g.y + bob;
+    const sc = (mine ? 1 : 0.6) * big, a0 = (mine ? 1 : 0.4) * fade * (g.life < 1.6 && Math.floor(S.t * 8) % 2 ? 0.55 : 1);
+    ctx.save(); ctx.globalAlpha = a0;
+    glowDot(x, y, 36 * sc, '255,206,90', mine ? 0.75 : 0.35);
+    if (mine) {   // life ring
+      ctx.strokeStyle = 'rgba(255,226,140,.75)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, 22 * big, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * clamp(g.life / SHARD_LIFE, 0, 1)); ctx.stroke();
+    }
+    ctx.translate(x, y); ctx.rotate(Math.sin(S.t * 2 + g.id) * 0.25);
+    const r = 12 * sc;
+    const gr = ctx.createLinearGradient(-r, -r, r, r); gr.addColorStop(0, '#fff6d0'); gr.addColorStop(0.45, '#f2c75a'); gr.addColorStop(1, '#9a6b26');
+    ctx.fillStyle = gr; ctx.strokeStyle = '#3a2405'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, -r * 1.35); ctx.lineTo(r, 0); ctx.lineTo(0, r * 1.35); ctx.lineTo(-r, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.moveTo(0, -r * 1.05); ctx.lineTo(r * 0.5, -r * 0.1); ctx.lineTo(0, 0); ctx.closePath(); ctx.fill();
+    const tw = (Math.sin(S.t * 9 + g.id * 2) + 1) / 2, sx = r * 0.9, sy = -r * 1.2, sl = 3 + 6 * tw;
+    ctx.strokeStyle = 'rgba(255,252,230,' + (0.35 + 0.65 * tw) + ')'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(sx - sl, sy); ctx.lineTo(sx + sl, sy); ctx.moveTo(sx, sy - sl); ctx.lineTo(sx, sy + sl); ctx.stroke();
+    if (g.v > 1) { ctx.rotate(-Math.sin(S.t * 2 + g.id) * 0.25); ctx.font = '800 11px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fff1c8'; otext('×' + g.v, 0, r * 2.6, 3); }
+    ctx.restore();
+  }
+}
+
+/* ---- 2. glass shatter cascades ---- */
+let shatN = 0;
+function shatter(u, killer, cy) {
+  if (shatN > 24) return;
+  const lvl = (u.chainLv | 0) + 1, cas = hasRelic(killer, 'cascade');
+  if (lvl > (cas ? 7 : 5)) return;
+  const n = cas ? 3 : 2, R = 85, dmg = Math.max(8, u.max * 0.16) * Math.pow(0.78, lvl - 1) * (cas ? 1.5 : 1);
+  const near = [];
+  for (const v of S.units) {
+    if (v === u || v.side !== u.side || v.gone || v.hp <= 0 || v.warp > 0) continue;
+    const [vx, vy] = ucenter(v), dd = Math.hypot(vx - u.x, vy - cy);
+    if (dd < R) near.push([dd, v, vx, vy]);
+  }
+  near.sort((a, b) => a[0] - b[0]);
+  const pts = [];
+  for (const [, v, vx, vy] of near.slice(0, n)) { shatN++; v.chainLv = Math.max(v.chainLv | 0, lvl); v.shat = 1; hurt(v, dmg, killer, true, null, false, true); pts.push([Math.round(vx), Math.round(vy)]); }
+  const P = S.p[killer]; P.cascBest = Math.max(P.cascBest | 0, lvl);
+  ev(['C', Math.round(u.x), Math.round(cy), lvl, killer, pts]);
+}
+const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19];
+
+/* ---- 3. prism combos: two different turrets on one target within 0.5 s ---- */
+function prismCheck(u, side, s) {
+  if (!s || !s.id || side === u.side) return 1;
+  let mul = 1;
+  const lens = hasRelic(side, 'lens'), win = lens ? 1 : 0.5;
+  if (u.pside === side && u.pid && u.pid !== s.id && S.t - u.pt <= win && !(u.pcd > S.t)) {
+    mul = lens ? 1.5 : 1.2; u.pcd = S.t + 1.5;
+    const P = S.p[side]; P.prismN = (P.prismN | 0) + 1;
+    if (S.t - (S.pLast || 0) > 0.06) { S.pLast = S.t; const [x, y] = ucenter(u); ev(['P', Math.round(x), Math.round(y), side, RIDX[u.pid] | 0, RIDX[s.id] | 0]); }
+  }
+  u.pid = s.id; u.pside = side; u.pt = S.t;
+  return mul;
+}
+function drawPflash() {
+  if (!S.pfl || !S.pfl.length) return;
+  const im = PRISM.field && PRISM.field.complete && PRISM.field.naturalWidth ? PRISM.field : null;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const f of S.pfl) {
+    const p = 1 - f.t / f.max, a = Math.sin(Math.PI * Math.min(1, p * 1.4));
+    ctx.globalAlpha = a * 0.9;
+    if (im) ctx.drawImage(im, f.x - 55 * (0.7 + p * 0.5), f.y - 40 * (0.7 + p * 0.5), 110 * (0.7 + p * 0.5), 80 * (0.7 + p * 0.5));
+    glowDot(f.x - 6, f.y, 22, f.a, a * 0.8); glowDot(f.x + 6, f.y, 22, f.b, a * 0.8);
+  }
+  ctx.restore();
+}
+
+/* ---- 4. wave preview ---- */
+const WAVE_LABEL = {trooper: 'Trooper column', bike: 'Bike rush', bulwark: 'Bulwark wall', drone: 'Wasp swarm', lancer: 'Dragonfly pairs', scarab: 'Scarab swarm'};
+const WAVE_TIP = {trooper: ['vulcan', 'torch', 'arc'], bike: ['cryo', 'arc', 'tesla'], bulwark: ['rail', 'lancer', 'mortar'], drone: ['flak', 'swarm', 'tesla'], lancer: ['flak', 'needle', 'arc'], scarab: ['tesla', 'rail', 'flak']};
+const WAVE_SURGE = {trooper: 6, bike: 4, bulwark: 3, drone: 5, lancer: 4, scarab: 2};
+const WAVE_POOL = r => ['trooper', 'bike', 'drone'].concat(r >= 2 ? ['bulwark', 'lancer'] : [], r >= 4 ? ['scarab'] : []);
+const titanDrop = (r, k) => Math.min(r < 10 ? 2 : 9, 1 + Math.floor((r - k) / (k === 1 ? 3 : 4)));
+const titanCount = r => titanDrop(r, 1) + (r >= 3 ? titanDrop(r, 2) : 0);
+function pickWave(r, rng) {
+  rng = rng || Math.random;
+  const pool = WAVE_POOL(r).filter(t => !S.wave || t !== S.wave.f);
+  return {f: pool[Math.floor(rng() * pool.length)], n: titanCount(r)};
+}
+function waveHtml() {
+  if (!S.wave || !WAVE_LABEL[S.wave.f]) return '';
+  const c = S.me === 1 ? 'b' : 'r', img = t => '<img class="sil" alt="" src="assets/m_' + c + '_' + t + '.webp">';
+  const tips = (WAVE_TIP[S.wave.f] || []).map(id => ROSTER[RIDX[id]] ? ROSTER[RIDX[id]].name : '').filter(Boolean).join(', ');
+  return '<div class="wavebar" style="--ec:' + (c === 'r' ? '255,110,90' : '110,190,255') + '" data-tip="Every round has a featured wave. It opens with a surge about 3 s into combat, and it shows up more often all round. Hold it off with no leaks for +2 gold."><span class="wl">Next</span>' +
+    img(S.wave.f) + '<b>' + WAVE_LABEL[S.wave.f] + '</b>' + (S.wave.n ? '<i>+</i>' + img('titan') + '<b>' + S.wave.n + ' Titan' + (S.wave.n > 1 ? 's' : '') + '</b>' : '') +
+    '<span class="wt">Counter with ' + tips + '</span></div>';
+}
+
+/* ---- 7. three-crown rating and gilt skins ---- */
+const parOf = r => 30 + 45 * Math.min(r - 1, 7) + 20 * Math.max(0, r - 8);   // kills by 20 s: about what a strong board manages
+const prismPar = r => 10 + 25 * Math.min(r, 8) + 5 * Math.max(0, r - 8);
+const CROWN_N = ['Clean keep', 'Under par', 'Combo'];
+const CROWN_D = ['Finish the round with your keep above 90%', 'Reach the par kill count in the first 20 s of combat', 'Land the round’s prism combo target (two different turrets on one enemy within 0.5 s)'];
+const CKEY = 'gg-crowns';
+const crownTotal = () => (lsGet(CKEY, {t: 0}).t | 0);
+const SKINS = [
+  {id: 'classic', n: 'Classic Gilt', need: 0, g: ''},
+  {id: 'rose', n: 'Rose Gilt', need: 12, g: 'linear-gradient(135deg,#ffe4dc 0%,#e8a08a 16%,#8e4a3a 36%,#f7cdbf 52%,#b86a55 70%,#ffe2d6 86%,#9a5444 100%)'},
+  {id: 'white', n: 'White Gold', need: 30, g: 'linear-gradient(135deg,#ffffff 0%,#d9dde6 16%,#7d8494 36%,#f2f4f8 52%,#a3a9b8 70%,#ffffff 86%,#8a90a0 100%)'},
+  {id: 'verd', n: 'Verdigris', need: 60, g: 'linear-gradient(135deg,#e2fff4 0%,#7fd6b8 16%,#2f7a62 36%,#c9f2e2 52%,#4f9e84 70%,#e0fff2 86%,#2c6e58 100%)'},
+  {id: 'obsid', n: 'Obsidian Gilt', need: 100, g: 'linear-gradient(135deg,#ffe9b0 0%,#6b5a3a 16%,#14110c 36%,#b39255 52%,#2a2318 70%,#f2d48a 86%,#1a160f 100%)'},
+  {id: 'aurora', n: 'Aurora', need: 160, g: 'linear-gradient(135deg,#fff2c8 0%,#ff9ad5 18%,#8a7bff 36%,#7ff0ff 52%,#b8ff9a 70%,#ffd27a 86%,#c58aff 100%)'}
+];
+function applySkin() {
+  const id = lsGet('gg-skin', 'classic'), sk = SKINS.find(x => x.id === id && crownTotal() >= x.need) || SKINS[0];
+  try { if (sk.g) document.documentElement.style.setProperty('--gild', sk.g); else document.documentElement.style.removeProperty('--gild'); } catch (e) {}
+}
+function crownAward(c) {
+  const st = lsGet(CKEY, {t: 0}), before = st.t | 0, n = c.filter(Boolean).length;
+  st.t = before + n; st.r = (st.r | 0) + 1; if (n === 3) st.p = (st.p | 0) + 1;
+  lsSet(CKEY, st);
+  for (const sk of SKINS) if (sk.need > before && sk.need <= st.t) addTitle('Gilt skin unlocked', sk.n + ' · choose it in Settings', '255,214,120', 3, 40, 1.8);
+}
+function skinHtml() {
+  const t = crownTotal(), cur = lsGet('gg-skin', 'classic');
+  return '<h2>Gilt skins</h2><p class="hint">You hold <b style="color:var(--warn)">' + t + ' ♛</b>. Earn up to three crowns a round: <b>Clean keep</b> (keep above 90%), <b>Under par</b> (the par kill count within 20 s) and <b>Combo</b> (the round’s prism combo target). In the Daily Siege, crowns add to your score instead.</p><div class="setrow skins">' +
+    SKINS.map(sk => '<button class="btn small' + (sk.id === cur ? ' prime' : '') + '" type="button" data-act="skin:' + sk.id + '"' + (t < sk.need ? ' disabled' : '') + ' style="--sk:' + (sk.g || 'var(--gild)') + '"><span class="skw"></span>' + sk.n + (t < sk.need ? ' · ' + sk.need + ' ♛' : '') + '</button>').join('') + '</div>';
+}
+function crownPath(x, y, s) {
+  ctx.beginPath();
+  ctx.moveTo(x - 16 * s, y + 9 * s); ctx.lineTo(x - 19 * s, y - 9 * s); ctx.lineTo(x - 8 * s, y - 1 * s); ctx.lineTo(x, y - 14 * s);
+  ctx.lineTo(x + 8 * s, y - 1 * s); ctx.lineTo(x + 19 * s, y - 9 * s); ctx.lineTo(x + 16 * s, y + 9 * s); ctx.closePath();
+}
+function drawCrownFx() {
+  const f = S.crownFx;
+  if (!f || S.phase !== 'result' || S.mode === 'demo' || S.me < 0) return;
+  ctx.save(); ctx.setTransform(k, 0, 0, k, 0, 0);
+  const cx = W / 2, cy = H - Math.max(S.letter || 0, 20) - 62;
+  ctx.globalAlpha = Math.min(1, f.t * 3);
+  ctx.fillStyle = 'rgba(6,4,14,.55)'; ctx.fillRect(cx - 190, cy - 34, 380, 74);
+  for (let i = 0; i < 3; i++) {
+    const x = cx + (i - 1) * 120, on = f.c[i], ap = clamp((f.t - 0.35 - i * 0.35) * 4, 0, 1), s = on ? 1 + 0.35 * Math.sin(Math.PI * ap) * (ap < 1 ? 1 : 0) : 0.9;
+    if (on && ap > 0) glowDot(x, cy - 2, 46, '255,206,90', 0.6 * ap);
+    crownPath(x, cy - 2, s);
+    if (on && ap > 0) { const g = ctx.createLinearGradient(x, cy - 16, x, cy + 10); g.addColorStop(0, '#fff6d0'); g.addColorStop(0.5, '#f2c75a'); g.addColorStop(1, '#9a6b26'); ctx.fillStyle = g; ctx.globalAlpha = Math.min(1, f.t * 3) * (0.3 + 0.7 * ap); ctx.fill(); ctx.globalAlpha = Math.min(1, f.t * 3); }
+    else { ctx.fillStyle = 'rgba(80,72,110,.55)'; ctx.fill(); }
+    ctx.strokeStyle = on && ap > 0 ? '#3a2405' : 'rgba(200,190,230,.35)'; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.font = '700 12px "Chakra Petch", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = on && ap > 0 ? '#ffe9a8' : 'rgba(200,190,230,.6)';
+    otext(CROWN_N[i].toUpperCase(), x, cy + 30, 3);
+  }
+  ctx.restore();
+}
+function crownRowHtml() {
+  const f = S.crownFx; if (!f || S.me < 0) return '';
+  return '<div class="crowns">' + f.c.map((on, i) => '<span class="cr' + (on ? ' on' : '') + '" data-tip="' + escA(CROWN_D[i]) + '"><i>♛</i>' + CROWN_N[i] + '</span>').join('') + (S.siege ? '' : '<span class="crt">' + crownTotal() + ' ♛ total</span>') + '</div>';
+}
+
+/* ---- 9. relic draft every 3 rounds ---- */
+const RELICS = [
+  {id: 'shatter',  n: 'Shatterglass Cryo', g: '❄', c: '#8fe6ff', d: 'Enemies that die while slowed shatter like a splash kill, starting a cascade.'},
+  {id: 'bikebomb', n: 'Volatile Bikes',    g: '✹', c: '#ff9a4a', d: 'Enemy Razor Bikes explode when you down them, hitting the ground units around them.'},
+  {id: 'gilded',   n: 'Gilded Reaper',     g: '◆', c: '#ffd36a', d: 'Your gilt shards are worth 2 gold each.'},
+  {id: 'lens',     n: 'Prism Lens',        g: '◈', c: '#e6a8ff', d: 'Prism combos trigger within 1 s instead of 0.5 s, and hit for +50% instead of +20%.'},
+  {id: 'breaker',  n: 'Bulwark Breaker',   g: '⛨', c: '#c9b28a', d: '+30% damage to armored enemies: Bulwarks, Titans and Scarabs.'},
+  {id: 'skyhook',  n: 'Skyhook Array',     g: '➶', c: '#9ad8ff', d: '+25% damage to flying enemies.'},
+  {id: 'overclock', n: 'Overclock',        g: '⚡', c: '#fff07a', d: 'Your turrets fire 25% faster for the first 10 s of every fight.'},
+  {id: 'tithe',    n: 'Titan Tithe',       g: '✚', c: '#7dffb0', d: 'Your keep heals 80 each time you down a Titan.'},
+  {id: 'cascade',  n: 'Cascade Core',      g: '✧', c: '#bff4ff', d: 'Shatter cascades hit 3 enemies instead of 2, deal +50% and chain 2 steps further.'},
+  {id: 'magnet',   n: 'Gilt Magnet',       g: '⊛', c: '#ffcf7a', d: 'Shards you miss collect themselves after 1.5 s.'},
+  {id: 'bounty',   n: 'Bounty Ledger',     g: '¤', c: '#f0d79a', d: '+1 gold for every 25 kills in a round (up to +6).'}
+];
+const RELIC_IDS = RELICS.map(r => r.id), relicOf = id => RELICS.find(r => r.id === id);
+const CPU_RELIC = ['breaker', 'overclock', 'skyhook', 'cascade', 'lens', 'tithe', 'shatter', 'bikebomb', 'gilded', 'bounty', 'magnet'];
+function offerRelics(side) {
+  const P = S.p[side]; P.relics = P.relics || [];
+  const pool = RELIC_IDS.filter(id => P.relics.indexOf(id) < 0);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  P.relicOffer = pool.slice(0, 3);
+  if (!P.relicOffer.length) P.relicOffer = null;
+  else if (isCpuSide(side)) { const o = P.relicOffer; let b = 0; o.forEach((id, i) => { if (CPU_RELIC.indexOf(id) < CPU_RELIC.indexOf(o[b])) b = i; }); relicPick(side, Math.random() < 0.7 ? b : Math.floor(Math.random() * o.length)); }
+}
+function relicPick(side, i) {
+  const P = S.p[side]; if (!P.relicOffer) return '';
+  const id = P.relicOffer[i | 0]; if (!id) return '';
+  P.relics.push(id); P.relicOffer = null;
+  return side === S.me || S.mode === 'host' ? 'Relic claimed: ' + relicOf(id).n + '.' : '';
+}
+function relicHtml() {
+  const P = myP(); if (!P || !P.relicOffer) return '';
+  return '<div class="kicker">Round ' + S.round + ' · Relic draft</div><h1>Choose a relic</h1><p class="hint">Relics bend the rules for the rest of the match. You keep every one you pick.</p><div class="relics3">' +
+    P.relicOffer.map((id, i) => { const r = relicOf(id); return '<button class="relic" type="button" data-act="relic:' + i + '" style="--rc:' + r.c + '"><i>' + r.g + '</i><b>' + r.n + '</b><span>' + r.d + '</span></button>'; }).join('') + '</div>' +
+    (P.relics.length ? '<p class="hint">Held: ' + P.relics.map(id => relicOf(id).n).join(', ') + '</p>' : '');
+}
+function relicChips(P) {
+  if (!P || !P.relics || !P.relics.length) return '';
+  return '<span class="rchips">' + P.relics.map(id => { const r = relicOf(id); return r ? '<i style="color:' + r.c + '" data-tip="' + escA(r.n + ': ' + r.d) + '">' + r.g + '</i>' : ''; }).join('') + '</span>';
+}
+
+/* ---- the round hooks ---- */
+function liveCombatStart() {
+  for (const P of S.p) {
+    if (P.relicOffer) { P.relics.push(P.relicOffer[Math.floor(Math.random() * P.relicOffer.length)]); P.relicOffer = null; }
+    P.shardN = 0; P.shardLast = null; P.shardGot = 0; P.prismN = 0; P.cascBest = 0; P.parAt = null; P.featSeen = 0; P.featLeak = 0;
+  }
+  S.shards = []; S.pfl = []; S.surge = 0; S.crowns = null; S.crownFx = null; S.bubbles = []; S.ghostTauntAt = rnd(6, 14); S.ui.tauntAt = null;
+  for (const P of S.p) P.tauntT = null;
+}
+function liveTick(dt) {
+  shardStep(dt);
+  const el = combatEl();
+  if (S.wave && !S.surge && el >= 3) {
+    S.surge = 1; S.quiet = 1;
+    for (let j = 0; j < (WAVE_SURGE[S.wave.f] || 3); j++) { spawn(S.wave.f, 0); spawn(S.wave.f, 1); }
+    S.quiet = 0;
+    ev(['V', TYPE_KEYS.indexOf(S.wave.f), S.wave.n]);
+  }
+  if (S.ghost && S.ghost.tp && S.ghost.taunt && S.ghostTauntAt && el >= S.ghostTauntAt) { S.ghostTauntAt = el + rnd(10, 16) < COMBAT_LEN - 2 ? el + rnd(10, 16) : 0; tauntPop(1, S.ghost.taunt); }
+  if (el <= 20) for (const P of S.p) if (P.parAt == null && P.roundKills >= parOf(S.round)) P.parAt = el;
+}
+function liveRoundEnd() {
+  S.crowns = [0, 1].map(i => { const P = S.p[i]; return [P.keep >= KEEP_HP * 0.9 ? 1 : 0, P.parAt != null ? 1 : 0, (P.prismN | 0) >= prismPar(S.round) ? 1 : 0]; });
+  ev(['W', S.crowns[0].join(''), S.crowns[1].join('')]);
+  for (let i = 0; i < 2; i++) {
+    const P = S.p[i];
+    if (S.wave && (P.featSeen | 0) >= 4 && !(P.featLeak > 0) && !S.siege) { P.gold += 2; ev(['K', i, TYPE_KEYS.indexOf(S.wave.f)]); }
+    if (hasRelic(i, 'bounty')) P.gold += Math.min(6, Math.floor(P.roundKills / 25));
+  }
+  if (S.ghost && S.rw === 1 && S.ghost.taunt) { S.tauntN = (S.tauntN | 0) + 1; if (S.tauntN % 2 === 1) addTitle(S.ghost.handle, '“' + S.ghost.taunt + '”', SIDES[1].rgb, 3.2, 34, 1.4); }
+}
+function liveDeath(u, killer, cy, byW, live) {
+  if (!byW || !live) return;
+  shardDrop(killer, u.x, cy);
+  if ((u.spl && S.t - u.spl < 0.12 && u.lastSpl) || u.shat || (u.slow > 0 && hasRelic(killer, 'shatter'))) shatter(u, killer, cy);
+  if (u.type === 'titan' && hasRelic(killer, 'tithe')) { const KP = S.p[killer]; KP.keep = Math.min(KEEP_HP, KP.keep + 80); S.texts.push({x: killer ? W - 300 : 300, y: H * 0.3, s: '+80 keep', life: 1.4, c: '#7dffb0', sz: 18}); }
+  if (u.type === 'bike' && hasRelic(killer, 'bikebomb')) { splash(u.x, cy, 75, 30 + 6 * S.round, killer, true, 'ground'); ev(['x', Math.round(u.x), Math.round(cy), 75, 0, killer]); }
+}
+function liveHurtMul(u, side, s) {
+  let m = prismCheck(u, side, s);
+  if (s) { if (u.armor > 0 && hasRelic(side, 'breaker')) m *= 1.3; if (u.fly && hasRelic(side, 'skyhook')) m *= 1.25; }
+  return m;
+}
+
+/* ---- events every client plays ---- */
+function liveEvent(d) {
+  const type = d[0];
+  if (type === '$') {
+    const [, side, x, y, v, tapped, id] = d, mine = side === S.me;
+    if (S.shards) for (const g of S.shards) if (g.id === id) g.dead = true;
+    spark(x, y, '255,214,110', mine ? 12 : 5, 170);
+    for (let i = 0; i < (mine ? 8 : 3); i++) { const a = i / 8 * Math.PI * 2; S.parts.push({x, y, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110 - 40, c: '#ffe08a', life: 0.45, r: 2.4, glow: true, nograv: true}); }
+    if (mine || S.me < 0) {
+      S.texts.push({x, y: y - 22, s: S.siege && side === 0 ? '+25' : '+' + v + ' g', life: 1, c: '#ffd978', sz: tapped ? 18 : 14});
+      const now = S.t; S.coinC = now - (S.coinT || -9) < 1.4 ? Math.min(8, (S.coinC | 0) + 1) : 0; S.coinT = now;
+      const f = 988 * Math.pow(2, PENTA[S.coinC] / 12);
+      sfx('coin', t => { zap(t, f, f, 0.09, 'sine', 0.05); zap(t + 0.06, f * 1.5, f * 1.5, 0.14, 'sine', 0.04); }, 0.03);
+    }
+    return true;
+  }
+  if (type === 'C') {
+    const [, x, y, lvl, side, pts] = d;
+    for (const p of (Array.isArray(pts) ? pts : [])) {
+      beam(x, y, p[0], p[1], '210,245,255', 1.6, 0.18, 'tracer');
+      for (let i = 0; i < 3; i++) S.parts.push({x: p[0], y: p[1], vx: rnd(-90, 90), vy: rnd(-150, -30), c: Math.random() < 0.5 ? '#e8fbff' : '#9fe6ff', life: rnd(0.3, 0.6), r: rnd(1.5, 3), glow: true});
+    }
+    for (let i = 0; i < 6 + lvl * 2; i++) { const a = Math.random() * Math.PI * 2, v = rnd(80, 200); S.parts.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 50, c: i % 3 ? '#dff8ff' : '#ffffff', life: rnd(0.35, 0.7), r: rnd(1.4, 2.8), glow: true}); }
+    if (lvl >= 2) { const f = 1046 * Math.pow(2, PENTA[Math.min(8, lvl - 1)] / 12); sfx('casc' + lvl, t => { zap(t, f, f * 1.01, 0.22, 'triangle', 0.035); zap(t, f * 2, f * 2, 0.12, 'sine', 0.015); }, 0.05); }
+    if (lvl >= 3 && S.texts.length < 18) S.texts.push({x, y: y - 30, s: 'CASCADE ×' + lvl, life: 1.1, c: lvl >= 5 ? '#ffffff' : '#bff4ff', sz: 13 + lvl * 2});
+    if (lvl >= 5) S.shake = Math.max(S.shake, 0.25);
+    return true;
+  }
+  if (type === 'P') {
+    const [, x, y, side, a, b] = d, Ra = ROSTER[a], Rb = ROSTER[b];
+    if (!Ra || !Rb) return true;
+    S.pfl = S.pfl || []; if (S.pfl.length < 8) S.pfl.push({x, y, t: 0.32, max: 0.32, a: Ra.rgb, b: Rb.rgb});
+    sfx('prism', t => { zap(t, 1318, 1318, 0.1, 'sine', 0.03); zap(t + 0.04, 1975, 1975, 0.14, 'sine', 0.025); }, 0.12);
+    if (side === S.me && S.mode !== 'demo') {
+      const key = [Ra.id, Rb.id].sort().join('+'), seen = lsGet('gg-prisms', []);
+      if (seen.indexOf(key) < 0) { seen.push(key); lsSet('gg-prisms', seen); addTitle('New prism', Ra.name + ' + ' + Rb.name + ' · ' + seen.length + ' found', '230,190,255', 1.6, 26); }
+    }
+    return true;
+  }
+  if (type === 'V') {
+    const t = TYPE_KEYS[d[1]];
+    if (t && WAVE_LABEL[t] && S.mode !== 'demo') S.texts.push({x: W / 2, y: H * 0.2, s: WAVE_LABEL[t].toUpperCase() + '!', life: 1.8, c: '#ffe9a8', sz: 30});
+    return true;
+  }
+  if (type === 'K') {
+    const [, side, ti] = d;
+    if (side === S.me) addTitle('Countered', (WAVE_LABEL[TYPE_KEYS[ti]] || 'The wave') + ' never touched your keep · +2 gold', '125,255,176', 2.6, 40, 1.2);
+    return true;
+  }
+  if (type === 'T') {
+    const [, side, txt, nm] = d;
+    S.bubbles = (S.bubbles || []).filter(b => b.side !== side);
+    S.bubbles.push({side: side ? 1 : 0, s: cleanTaunt(txt), n: cleanHandle(nm) || SIDES[side ? 1 : 0].name, t: 3.4, max: 3.4});
+    sfx('taunt' + side, t => { zap(t, 520, 760, 0.09, 'triangle', 0.05); zap(t + 0.1, 760, 440, 0.14, 'triangle', 0.045); }, 0.3);
+    return true;
+  }
+  if (type === 'W') {
+    if (S.me < 0 || S.mode === 'demo') return true;
+    const c = String(d[1 + S.me] || '000');
+    S.crownFx = {c: [0, 1, 2].map(i => c[i] === '1'), t: 0};
+    if (!S.siege) crownAward(S.crownFx.c);
+    const n = S.crownFx.c.filter(Boolean).length;
+    for (let i = 0; i < n; i++) sfx('crown' + i, t => { zap(t + 0.4 + i * 0.35, 784 * Math.pow(2, i * 4 / 12), 784 * Math.pow(2, i * 4 / 12), 0.25, 'triangle', 0.05); }, 0.05);
+    return true;
+  }
+  return false;
+}
+function liveCosmetic(dt) {
+  if (S.pfl) { for (const f of S.pfl) f.t -= dt; S.pfl = S.pfl.filter(f => f.t > 0); }
+  if (S.crownFx) S.crownFx.t += dt;
+  if (S.bubbles) { for (const b of S.bubbles) b.t -= dt; S.bubbles = S.bubbles.filter(b => b.t > 0); }
+  if (S.mode !== 'host' && S.mode !== 'cpu' && S.mode !== 'demo' && S.shards) for (const g of S.shards) g.life -= dt;
+}
+
+/* ---- 8. Daily Siege: one fixed board-and-wave puzzle per day ---- */
+const SIEGE_ROUND = 9, SIEGE_LV = 7, SIEGE_PLAN = 90, SKEY = 'gg-siege';
+const dayKey = () => { const d = new Date(); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); };
+function srng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const hashStr = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+function siegeKit(day) {
+  const rng = srng(hashStr('glass-gilt-siege-' + day)), pick = a => a[Math.floor(rng() * a.length)];
+  const ofTier = t => ROSTER.map((R, i) => R.tier === t ? i : -1).filter(i => i >= 0);
+  const bench = [1, 2, 2, 3, 3, 4, 4, 5].map(t => [pick(ofTier(t)), t <= 2 && rng() < 0.5 ? 2 : 1]);
+  const items = [pick(ITEM_KEYS.split('')), pick(ITEM_KEYS.split(''))].join('');
+  const opp = [2, 2, 3, 3, 3, 4, 4].map(t => [pick(ofTier(t)), rng() < 0.4 ? 2 : 1]);
+  const feat = pick(WAVE_POOL(SIEGE_ROUND));
+  // the wave script: same pacing rules as a normal round, rolled once from the day's seed
+  const script = []; let t = 0.5;
+  while (t < COMBAT_LEN) {
+    const I = roundHeat(SIEGE_ROUND) + 0.75 * Math.pow(t / COMBAT_LEN, 1.3) + (t > COMBAT_LEN - 5 ? 0.2 : 0);
+    const w = [['trooper', 5], ['bike', 1 + 2.2 * I], ['bulwark', 0.6 + 1.8 * I], ['drone', 1.2 + 2.0 * I], ['lancer', 0.5 + 1.5 * I], ['scarab', 0.15 + 0.9 * I]].map(e => e[0] === feat ? [e[0], e[1] * (feat === 'trooper' ? 1.5 : 2.4)] : e);
+    let tot = 0; for (const e of w) tot += e[1];
+    let r = rng() * tot, ty = 'trooper'; for (const e of w) { r -= e[1]; if (r <= 0) { ty = e[0]; break; } }
+    const n = (ty === 'scarab' ? 1 : 1 + (ty === 'lancer' ? 1 : 0)) + (ty === 'scarab' ? 0 : (rng() < 0.3 * I ? 1 : 0) + (rng() < 0.15 * I ? 1 : 0));
+    script.push([Math.round(t * 100) / 100, TYPE_KEYS.indexOf(ty), n]);
+    let gap = Math.max(0.1, 0.62 / (1 + 2.6 * I)) * (0.5 + rng() * 0.9);
+    if (rng() < 0.12 + 0.2 * I) gap *= 0.2;
+    t += gap;
+  }
+  return {day, bench, items, opp, feat, script};
+}
+function startSiege() {
+  leaveRoom(); newMatch('cpu', 'hard');
+  const day = dayKey(), kit = siegeKit(day);
+  S.siege = {day, kit, si: 0, sh: 0};
+  if (S.log) S.log.mode = 'siege';
+  S.round = SIEGE_ROUND; S.wave = {f: kit.feat, n: titanCount(SIEGE_ROUND)};
+  const P = S.p[0], O = S.p[1];
+  P.board = Array(10).fill(null); P.bench = Array.from({length: BENCH}, (_, i) => kit.bench[i] ? unitOf(kit.bench[i][0], kit.bench[i][1]) : null);
+  P.items = kit.items.split(''); P.gold = 0; P.level = SIEGE_LV; P.xp = 0; P.shop = [-1, -1, -1, -1, -1];
+  O.board = Array.from({length: 10}, (_, i) => kit.opp[i] ? unitOf(kit.opp[i][0], kit.opp[i][1]) : null); O.bench = Array(BENCH).fill(null); O.level = SIEGE_LV; O.items = []; O.shop = [-1, -1, -1, -1, -1];
+  O.ready = true;
+  S.phaseT = SIEGE_PLAN;
+  for (const Q of S.p) buildTurrets(Q);
+  S.ui.msg = 'Daily Siege: field 7 of today’s 8 turrets, fit the 2 cores, then hold the wave for 30 s.'; S.ui.msgT = 6;
+  overlaySig = ''; dockSig = '';
+}
+function siegeSpawn(el) {
+  const sc = S.siege.kit.script;
+  while (S.siege.si < sc.length && sc[S.siege.si][0] <= el && S.units.length < UNIT_CAP) {
+    const [, ti, n] = sc[S.siege.si++], t = TYPE_KEYS[ti];
+    for (let j = 0; j < n; j++) { spawn(t, 0); spawn(t, 1); }
+  }
+}
+function siegeScore() {
+  const P = S.p[0], cr = S.crowns ? S.crowns[0].filter(Boolean).length : 0;
+  const parts = [['Kills × 4', P.roundKills * 4], ['Keep left', Math.max(0, Math.round(P.keep))], ['Shards × 25', S.siege.sh * 25], ['Crowns × 150', cr * 150]];
+  return {parts, total: parts.reduce((a, p) => a + p[1], 0)};
+}
+function siegeFinish() {
+  const sc = siegeScore(), st = lsGet(SKEY, {}), day = S.siege.day;
+  if (st.d !== day) { st.d = day; st.best = 0; st.tries = 0; }
+  st.tries = (st.tries | 0) + 1; S.siege.newBest = sc.total > (st.best | 0); st.best = Math.max(st.best | 0, sc.total);
+  lsSet(SKEY, st); S.siege.score = sc;
+  if (PVP.db && PVP.uid) { const me = myLb(); me.sg = {d: day, s: st.best, h: HANDLE}; lsSet(LBKEY, me); pvpPushLb(); }
+}
+function siegeBest() { const st = lsGet(SKEY, {}); return st.d === dayKey() ? st.best | 0 : 0; }
+function siegeOverHtml() {
+  const sc = S.siege.score || siegeScore(), st = lsGet(SKEY, {});
+  return '<div class="kicker">Daily Siege · ' + S.siege.day + '</div><h1>' + sc.total.toLocaleString() + ' points</h1>' +
+    (S.siege.newBest ? '<p class="lvup">New best today</p>' : '<p class="hint">Your best today: ' + (st.best | 0).toLocaleString() + ' · attempt ' + (st.tries | 0) + '</p>') +
+    crownRowHtml() +
+    '<table class="stats"><tbody>' + sc.parts.map(p => '<tr><th>' + p[0] + '</th><td>' + p[1].toLocaleString() + '</td></tr>').join('') + '</tbody></table>' +
+    '<p class="hint">Same turrets, same cores and the same wave all day for everyone. A new siege starts at 00:00 UTC.' + (PVP.db ? '' : ' Sign in to post your best to the board.') + '</p>' +
+    '<div class="btns"><button class="btn prime" data-act="siege" type="button">Try again</button><button class="btn" data-act="siegelb" type="button">Siege board</button><button class="btn quiet" data-act="menu" type="button">Main menu</button></div>';
+}
+function siegeLbHtml() {
+  const day = dayKey(), rows = (PVP.lb || []).filter(r => r && r.sg && r.sg.d === day && r.id !== PVP.uid).map(r => ({h: cleanHandle(r.sg.h || r.handle) || 'Player', s: r.sg.s | 0}));
+  const mine = siegeBest(); if (mine) rows.push({h: HANDLE, s: mine, me: 1});
+  rows.sort((a, b) => b.s - a.s);
+  const body = rows.length ? rows.slice(0, 50).map((r, i) => '<tr' + (r.me ? ' class="me"' : '') + '><th>' + (i + 1) + '</th><td class="l">' + escA(r.h) + (r.me ? ' (you)' : '') + '</td><td>' + r.s.toLocaleString() + '</td></tr>').join('') : '<tr><td colspan="3" class="l">No scores yet today. Be the first.</td></tr>';
+  return '<div class="kicker">Daily Siege · ' + day + '</div><h1>Siege board</h1><div class="wiki"><p class="hint">' + (PVP.db ? 'Best score per tactician today.' : 'Only your own score shows here: posting needs a signed-in account with access to the shared store.') + '</p>' +
+    '<table class="stats wk"><thead><tr><th>#</th><th>Tactician</th><th>Score</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+    '<div class="btns"><button class="btn prime" data-act="siege" type="button">Play today’s siege</button><button class="btn quiet" data-act="siegelbx" type="button">Back</button></div>';
+}
+
+/* ---- 10. rival taunts ---- */
+const TKEY = 'gg-taunt';
+const cleanTaunt = v => String(v || '').replace(/[<>&"`\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+let TAUNT = cleanTaunt(lsGet(TKEY, ''));
+function setTaunt(v) {
+  TAUNT = cleanTaunt(v); lsSet(TKEY, TAUNT);
+  const mine = lsGet(MYKEY, []); if (mine.length) pvpPushBuilds(mine);
+}
+function useGhost(g) {
+  leaveRoom(); newMatch('cpu', 'hard');
+  S.ghost = g;
+  if (S.log) { S.log.mode = 'ghost'; S.log.ghost = {id: g.id, handle: g.handle, src: g.src}; }
+  ghostSetup(1); buildTurrets(S.p[1]);
+  addTitle('Rival · ' + g.handle, g.taunt ? '“' + g.taunt + '”' : 'No taunt. Just their build.', SIDES[1].rgb, 3.6, 44, 0.3);
+  S.ui.msg = 'Rival found: ' + g.handle; S.ui.msgT = 4;
+  overlaySig = ''; dockSig = '';
+}
+/* taunt pop-ups: a speech bubble over the sender's keep during combat, at most once every 10 s */
+const TAUNT_CD = 10;
+let TPOP = !!lsGet('gg-taunt-pop', false);
+function setTauntPop(v) { TPOP = !!v; lsSet('gg-taunt-pop', TPOP); const mine = lsGet(MYKEY, []); if (mine.length) pvpPushBuilds(mine); }
+const tauntReady = () => TAUNT && TPOP && S.phase === 'combat' && S.me >= 0 && S.mode !== 'demo';
+const tauntCd = () => Math.max(0, TAUNT_CD - (S.t - (S.ui.tauntAt == null ? -99 : S.ui.tauntAt)));
+function tauntBtn(full) {
+  if (!tauntReady()) return '';
+  const cd = tauntCd();
+  return '<button type="button" class="btn small call tauntb' + (cd > 0 ? ' cool' : '') + '" data-act="taunt" data-tip="Pop your taunt up over your keep for both sides to see (key B). Once every 10 s.">' + (full ? '<span><kbd>B</kbd> Taunt</span>' : '<kbd>B</kbd> Taunt') + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : '“”') + '</b></button>';
+}
+function tauntSend() {
+  if (!tauntReady() || tauntCd() > 0) return;
+  S.ui.tauntAt = S.t; sideSig = ''; dockSig = '';
+  act({t: 'taunt', s: TAUNT});
+}
+function tauntPop(side, txt) {
+  const P = S.p[side]; txt = cleanTaunt(txt);
+  if (!txt || S.phase !== 'combat' || S.t - (P.tauntT == null ? -99 : P.tauntT) < TAUNT_CD - 0.5) return '';
+  P.tauntT = S.t;
+  ev(['T', side, txt, String(tags()[side] || SIDES[side].name).split(' · ')[0].slice(0, 20)]);
+  return '';
+}
+function drawBubbles() {
+  if (!S.bubbles || !S.bubbles.length) return;
+  for (const b of S.bubbles) {
+    const p = 1 - b.t / b.max, pop = Math.min(1, p * 8), fade = Math.min(1, b.t * 2.5), sc = 0.7 + 0.3 * (1 - Math.pow(1 - pop, 3));
+    const x = b.side ? W - 300 : 300, y = H * 0.24 - 6 * Math.sin(Math.min(1, p * 4) * Math.PI);
+    ctx.save(); ctx.globalAlpha = fade; ctx.translate(x, y); ctx.scale(sc, sc);
+    ctx.font = 'italic 600 19px "Chakra Petch", sans-serif';
+    const tw = Math.min(460, ctx.measureText('“' + b.s + '”').width), w = Math.max(160, tw + 36), h = 64, col = b.side ? '255,121,105' : '66,216,255';
+    ctx.fillStyle = 'rgba(8,6,20,.9)'; ctx.strokeStyle = 'rgba(' + col + ',.9)'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-w / 2, -h / 2, w, h, 12); else ctx.rect(-w / 2, -h / 2, w, h);
+    ctx.fill(); ctx.stroke();
+    const tx = b.side ? w / 2 - 40 : -w / 2 + 40;
+    ctx.beginPath(); ctx.moveTo(tx - 10, h / 2 - 1); ctx.lineTo(tx + (b.side ? 14 : -14), h / 2 + 18); ctx.lineTo(tx + 10, h / 2 - 1); ctx.closePath(); ctx.fillStyle = 'rgba(8,6,20,.9)'; ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'center';
+    ctx.font = '800 12px "Chakra Petch", sans-serif'; ctx.fillStyle = 'rgb(' + col + ')'; ctx.fillText(b.n.toUpperCase(), 0, -10);
+    ctx.font = 'italic 600 19px "Chakra Petch", sans-serif'; ctx.fillStyle = '#fff3d6'; ctx.fillText('“' + b.s + '”', 0, 16, 460);
+    ctx.restore();
+  }
+}
+
+applySkin();
 /* ---------- cosmetic update (every screen) ---------- */
 let cdLast = -1;
 function countdownTick() {
@@ -2885,6 +3438,7 @@ function countdownTick() {
 function cosmetic(dt, rdt) {
   countdownTick();
   S.t += dt;
+  liveCosmetic(dt);
   musicTick(rdt);
   const sec = section();
   if (MUS.analyser && !muted && VOL.music > 0.02) {
@@ -4362,6 +4916,9 @@ function render() {
   drawTraces();
   drawFx();
   drawDrops();
+  drawPflash();
+  drawShards();
+  drawBubbles();
   drawKeepBars();
   ctx.textAlign = 'center';
   for (const t of S.texts) {
@@ -4386,6 +4943,7 @@ function render() {
     ctx.globalAlpha = 1;
   }
   drawTitles();
+  drawCrownFx();
 }
 
 /* =========================================================================
@@ -4407,10 +4965,11 @@ function uiMsg(m) {
   S.ui.msg = m; S.ui.msgT = 3;
 }
 function act(a) {
-  if (a && a.t === 'call' ? !(S.phase === 'combat' && S.me >= 0) : a && a.t === 'unready' ? !inSetup() : !canPlan()) return;
+  if (a && (a.t === 'call' || a.t === 'shard' || a.t === 'taunt') ? !(S.phase === 'combat' && S.me >= 0) : a && a.t === 'unready' ? !inSetup() : !canPlan()) return;
   if (a && a.t !== 'ready' && a.t !== 'unready' && S.me >= 0 && S.mode !== 'demo') {
     S.acts = (S.acts | 0) + 1; (S.actR = S.actR || {})[S.round] = 1;
-    if (a.t === 'call' && CALLS[a.i | 0]) { const id = CALLS[a.i | 0].id; (S.myCalls = S.myCalls || {})[id] = (S.myCalls[id] | 0) + 1; }
+    if (a.t === 'shard' || a.t === 'taunt') { /* taps are not planning actions */ }
+    else if (a.t === 'call' && CALLS[a.i | 0]) { const id = CALLS[a.i | 0].id; (S.myCalls = S.myCalls || {})[id] = (S.myCalls[id] | 0) + 1; }
   }
   if (S.mode === 'guest') {
     if (!net) return;
@@ -4441,6 +5000,7 @@ function onSlot(z, i) {
 }
 function worldPt(e) { const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H; return [(sx - W / 2) / S.cam.z + S.cam.x, (sy - H / 2) / S.cam.z + S.cam.y]; }
 cv.addEventListener('pointermove', e => {
+  if (S.phase === 'combat' && (e.buttons & 1)) { const [wx, wy] = worldPt(e); shardTapAt(wx, wy); return; }
   if (!S.ui || !S.ui.sel || S.me < 0) return;
   const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
   const wx = (sx - W / 2) / S.cam.z + S.cam.x, wy = (sy - H / 2) / S.cam.z + S.cam.y;
@@ -4450,6 +5010,7 @@ cv.addEventListener('pointermove', e => {
 });
 cv.addEventListener('pointerdown', e => {
   audio();
+  if (S.phase === 'combat') { const [wx, wy] = worldPt(e); shardTapAt(wx, wy); return; }
   if (!canPlan()) return;
   const r = cv.getBoundingClientRect();
   const sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H;
@@ -4641,6 +5202,7 @@ addEventListener('keydown', e => {
   if (S.phase === 'combat' && S.me >= 0 && !S.ui.menu && !e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) {
     const ci = 'qwertyui'.indexOf(e.key.toLowerCase());
     if (ci >= 0) { act({t: 'call', i: ci}); return; }
+    if (e.key === 'b' || e.key === 'B') { tauntSend(); return; }
   }
   if (!canPlan() || S.ui.menu) return;
   const dig = e.key.length === 1 ? '1234567890'.indexOf(e.key) : -1;
@@ -4775,6 +5337,7 @@ function unpackUnit(a) { return Array.isArray(a) && ROSTER[a[0]] ? {r: a[0] | 0,
 function packP(P) {
   return {hp: P.hp, k: Math.ceil(P.keep), sd: Math.ceil(P.shield), g: P.gold, l: P.level, x: P.xp, st: P.streak, sh: P.shop, b: P.bench.map(packUnit), m: P.board.map(packUnit),
     it: P.items.join(''), bt: P.bet, bs: P.betRes, lk: P.lock.join(''), up: P.up.join(''), cdn: P.cd.map(x => Math.round(x * 10)), ry: Math.round(P.rally * 10), hs: Math.round(P.haste * 10), ro: Math.round(P.rotor * 10), vg: Math.round(P.vigor * 10), rd: P.ready ? 1 : 0, rr: P.rr | 0, gr: P.gr | 0, ks: P.kills, rk: P.roundKills, ld: P.lastDmg, li: P.lastIncome, as: P.actSeen, ms: [P.msgN, P.msg],
+    rl: (P.relics || []).map(id => RELIC_IDS.indexOf(id)), ro: P.relicOffer ? P.relicOffer.map(id => RELIC_IDS.indexOf(id)) : 0, sgn: [P.shardGot | 0, P.shardN | 0, P.prismN | 0],
     a: [Math.round(P.aim.ang * 1000), Math.round(P.aim.pow * 1000), Math.round(P.reload * 100), Math.round(P.reloadMax * 100)],
     };
 }
@@ -4788,6 +5351,8 @@ function snapshot() {
     pr: S.projs.filter(p => p.kind === 'shell').slice(0, 12).map(p => [p.id, r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.side]),
     os: S.strikes.map(k2 => [r1(k2.x), r1(k2.y), r1(k2.t * 10)]),
     dr: S.drops.map(d => [ITEM_KEYS.indexOf(d.kind), r1(d.x), r1(d.y), d.side, d.st === 'fly' ? 1 : 0]),
+    gs: S.shards.filter(g => g.side === 1 && !g.dead).slice(0, 16).map(g => [g.id, r1(g.x), r1(g.y), r1(g.life * 10), g.v]),
+    wv: S.wave ? [TYPE_KEYS.indexOf(S.wave.f), S.wave.n] : 0,
     ev: S.events.map(e => [e.s, ...e.d]),
     sr: S.stats.rounds.map(r => [r.r, r.w, r.keep[0], r.keep[1], r.kills[0], r.kills[1], r.dmg, r.lv[0], r.lv[1]]),
     sp: S.stats.p.map(q => [q.kills, Math.round(q.breach), q.spent, q.rerolls, q.xp, q.stars, q.dealt, q.wins])
@@ -4851,6 +5416,8 @@ function applySnap(s) {
   if (Array.isArray(s.nm)) S.names = s.nm.slice(0, 2).map(x => cleanHandle(x) || 'Player');
   if (Array.isArray(s.sr)) S.stats.rounds = s.sr.filter(Array.isArray).map(a => ({r: a[0] | 0, w: a[1] | 0, keep: [a[2] | 0, a[3] | 0], kills: [a[4] | 0, a[5] | 0], dmg: a[6] | 0, lv: [a[7] | 0, a[8] | 0]}));
   if (Array.isArray(s.sp)) S.stats.p = [0, 1].map(i => { const a = Array.isArray(s.sp[i]) ? s.sp[i] : []; return {kills: a[0] | 0, breach: a[1] | 0, spent: a[2] | 0, rerolls: a[3] | 0, xp: a[4] | 0, stars: a[5] | 0, dealt: a[6] | 0, wins: a[7] | 0}; });
+  S.wave = Array.isArray(s.wv) && TYPE_KEYS[s.wv[0]] ? {f: TYPE_KEYS[s.wv[0]], n: s.wv[1] | 0} : null;
+  S.shards = (Array.isArray(s.gs) ? s.gs : []).filter(a => Array.isArray(a) && !(S.ui.picked && S.ui.picked.has(a[0] | 0))).map(a => ({id: a[0] | 0, side: 1, x: +a[1], y: +a[2], life: (a[3] | 0) / 10, t: 1, v: a[4] | 0 || 1}));
   S.chaos = Array.isArray(s.ch) && CHAOS[s.ch[0]] ? {id: CHAOS[s.ch[0]].id, i: s.ch[0], t: (s.ch[1] | 0) / 10} : null;
   S.timeScale = Number.isFinite(s.ts) ? clamp(s.ts / 100, 0.1, 1) : 1;
   (Array.isArray(s.P) ? s.P : []).slice(0, 2).forEach((a, side) => {
@@ -4865,6 +5432,8 @@ function applySnap(s) {
     P.up = [0, 0, 0]; P.bet = 0; P.betRes = null;
     if (Array.isArray(a.cdn)) P.cd = [0, 1, 2, 3, 4, 5, 6, 7].map(i => (a.cdn[i] | 0) / 10);
     P.rally = (a.ry | 0) / 10; P.haste = (a.hs | 0) / 10; P.rotor = (a.ro | 0) / 10; P.vigor = (a.vg | 0) / 10;
+    P.relics = Array.isArray(a.rl) ? a.rl.map(i => RELIC_IDS[i]).filter(Boolean) : []; P.relicOffer = Array.isArray(a.ro) ? a.ro.map(i => RELIC_IDS[i]).filter(Boolean) : null; if (P.relicOffer && !P.relicOffer.length) P.relicOffer = null;
+    if (Array.isArray(a.sgn)) { P.shardGot = a.sgn[0] | 0; P.shardN = a.sgn[1] | 0; P.prismN = a.sgn[2] | 0; }
     P.rr = a.rr | 0; P.gr = a.gr | 0; P.ready = !!a.rd; P.kills = a.ks | 0; P.roundKills = a.rk | 0; P.lastDmg = a.ld | 0; P.lastIncome = a.li | 0;
     if (Array.isArray(a.a)) { P.aim.ang = (a.a[0] | 0) / 1000; P.aim.pow = (a.a[1] | 0) / 1000; P.reload = (a.a[2] | 0) / 100; P.reloadMax = Math.max(0.01, (a.a[3] | 0) / 100); }
     if (side === S.me) {
@@ -4927,6 +5496,7 @@ const streakTxt = st => st > 1 ? 'W' + st : st < -1 ? 'L' + (-st) : '';
 function tags() {
   const d = DIFF[S.diff] ? DIFF[S.diff].label : '';
   if (S.mode === 'demo') return ['CPU', 'CPU'];
+  if (S.siege) return [HANDLE, 'Daily Siege · ' + S.siege.day];
   if (S.mode === 'cpu') return S.ghost ? [HANDLE, S.ghost.handle + ' · ghost'] : [HANDLE, 'CPU · ' + d];
   if (S.mode === 'host') return [HANDLE, net && net.guestPeer ? hostGuestName() : 'Waiting'];
   if (S.mode === 'guest') { const n = S.names || []; return [n[0] || 'Player 1', n[1] || 'Player 2']; }
@@ -4939,17 +5509,17 @@ function sideHtml(s) {
   const kp = Math.max(0, Math.min(100, 100 * (P.keep || 0) / KEEP_HP));
   const R = (a, b) => '<div class="row"><span>' + a + '</span><b>' + b + '</b></div>';
   let h = '<h4 style="color:' + (s === 0 ? '#8fd0ff' : '#ff9a85') + '">' + (t || nm) + '<i>' + nm + '</i></h4>' +
-    R('Gold', '<em style="font-style:normal;color:var(--warn)">' + P.gold + '</em>') + R('Level', P.level) + R('Cores', P.items.length) + R('Streak', streakTxt(P.streak) || '—') + R('Kills', P.roundKills | 0) +
+    R('Gold', '<em style="font-style:normal;color:var(--warn)">' + P.gold + '</em>') + R('Level', P.level) + (S.phase === 'combat' ? '' : R('Cores', P.items.length) + R('Streak', streakTxt(P.streak) || '—')) + R('Kills', P.roundKills | 0) + (S.phase === 'combat' || S.phase === 'result' ? R('Shards', (P.shardGot | 0) + '/' + (P.shardN | 0)) + (mine ? R('Par', (P.roundKills | 0) + '/' + parOf(S.round)) + R('Prisms', (P.prismN | 0) + '/' + prismPar(S.round)) : '') : '') + (P.relics && P.relics.length ? '<div class="row"><span>Relics</span>' + relicChips(P) + '</div>' : '') +
     '<div class="row"><span>Keep</span><b>' + Math.ceil(Math.max(0, P.keep || 0)) + '</b></div><div class="kbar"><i style="width:' + kp + '%"></i></div>';
   if (S.phase === 'result' && mine) h += '<div class="row"><span>' + (S.rw === S.me ? 'Won' : S.rw < 0 ? 'Drawn' : 'Lost') + '</span><b>' + (S.rw === S.me || S.rw < 0 ? '' : '−' + P.lastDmg) + '</b></div>';
-  if (mine && S.phase === 'combat') h += '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><span><kbd>' + C.key + '</kbd> ' + C.name + '</span> <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>';
+  if (mine && S.phase === 'combat') h += '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><span><kbd>' + C.key + '</kbd> ' + C.name + '</span> <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + tauntBtn(true) + '</div>';
   return h;
 }
 function updateSides(battle) {
   const L = $('sideL'), Rr = $('sideR');
   if (!battle) { if (!L.hidden) { L.hidden = Rr.hidden = true; sideSig = ''; } return; }
   const sg = [S.phase, S.me, S.rw, tags().join('/')];
-  for (let s = 0; s < 2; s++) { const P = S.p[s]; sg.push(P.gold, P.level, P.items.length, P.streak, P.roundKills | 0, Math.ceil(P.keep || 0), P.lastDmg | 0); if (s === S.me) sg.push(P.cd.map(x => Math.ceil(x)).join('.')); }
+  for (let s = 0; s < 2; s++) { const P = S.p[s]; sg.push(P.gold, P.level, P.items.length, P.streak, P.roundKills | 0, Math.ceil(P.keep || 0), P.lastDmg | 0, P.shardGot | 0, P.shardN | 0, (P.relics || []).length, P.prismN | 0); if (s === S.me) sg.push(Math.ceil(tauntCd()), tauntReady()); if (s === S.me) sg.push(P.cd.map(x => Math.ceil(x)).join('.')); }
   const sig = sg.join('|');
   if (sig === sideSig && !L.hidden) return;
   sideSig = sig; L.hidden = Rr.hidden = false;
@@ -4991,7 +5561,8 @@ function dockSigNow() {
   const P = myP();
   const base = [S.mode, S.phase, S.me, S.round, S.ui.msg, JSON.stringify(S.ui.sel)];
   if (P) base.push(P.gold, P.level, P.xp, P.ready, P.shop.join(','), JSON.stringify(P.bench.map(packUnit)), JSON.stringify(P.board.map(packUnit)), P.items.join(''), P.streak, P.lastIncome, P.rr, P.gr, S.ui.greed, P.up.join(''), P.lock.join(''), P.bet, P.betRes ? P.betRes.join('') : '');
-  if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5), P ? P.cd.map(x => Math.ceil(x)).join('.') + P.gold : '');
+  if (S.phase === 'combat') base.push(Math.ceil(S.timeLeft / 5), P ? P.cd.map(x => Math.ceil(x)).join('.') + P.gold + ':' + (P.shardGot | 0) + ':' + (P.shardN | 0) + ':' + Math.floor((P.roundKills | 0) / 10) : '');
+  if (P) base.push((P.relics || []).join(','), S.wave ? S.wave.f + S.wave.n : '', S.phase === 'combat' ? Math.ceil(tauntCd()) : '');
   return base.join('|');
 }
 const wIcon = id => '<img class="ti" alt="" src="assets/w_' + (S.me === 1 ? 'r' : 'b') + '_' + id + '.webp" onerror="this.remove()">';
@@ -5057,7 +5628,7 @@ function renderDock() {
   if (S.phase !== 'setup') {
     const bw = '';
     const res = S.phase === 'result' ? (S.rw === S.me ? 'Round won' : S.rw < 0 ? 'Round drawn' : 'Round lost · −' + P.lastDmg + ' HP') + bw : S.phase === 'over' ? 'Match over' : 'Combat runs on its own. Watch your build work.';
-    d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span><span class="spacer"></span>' + sound + '</div>' + (S.phase === 'combat' && S.me >= 0 ? '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><kbd>' + C.key + '</kbd> ' + C.name + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + '</div>' : '');
+    d.innerHTML = '<div class="cline"><span><b>' + res + '</b></span><span>Gold <b style="color:var(--warn)">' + P.gold + '</b></span><span>Level <b>' + P.level + '</b></span><span>Cores <b>' + P.items.length + '</b></span>' + (S.phase === 'combat' ? '<span>Shards <b>' + (P.shardGot | 0) + '/' + (P.shardN | 0) + '</b></span><span>Par <b>' + (P.roundKills | 0) + '/' + parOf(S.round) + '</b></span>' : '') + '<span class="spacer"></span>' + sound + '</div>' + (S.phase === 'combat' && S.me >= 0 ? '<div class="calls">' + CALLS.map((C, i) => { const cd = P.cd[i] || 0; return '<button type="button" class="btn small call' + (cd > 0 ? ' cool' : P.gold < C.cost ? ' dim' : '') + '" data-act="call:' + i + '" data-tip="' + C.name + ' (' + C.key + ') · ' + C.cost + ' gold · ' + C.cd + ' s recharge. ' + C.fx + '"><kbd>' + C.key + '</kbd> ' + C.name + ' <b>' + (cd > 0 ? Math.ceil(cd) + 's' : C.cost + 'g') + '</b></button>'; }).join('') + tauntBtn(false) + '</div>' : '');
     return;
   }
   const locked = P.ready, onBoard = boardCount(P), interest = S.me >= 0 ? interestFor(S.me) : interestOf(P.gold), comeback = S.me >= 0 ? comebackFor(S.me) : 0;
@@ -5071,7 +5642,7 @@ function renderDock() {
     '<button type="button" class="btn small greed' + (S.ui.greed ? ' armed' : '') + '" data-act="greed" data-tip="Greed: lift one turret on a keep mount up a star. Costs a whole round of income (' + greedCost(P) + ' gold), unlocks at level ' + GREED_LV + ', two per game (' + (P.gr | 0) + ' left). Select a mounted turret first, or press this and then tap one."' + (locked || !(P.gr > 0) || P.level < GREED_LV || P.gold < greedCost(P) ? ' disabled' : '') + '>Greed <b>' + (P.level < GREED_LV ? 'Lv' + GREED_LV : greedCost(P)) + '</b></button>' +
     sound +
     (locked ? '<button type="button" class="btn" data-act="unready" data-tip="Take your Ready back and keep editing while the clock runs.">Unlock</button>' : '<button type="button" class="btn prime" data-act="ready" data-tip="Lock in your keep. When both sides are ready, combat starts early.">Ready</button>') +
-    '</div><div class="shop">';
+    '</div>' + waveHtml() + (P.relics && P.relics.length ? '<div class="relicrow"><span class="wl">Relics</span>' + relicChips(P) + '</div>' : '') + '<div class="shop">';
   for (let i = 0; i < 5; i++) {
     const r = P.shop[i];
     if (r < 0 || !ROSTER[r]) { h += '<div class="sc"><div class="unit sold">Sold</div></div>'; continue; }
@@ -5097,7 +5668,7 @@ function renderDock() {
 }
 function postOn() { return S.phase === 'result' && S.post && S.mode !== 'demo' && S.phaseT < RESULT_LEN - 2.8; }
 function sigNow() {
-  const parts = [S.ui.set, S.ui.about, S.ui.prof, S.ui.pt, S.award && S.award.t, PROF.px.cx + PROF.px.ax + PROF.px.hx, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
+  const parts = [S.ui.siegelb, S.siege ? S.siege.day + (S.siege.score ? S.siege.score.total : '') : '', myP() && myP().relicOffer ? myP().relicOffer.join() : '', !!S.crownFx, lsGet('gg-skin', ''), S.ghost ? S.ghost.handle : '', S.ui.set, S.ui.about, S.ui.prof, S.ui.pt, S.award && S.award.t, PROF.px.cx + PROF.px.ax + PROF.px.hx, GFX.results ? GFX.results.t : 0, VIDEO.res, VIDEO.adapt, PERF.step, S.ui.lb, PVP.busy, PVP.err, PVP.n, !!PVP.db, HANDLE, postOn(), S.mode, S.phase, S.me, S.winner, roomChecked, !!roomNS, peerMode(), S.netMsg || '', S.joinErr || '', S.ui.menu, S.ui.wiki, S.ui.tab, S.stats.rounds.length, VIDEO.shake, VIDEO.low, muted];
   if (S.ui.tab) parts.push(S.p.map(P => P.kills + ':' + P.level + ':' + P.hp).join(','), Math.floor(S.stats.p[0].breach / 20), Math.floor(S.stats.p[1].breach / 20));
   if (S.mode === 'host') parts.push(net ? net.code : '', net && net.rematch);
   if (S.mode === 'host' && S.phase === 'over') { const g = guestPresence(); parts.push(!!(g && g.r)); }
@@ -5250,6 +5821,7 @@ function settingsHtml() {
       '<label><input type="checkbox" id="mAdapt"' + (VIDEO.adapt ? ' checked' : '') + '> Adaptive resolution (lowers it automatically if combat lags)</label></div>' +
     (RES[VIDEO.res] && effRes() !== VIDEO.res ? '<p class="hint">Now drawing at ' + RES[effRes()].name + ', lowered automatically because combat was running slowly.</p>' : '') +
     '<p class="hint">4K draws the battlefield at 3840 × 2160 and is the default. If the game runs slowly, choose a lower resolution: it also loads a smaller background picture.</p>' + benchHtml() +
+    skinHtml() +
     '<h2>About</h2><div class="setrow"><button class="btn small" data-act="about" type="button">About · credits &amp; licences</button></div>';
 }
 function aboutHtml() {
@@ -5420,17 +5992,21 @@ function showOverlay() {
       '<div class="btns"><button class="btn quiet" data-act="stats" type="button">Close · Tab</button></div>');
     return;
   }
-  if (postOn() && inMatch() && !S.ui.menu && !S.ui.tab) { card(postHtml()).classList.add('post'); return; }
+  if (ph === 'setup' && inMatch() && myP() && myP().relicOffer && !S.ui.menu && !S.ui.tab) { card(relicHtml()).classList.add('relicc'); return; }
+  if (S.ui.siegelb) { card(siegeLbHtml()).classList.add('wikic'); return; }
+  if (ph === 'over' && S.siege) { card(siegeOverHtml(), true); return; }
+  if (postOn() && inMatch() && !S.ui.menu && !S.ui.tab) { card(crownRowHtml() + postHtml()).classList.add('post'); return; }
   if (mode === 'demo' && S.ui.lb) { card(lbHtml()).classList.add('wikic'); return; }
   if (mode === 'demo' && S.ui.prof) { card(profHtml()).classList.add('wikic'); return; }
   if (mode === 'demo') {
     const online = roomChecked && roomNS;
     card(
-      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><button class="btn small prime" data-act="prof" type="button" style="align-self:flex-end" data-tip="Your level, titles and stats from finished matches.">Profile · Lv ' + levelOf(myXp().total).lv + '</button><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button><button class="btn small" data-act="settings" type="button" style="align-self:flex-end">Settings</button></div>' +
+      '<div class="namebar"><label>Your name<input id="handleIn" type="text" maxlength="14" value="' + escA(HANDLE) + '" autocomplete="off" spellcheck="false"></label><label>Taunt for rivals<input id="tauntIn" type="text" maxlength="60" value="' + escA(TAUNT) + '" placeholder="Glass breaks. Gilt stays." autocomplete="off"></label><label class="tpop"><span><input type="checkbox" id="tauntPop"' + (TPOP ? ' checked' : '') + '> Pop it up in battle</span><span class="hint">Key B, once every 10 s. Ghost rivals use it too.</span></label><button class="btn small prime" data-act="prof" type="button" style="align-self:flex-end" data-tip="Your level, titles and stats from finished matches.">Profile · Lv ' + levelOf(myXp().total).lv + '</button><button class="btn small" data-act="wiki:world" type="button" style="align-self:flex-end">Wiki &amp; lore</button><button class="btn small" data-act="settings" type="button" style="align-self:flex-end">Settings</button></div>' +
       (PVP.err ? '<p class="warn">' + escA(PVP.err) + '</p>' : '<p class="hint">Your name shows in every mode. Signed-in online matches are ranked, and your build becomes an async rival.</p>') +
       '<div class="modes">' +
         '<div class="mode"><h2>Against the CPU</h2><p class="hint">The CPU holds the Crimson Keep for Vermilion on the right. Hard reads your last round, fits turrets to mounts and gets +5 gold a round.</p><div class="btns"><button class="btn" data-act="cpu:easy" type="button">Easy</button><button class="btn prime" data-act="cpu:hard" type="button">Hard</button></div></div>' +
         '<div class="mode"><h2>Async PvP</h2><p class="hint">Fight a random build saved by a ranked player. Not ranked.</p><div class="btns"><button class="btn small prime" data-act="ghost" type="button"' + (PVP.busy ? ' disabled' : '') + '>' + (PVP.busy ? 'Finding rival…' : 'Find rival') + '</button><button class="btn small" data-act="lb" type="button">Board</button></div></div>' +
+        '<div class="mode siege"><h2>Daily Siege</h2><p class="hint">Today’s puzzle: field 7 of the same 8 turrets and 2 cores everyone gets, then hold one scripted wave. ' + (siegeBest() ? 'Your best: <b style="color:var(--warn)">' + siegeBest().toLocaleString() + '</b>' : 'Not played yet today.') + '</p><div class="btns"><button class="btn small prime" data-act="siege" type="button">Play</button><button class="btn small" data-act="siegelb" type="button">Board</button></div></div>' +
         '<div class="mode"><h2>Against a friend</h2>' +
           (online ? '<div class="btns"><button class="btn" data-act="host" type="button">Create room</button></div>' +
             '<div class="join"><input id="codeIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="8" placeholder="Room code" aria-label="Room code"><button class="btn" data-act="join" type="button">Join</button></div>' +
@@ -5473,10 +6049,11 @@ function showOverlay() {
     const title = me < 0 ? (w < 0 ? 'Dead even' : SIDES[w].name + ' wins') : w === me ? 'Victory' : w < 0 ? 'Dead even' : 'Defeat';
     const P = me >= 0 ? S.p[me] : null;
     let btns = '';
-    if (mode === 'cpu') btns = '<button class="btn prime" data-act="again" type="button">Run it back</button>';
+    if (mode === 'cpu') btns = S.ghost ? '<button class="btn prime" data-act="rematch" type="button">Rematch ' + escA(S.ghost.handle) + '</button><button class="btn" data-act="again" type="button">New rival</button>' : '<button class="btn prime" data-act="again" type="button">Run it back</button>';
     else if (mode === 'host') { const g = guestPresence(); btns = net && net.rematch ? '<button class="btn" type="button" disabled>Waiting for rival…</button>' : '<button class="btn prime" data-act="again" type="button">' + (g && g.r ? 'Accept rematch' : 'Rematch') + '</button>'; }
     else if (mode === 'guest' && me >= 0) btns = net && net.in.r ? '<button class="btn" type="button" disabled>Waiting for rival…</button>' : '<button class="btn prime" data-act="again" type="button">' + (S.hostRematch ? 'Accept rematch' : 'Rematch') + '</button>';
     card(outcomeBanner(w) + '<div class="kicker">Match over · ' + S.round + ' rounds</div>' +
+      (S.ghost ? '<p class="taunt"><b>' + escA(S.ghost.handle) + '</b>' + (S.ghost.taunt ? ': “' + escA(S.ghost.taunt) + '”' : ' left no taunt.') + '</p>' : '') +
       (P ? '<p>You finished on ' + Math.max(0, Math.ceil(P.hp)) + ' HP at level ' + P.level + ', with ' + P.kills + ' kills across the match.</p>' : '') +
       awardHtml() +
       '<div class="btns">' + btns + '<button class="btn quiet" data-act="menu" type="button">Main menu</button><button class="btn quiet" data-act="profgo" type="button">Profile</button></div>' +
@@ -5507,6 +6084,13 @@ function onAct(a, btn) {
   else if (k0 === 'benchuse') { if (RES[parts[1]]) { VIDEO.res = parts[1]; PERF.step = 0; PERF.n = 0; PERF.cool = 3; saveVideo(); fit(); overlaySig = ''; } }
   else if (k0 === 'cpu') startCpu(parts[1]);
   else if (k0 === 'ghost') { PVP.err = ''; startGhost(); }
+  else if (k0 === 'rematch') { if (S.ghost) useGhost(S.ghost); }
+  else if (k0 === 'siege') { S.ui.siegelb = false; startSiege(); }
+  else if (k0 === 'siegelb') { S.ui.siegelb = true; pvpLoadLb(); }
+  else if (k0 === 'siegelbx') S.ui.siegelb = false;
+  else if (k0 === 'relic') act({t: 'relic', i: parts[1] | 0});
+  else if (k0 === 'taunt') tauntSend();
+  else if (k0 === 'skin') { const sk = SKINS.find(x => x.id === parts[1]); if (sk && crownTotal() >= sk.need) { lsSet('gg-skin', sk.id); applySkin(); } }
   else if (k0 === 'lb') { S.ui.lb = true; pvpLoadLb(); }
   else if (k0 === 'lbx') S.ui.lb = false;
   else if (k0 === 'prof') { S.ui.prof = true; S.ui.pt = 'ov'; pvpLoadLb(); }
@@ -5540,7 +6124,7 @@ function onAct(a, btn) {
 }
 for (const id of ['sideL', 'sideR']) {   // battle calls fire on press, so a panel refresh between press and release can never swallow the click
   $(id).addEventListener('pointerdown', e => {
-    const b = e.target && e.target.closest ? e.target.closest('[data-act^="call:"]') : null;
+    const b = e.target && e.target.closest ? e.target.closest('[data-act^="call:"],[data-act="taunt"]') : null;
     if (b && e.button === 0 && !b.disabled) { e.preventDefault(); onAct(b.getAttribute('data-act'), b); sideSig = ''; }
   });
 }
@@ -5551,7 +6135,7 @@ for (const id of ['overlay', 'dock']) {
     if (b && !b.disabled) onAct(b.getAttribute('data-act'), b);
   });
 }
-$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
+$('overlay').addEventListener('change', e => { const t = e.target; if (!t) return; if (t.id === 'handleIn') setHandle(t.value); else if (t.id === 'tauntIn') { setTaunt(t.value); t.value = TAUNT; } else if (t.id === 'tauntPop') setTauntPop(t.checked); else if (t.id === 'ghIn' && t.files && t.files[0]) pvpImport(t.files[0]); });
 $('overlay').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'codeIn') onAct('join'); });
 
 $('volMusic').value = String(Math.round(VOL.music * 100));
