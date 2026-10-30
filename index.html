@@ -1331,8 +1331,12 @@ function logPersist() {
 function logRound(w, fallen, dmg, post) {
   if (!S.log || S.mode === 'demo') return;
   S.log.rounds.push({r: S.round, w, fallen, dmg, secs: post ? post.t : null, post: post || null,
-    p: S.p.map(P => ({hp: P.hp, keep: Math.ceil(Math.max(0, P.keep)), gold: P.gold, level: P.level, xp: P.xp, streak: P.streak, income: P.lastIncome, kills: P.roundKills,
-      up: P.up.join(''), wager: P.betRes, cores: P.items.join(''), traits: P.traitLv, board: P.board.map(packUnit), bench: P.bench.map(packUnit)}))});
+    p: S.p.map((P, i) => ({hp: P.hp, keep: Math.ceil(Math.max(0, P.keep)), gold: P.gold, level: P.level, xp: P.xp, streak: P.streak, income: P.lastIncome, kills: P.roundKills,
+      up: P.up.join(''), wager: P.betRes, cores: P.items.join(''), traits: P.traitLv, board: P.board.map(packUnit), bench: P.bench.map(packUnit),
+      relics: (P.relics || []).slice(), relicOffer: P.relicOffer ? P.relicOffer.slice() : null, shards: [P.shardGot | 0, P.shardN | 0], prisms: P.prismN | 0, cascade: P.cascBest | 0,
+      par: P.parAt == null ? null : Math.round(P.parAt * 10) / 10, feat: [P.featSeen | 0, Math.round(P.featLeak || 0)], taunts: P.tauntN | 0,
+      crowns: S.crowns && S.crowns[i] ? S.crowns[i].join('') : (S.crownFx && i === S.me ? S.crownFx.c.map(x => x ? 1 : 0).join('') : null)})),
+    wave: S.wave ? [S.wave.f, S.wave.n] : null, parGoal: [parOf(S.round), prismPar(S.round)], chaos: S.chaos ? S.chaos.id : null});
   logPersist();
 }
 async function logDownload(all) {
@@ -1351,23 +1355,28 @@ async function logDownload(all) {
 }
 function logEnd() {
   if (!S.log || S.mode === 'demo') return;
-  S.log.end = {winner: S.winner, rounds: S.round, hp: S.p.map(P => P.hp), stats: S.stats.p};
+  S.log.end = {winner: S.winner, rounds: S.round, hp: S.p.map(P => P.hp), stats: S.stats.p, relics: S.p.map(P => (P.relics || []).slice()), secs: Math.round((Date.now() - Date.parse(S.log.started)) / 1000),
+    ghost: S.ghost ? {handle: S.ghost.handle, taunt: S.ghost.taunt || '', tp: !!S.ghost.tp} : null, siege: S.siege ? {day: S.siege.day, score: S.siege.score ? S.siege.score.total : null, parts: S.siege.score ? S.siege.score.parts : null, shards: S.siege.sh} : null,
+    crownTotal: crownTotal(), skin: lsGet('gg-skin', 'classic'), taunt: TAUNT ? {on: TPOP, len: TAUNT.length} : null};
   logPersist();
   try { profAward(); } catch (e) { S.award = null; }
   pvpRecord();
   logFlush();
 }
 /* ---------- run upload: finished matches go to the shared store (Claude db) and/or RUN_ENDPOINT for later analysis ---------- */
-const RUN_ENDPOINT = '';      // optional: URL of the Cloudflare Worker in worker/ (POST JSON). Empty = Claude db only.
+const RUN_ENDPOINT = 'https://bk-runs.prestonmcgill.workers.dev';   // the run log (worker/ in the repo, D1 database bk-runs): every finished match, web or Claude
+function devId() { let d = lsGet('bk-dev', ''); if (!/^[a-z0-9]{10}$/.test(d)) { d = Math.random().toString(36).slice(2, 12).padEnd(10, '0'); lsSet('bk-dev', d); } return d; }   // a random id per device, so two players' copies of one online match stay apart
 const SENTKEY = 'bk-runs-sent';
 let flushing = false;
 async function logSend(m) {
-  const doc = Object.assign({}, m, {uid: PVP.uid || null, handle: HANDLE, ver: GAME_VER, schema: SCHEMA, sent: Date.now()});
+  const doc = Object.assign({}, m, {uid: PVP.uid || null, dev: devId(), handle: HANDLE, ver: GAME_VER, build: BUILD.split(' ')[0], schema: SCHEMA, sent: Date.now(),
+    src: typeof window !== 'undefined' && window.claude && window.claude.use ? 'claude' : 'web', ui: (document.documentElement.dataset || {}).ui || ''});
   let text = JSON.stringify(doc);
   if (text.length > 200000) { doc.rounds = doc.rounds.map(r => Object.assign({}, r, {post: null})); text = JSON.stringify(doc); }
   let ok = false;
-  if (PVP.db && PVP.uid && BK.putRun) { await BK.putRun(m.id, doc); ok = true; }
-  if (RUN_ENDPOINT) { const r = await fetch(RUN_ENDPOINT, {method: 'POST', headers: {'content-type': 'application/json'}, body: text}); if (!r.ok) throw new Error('run upload ' + r.status); ok = true; }
+  // each destination is tried on its own, so a blocked one never stops the other
+  if (PVP.db && PVP.uid && BK.putRun) { try { await BK.putRun(m.id, doc); ok = true; } catch (e) {} }
+  if (RUN_ENDPOINT) { try { const r = await fetch(RUN_ENDPOINT, {method: 'POST', headers: {'content-type': 'application/json'}, body: text, keepalive: text.length < 60000}); if (r.ok || r.status === 422) ok = true; } catch (e) {} }
   return ok;
 }
 async function logFlush() {
@@ -1377,7 +1386,7 @@ async function logFlush() {
     const sent = lsGet(SENTKEY, []);
     for (const m of logsLoad()) {
       if (!m.end || sent.includes(m.id)) continue;
-      try { if (await logSend(m)) { sent.push(m.id); lsSet(SENTKEY, sent.slice(-60)); } } catch (e) { break; }
+      try { if (await logSend(m)) { sent.push(m.id); lsSet(SENTKEY, sent.slice(-60)); } else break; } catch (e) { break; }
     }
   } finally { flushing = false; }
 }
@@ -1422,7 +1431,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v130 · 30 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v131 · 30 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -1775,7 +1784,7 @@ function lbHtml() {
     '<div class="btns"><button class="btn quiet" data-act="lbx" type="button">Back</button><label class="btn filebtn">Import builds from a match file<input id="ghIn" type="file" accept=".json,application/json"></label></div>';
 }
 function afterResult() {
-  if (S.siege) { siegeFinish(); setPhase('over'); overlaySig = ''; return; }
+  if (S.siege) { siegeFinish(); S.winner = S.p[0].keep > 0 ? 0 : 1; setPhase('over'); logEnd(); overlaySig = ''; return; }
   if (S.p[0].hp <= 0 || S.p[1].hp <= 0) {
     S.winner = S.p[0].hp === S.p[1].hp ? -1 : S.p[0].hp > S.p[1].hp ? 0 : 1;
     if (S.mode === 'demo') { newMatch('demo'); return; }
@@ -3423,7 +3432,7 @@ function tauntSend() {
 function tauntPop(side, txt) {
   const P = S.p[side]; txt = cleanTaunt(txt);
   if (!txt || S.phase !== 'combat' || S.t - (P.tauntT == null ? -99 : P.tauntT) < TAUNT_CD - 0.5) return '';
-  P.tauntT = S.t;
+  P.tauntT = S.t; P.tauntN = (P.tauntN | 0) + 1;
   ev(['T', side, txt, String(tags()[side] || SIDES[side].name).split(' · ')[0].slice(0, 20)]);
   return '';
 }
@@ -5886,7 +5895,7 @@ function menuHtml() {
   return '<div class="kicker">Paused for you only · the match keeps running</div><h1>Menu</h1>' +
     '<div class="btns"><button class="btn prime" data-act="resume" type="button">Resume</button><button class="btn" data-act="stats" type="button">Match stats</button><button class="btn" data-act="wiki:basics" type="button">Wiki</button><button class="btn" data-act="logdl" type="button">Download logs</button></div>' +
     settingsHtml() +
-    '<h2>Match logs</h2><div class="setrow"><label><input type="checkbox" id="mAuto"' + (LOGPREF.send ? ' checked' : '') + '> Send my match runs automatically (uncheck to keep them on this device only)</label></div><p class="hint">Finished matches are uploaded for balance analysis: builds, round results and damage totals, plus your player name. Every round is also saved on this device (last 12 matches); use Download logs to export them.</p>' +
+    '<h2>Match logs</h2><div class="setrow"><label><input type="checkbox" id="mAuto"' + (LOGPREF.send ? ' checked' : '') + '> Send my match runs automatically (uncheck to keep them on this device only)</label></div><p class="hint">Finished matches are sent to the Glass &amp; Gilt run log for balance analysis: builds, round results, damage totals, relics, crowns and shard pickups, plus your player name. Every round is also saved on this device (last 12 matches); use Download logs to export them.</p>' +
     '<h2>Leave</h2><p class="hint">' + (S.mode === 'cpu' ? 'Leaving ends this match against the CPU.' : 'Leaving forfeits the match for your rival.') + '</p>' +
     '<div class="btns"><button class="btn" data-act="leave" type="button">Leave game</button><button class="btn quiet" data-act="menu" type="button">Main menu</button></div>';
 }
@@ -6055,6 +6064,7 @@ function showOverlay() {
         '<li>Each round’s armies hit harder than the last</li>' +
       '</ul>' +
       '<p class="hint">Turn up the music with the volume controls at the bottom right. ' + (peerMode() ? 'To play a friend, send them this page’s link and your room code.' : 'A friend needs access to this page (Share menu) and must be signed in.') + '</p>' +
+      '<p class="hint">' + (LOGPREF.send ? 'Finished matches are logged with your player name to help tune the game. Turn this off any time under Menu · Match logs.' : 'Match logging is off: finished matches stay on this device.') + '</p>' +
       '<p class="buildv">Build ' + BUILD + '</p>'
     );
     return;

@@ -1,7 +1,9 @@
 name = "bk-runs"
 main = "runs.js"
 compatibility_date = "2025-01-01"
+workers_dev = true
+
 [[d1_databases]]
 binding = "DB"
 database_name = "bk-runs"
-database_id = "REPLACE_WITH_ID"
+database_id = "10d4fa62-99a6-4555-868b-fb812631fe36"
