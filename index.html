@@ -1422,7 +1422,7 @@ function setHandle(v) {
      putReports(m)                     write MY reports
    Backends: BK_CLAUDE (account + shared store inside Claude). A Steam build adds BK_STEAM with the same eight methods, calling a server. */
 const SCHEMA = 1;       // shape of the stored documents; bump when a stored field changes meaning
-const BUILD = 'v129 · 30 Oct 2026';   // shown at the bottom of the main screen; bump with every release
+const BUILD = 'v130 · 30 Oct 2026';   // shown at the bottom of the main screen; bump with every release
 const GAME_VER = 4;     // bump when turrets, cores or stats change enough that old saved builds no longer mean the same thing
 const BK_CLAUDE = {
   name: 'claude', db: null, uid: null,
@@ -3012,6 +3012,33 @@ function shatter(u, killer, cy) {
   ev(['C', Math.round(u.x), Math.round(cy), lvl, killer, pts]);
 }
 const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19];
+/* glass marimba for shatter cascades: a struck bar (a sine plus the bar's 3.9x and 9.2x overtones), a soft mallet tick and a
+   short shimmering echo. Each cascade step climbs a major pentatonic; bigger cascades ring longer and add a rolled chord on top. */
+let GLASS_BUS = null;
+function glassBus() {
+  if (GLASS_BUS && GLASS_BUS.ac === MUS.ac) return GLASS_BUS.in;
+  const ac = MUS.ac, inp = ac.createGain(), dl = ac.createDelay(1), fb = ac.createGain(), lp = ac.createBiquadFilter(), wet = ac.createGain();
+  dl.delayTime.value = 0.13; fb.gain.value = 0.32; lp.type = 'lowpass'; lp.frequency.value = 5200; wet.gain.value = 0.3;
+  inp.connect(MUS.sfx); inp.connect(dl); dl.connect(lp); lp.connect(fb); fb.connect(dl); lp.connect(wet); wet.connect(MUS.sfx);
+  GLASS_BUS = {ac, in: inp};
+  return inp;
+}
+function glassNote(t, f, v, len) {
+  const ac = MUS.ac, bus = glassBus(), det = Math.pow(2, (Math.random() - 0.5) * 0.008);
+  [[1, 1, 1], [3.93, 0.32, 0.38], [9.2, 0.1, 0.16]].forEach(([m, g, d]) => {
+    const fr = f * m * det; if (fr > 16000) return;
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(fr, t);
+    o.connect(voiceGain(t, v * g, 0.003, len * d, bus)); o.start(t); o.stop(t + len * d + 0.05);
+  });
+  nz(t, 0.025, 'bandpass', Math.min(9000, f * 5), 2, v * 0.18, 0.02, bus);   // the mallet touching glass
+}
+function cascadeChime(t, lvl) {
+  const step = Math.min(8, lvl - 1), f = 659.25 * Math.pow(2, PENTA[step] / 12), v = 0.034 + 0.005 * Math.min(6, lvl), len = 0.55 + 0.12 * Math.min(6, lvl);
+  glassNote(t, f, v, len);
+  if (lvl >= 3) glassNote(t + 0.045, f * 2, v * 0.35, len * 0.6);                                   // a sparkle an octave up
+  if (lvl >= 5) [3, 2, 1].forEach((k, i) => glassNote(t + 0.07 + i * 0.055, 659.25 * Math.pow(2, PENTA[Math.max(0, step - k)] / 12) * 2, v * 0.45, len * 0.8));   // rolled chord
+  if (lvl >= 7) [0, 4, 7, 12].forEach((k, i) => glassNote(t + 0.25 + i * 0.04, f * 2 * Math.pow(2, k / 12), v * 0.25, 1.2));   // high shimmer for the biggest chains
+}
 
 /* ---- 3. prism combos: two different turrets on one target within 0.5 s ---- */
 function prismCheck(u, side, s) {
@@ -3227,7 +3254,7 @@ function liveEvent(d) {
       for (let i = 0; i < 3; i++) S.parts.push({x: p[0], y: p[1], vx: rnd(-90, 90), vy: rnd(-150, -30), c: Math.random() < 0.5 ? '#e8fbff' : '#9fe6ff', life: rnd(0.3, 0.6), r: rnd(1.5, 3), glow: true});
     }
     for (let i = 0; i < 6 + lvl * 2; i++) { const a = Math.random() * Math.PI * 2, v = rnd(80, 200); S.parts.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 50, c: i % 3 ? '#dff8ff' : '#ffffff', life: rnd(0.35, 0.7), r: rnd(1.4, 2.8), glow: true}); }
-    if (lvl >= 2) { const f = 1046 * Math.pow(2, PENTA[Math.min(8, lvl - 1)] / 12); sfx('casc' + lvl, t => { zap(t, f, f * 1.01, 0.22, 'triangle', 0.035); zap(t, f * 2, f * 2, 0.12, 'sine', 0.015); }, 0.05); }
+    if (lvl >= 2) sfx('casc' + lvl, t => cascadeChime(t, lvl), 0.07);
     if (lvl >= 3 && S.texts.length < 18) S.texts.push({x, y: y - 30, s: 'CASCADE ×' + lvl, life: 1.1, c: lvl >= 5 ? '#ffffff' : '#bff4ff', sz: 13 + lvl * 2});
     if (lvl >= 5) S.shake = Math.max(S.shake, 0.25);
     return true;
